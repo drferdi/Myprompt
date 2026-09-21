@@ -24,6 +24,9 @@ const isSmokeMode =
   process.argv.includes('--smoke') ||
   app.commandLine.hasSwitch('smoke')
 
+app.commandLine.appendSwitch('disable-features', 'DirectCompositionVideoOverlays')
+app.commandLine.appendSwitch('log-level', '3')
+
 function resolveDesktopProjectDir() {
   const sourceProjectDir = path.resolve(__dirname, '..')
   if (existsSync(path.join(sourceProjectDir, 'package.json'))) {
