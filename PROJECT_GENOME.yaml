@@ -1,0 +1,43 @@
+document_id: S01
+title: Sentra Prompt Project Genome
+status: active
+authority: Chief
+owner: Chief
+version: 1.0.0
+created: 2026-09-21
+last_verified: 2026-09-21
+applies_to: .
+source_of_truth: true
+identity:
+  id: internal/prompt
+  product: Sentra Prompt
+  runtime: Electron desktop on Node.js
+  risk: R2
+purpose: Provide a standalone desktop workspace for prompt authoring, optimisation, template use, and provider-backed evaluation.
+authority_hierarchy:
+  - PROJECT_GENOME.yaml
+  - docs/spds/purpose_contract.md
+  - docs/spds/authority_and_decision_rights.md
+  - docs/spds/system_requirements.md
+  - docs/spds/architecture.md
+  - docs/spds/verification_evidence_index.md
+lifecycle:
+  install: [pnpm, install, --frozen-lockfile]
+  lint: [pnpm, run, lint]
+  typecheck: [pnpm, run, typecheck]
+  test: [pnpm, run, test]
+  build: [pnpm, run, build]
+  run: [pnpm, run, start]
+  deploy_dry_run: [pnpm, run, deploy:dry-run]
+constraints:
+  - Credentials are operator-managed and never committed.
+  - Database migration, payment, provider, and production actions require separate approval.
+  - The renderer remains context-isolated from privileged Electron APIs.
+evidence_locations:
+  - project.contract.json
+  - capabilities.json
+  - docs/testing.md
+  - docs/spds/verification_evidence_index.md
+agent_entry_points:
+  - AGENTS.md
+  - docs/spds/read_first.md

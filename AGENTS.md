@@ -7,6 +7,11 @@
 - Human owner: Chief
 - Default risk: R2 because this capsule handles desktop IPC, provider keys, user data, and payment integrations.
 
+## Required context
+
+Before substantial work, read `docs/spds/read_first.md`, then use the linked
+authority, architecture, risk, and verification records relevant to the task.
+
 ## Standalone contract
 
 All lifecycle commands execute from this directory and use only capsule-owned manifests, lockfile, source, Prisma schema, generated output, scripts, and tests.

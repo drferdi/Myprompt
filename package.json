@@ -1,6 +1,6 @@
 {
   "name": "sentra-prompt",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "main": "dist-electron/desktop/bootstrap.js",
   "//packageManager": "Pinned so this app resolves deterministically after being copied out of the ABYSS monorepo — App Independence promises 'clone and run', which an arbitrary local pnpm version does not deliver. Matches the ABYSS root toolchain today; once independent this app may move ahead of root on its own schedule.",

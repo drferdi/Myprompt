@@ -8,14 +8,19 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-21
+
 ### Added
 
 - Standard GitHub repository scaffolding (Issue/PR templates, CI/CD,
   documentation)
+- Local operations, release, architecture, data, testing, contribution, and
+  code-of-conduct documentation for the standalone capsule.
 
 ### Changed
 
-- None
+- Reworked the README as the documented entry point for setup, provider
+  configuration, lifecycle commands, verification, and safety boundaries.
 
 ### Deprecated
 
@@ -23,7 +28,8 @@ and this project adheres to
 
 ### Removed
 
-- None
+- Unreferenced legacy `migration_init.sql`; canonical Prisma history remains in
+  `prisma/migrations/`.
 
 ### Fixed
 
