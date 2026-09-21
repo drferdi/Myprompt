@@ -1,24 +1,26 @@
 # Security Policy
 
-## Supported Versions
+## Supported versions
 
-The following versions of the project are currently being supported with
-security updates.
+The active `main` branch and the latest released 0.x version receive security
+updates. Older versions are unsupported.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.x.x   | :white_check_mark: |
-| < 1.0   | :x:                |
+| Version | Supported |
+| --- | --- |
+| Active `main` branch | Yes |
+| Latest 0.x release | Yes |
+| Earlier releases | No |
 
 ## Reporting a Vulnerability
 
-Please do not report security vulnerabilities through public GitHub issues.
+Do not report security vulnerabilities through public GitHub issues or include
+credentials in any report. Use a private GitHub Security Advisory when available,
+or contact the project maintainers through an agreed private channel.
 
-If you believe you have found a security vulnerability in this project, please
-report it privately to the maintainers. You can reach out directly via email to
-the project lead (Dr. Ferdi Iskandar) or use GitHub Security Advisories if
-enabled for this repository.
+Reports should describe the affected version, impact, reproduction conditions,
+and any proof of concept that does not disclose third-party secrets. Relevant
+surfaces include desktop IPC and preload exposure, provider and API-key handling,
+Prisma/database access, payment integrations, and dependency supply chain.
 
-We will acknowledge receipt of your vulnerability report and strive to send you
-regular updates about our progress. If you're interested, we're happy to
-coordinate a public disclosure once the issue is resolved.
+Maintainers will acknowledge the report, assess impact, coordinate remediation,
+and agree on disclosure timing with the reporter where appropriate.

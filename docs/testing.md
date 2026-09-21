@@ -1,5 +1,32 @@
-# Testing
+# Testing and verification
 
-The migrated Vitest suite covers desktop renderer behavior and prompt optimisation formatting. `pnpm run test` first runs the non-network optimizer acceptance dry-run, then runs Vitest. `pnpm run desktop:smoke` is the runtime probe for a local Electron build.
+## Test levels
 
-`verify:structure` checks the standalone boundary. `verify:extraction` creates a temporary copy and runs lifecycle checks from that extraction without using the SAFRS root.
+| Level | Command | Evidence |
+| --- | --- | --- |
+| Static analysis | `pnpm run lint` | ESLint compliance. |
+| Type safety | `pnpm run typecheck` | TypeScript validation after Prisma generation. |
+| Behavioural tests | `pnpm run test` | Optimizer acceptance dry-run and Vitest suites. |
+| Desktop runtime | `pnpm run desktop:smoke` | Builds Electron and verifies controlled startup. |
+| Structure gate | `pnpm run verify:structure` | Confirms capsule-local files and dependency boundaries. |
+| Extraction gate | `pnpm run verify:extraction` | Reinstalls and validates a fresh temporary copy. |
+
+## Recommended local gate
+
+Run the following before opening a change for review:
+
+```bash
+pnpm run verify
+pnpm run verify:extraction
+```
+
+The complete gate runs lint, type checking, test suites, an Electron smoke test,
+and a deploy artifact dry-run. Tests do not require provider credentials or a live
+database.
+
+## Failure handling
+
+Treat a failed gate as evidence, not as a reason to weaken validation. Record the
+failing command, the affected surface, and whether the failure predates the change.
+Do not replace behavioural tests with placeholders or use a production credential
+to make a local test pass.

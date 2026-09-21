@@ -1,8 +1,8 @@
 # Contributing to Sentra Prompt
 
-First off, thank you for considering contributing to this project! It's people
-like you that make the open source community such a great place to learn,
-inspire, and create.
+Thank you for contributing to Sentra Prompt. This project is a standalone
+Electron capsule with desktop IPC, provider, persistence, billing, and data
+boundaries. Keep each change focused, documented, and verifiable.
 
 ## Code of Conduct
 
@@ -14,8 +14,9 @@ Conduct.
 ### Reporting Bugs
 
 - Ensure the bug was not already reported by searching on GitHub under Issues.
-- If you're unable to find an open issue addressing the problem, open a new one
-  using the **Bug report** template.
+- Include the observed behaviour, expected behaviour, reproduction steps, and
+  non-sensitive environment details.
+- Do not include API keys, database URLs, payment data, or `.env.local` content.
 
 ### Suggesting Enhancements
 
@@ -26,17 +27,21 @@ Conduct.
 ### Pull Requests
 
 1. Fork the repo and create your branch from `main`.
-2. If you've added code that should be tested, add tests.
-3. If you've changed APIs, update the documentation.
-4. Ensure the test suite passes.
-5. Make sure your code lints and is formatted correctly.
-6. Issue that pull request!
+2. Keep source, dependency, and documentation changes in the smallest practical
+   reviewable scope.
+3. Add behavioural tests for changed logic and update documentation for changed
+   workflows or configuration.
+4. Run `pnpm run verify` and `pnpm run verify:extraction` from the capsule root.
+5. State test evidence and any known limitations in the pull request.
+6. Request designated review for Electron IPC, Prisma, provider, billing, or
+   external-service boundary changes.
 
 ## Coding Standards
 
 - We use `pnpm` as our package manager.
-- Follow the formatting rules enforced by our linter (`pnpm lint`) and
-  prettier/editorconfig.
-- Write meaningful commit messages.
+- Follow the formatting rules enforced by `pnpm run lint` and `.editorconfig`.
+- Keep credentials in ignored local environment files, never in source or docs.
+- Do not introduce a dependency on a parent monorepo or another capsule.
+- Write clear, imperative commit messages.
 
 Thank you!
