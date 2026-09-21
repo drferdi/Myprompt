@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "rootDir": ".",
+    "outDir": "./dist-electron",
+    "lib": ["dom", "es2020"],
+    "noEmit": false,
+    "incremental": false,
+    "types": ["node"]
+  },
+  "include": ["desktop/bootstrap.ts", "desktop/main.ts", "desktop/preload.ts", "desktop/renderer/renderer.ts"],
+  "exclude": ["node_modules", "dist-electron"]
+}

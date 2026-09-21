@@ -1,0 +1,11 @@
+node_modules/
+.next/
+dist-electron/
+prisma/generated/
+coverage/
+dist/
+build/
+.turbo/
+.env
+.env.local
+*.tsbuildinfo

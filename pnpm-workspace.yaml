@@ -1,0 +1,25 @@
+packages: []
+overrides:
+  'minimatch@<3.1.4': 3.1.5
+  'minimatch@>=9.0.0 <9.0.7': 9.0.9
+  'minimatch@>=10.0.0 <10.2.3': 10.2.5
+  'rollup@>=4.0.0 <4.59.0': 4.59.0
+  'esbuild@<0.25.0': 0.25.12
+  'markdown-it@<14.1.1': 14.1.1
+  'ajv@>=6.0.0 <6.14.0': 6.14.0
+  'tmp@<0.2.6': 0.2.6
+  'path-to-regexp@>=4.0.0 <6.3.0': 6.3.0
+  'tar@<7.5.19': 7.5.19
+  'undici@<6.24.0': 6.24.0
+  'shell-quote@<1.8.4': 1.8.4
+  'vitest@>=3.0.0 <3.2.6': 3.2.6
+  xlsx: npm:@e965/xlsx@0.20.3
+allowBuilds:
+  '@prisma/client': true
+  '@prisma/engines': true
+  '@sentry/cli': false
+  electron: true
+  esbuild: true
+  prisma: true
+  sharp: false
+  unrs-resolver: false

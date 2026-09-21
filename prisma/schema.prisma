@@ -1,0 +1,347 @@
+// Drferdi Transformer Engine V2 — Prisma Schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [vector]
+}
+
+// ── Enums ────────────────────────────────────────────────────────────────
+
+enum LLMProvider {
+  CLAUDE
+  OPENAI
+  MISTRAL
+  QWEN
+  GROK
+  LOCAL
+}
+
+enum TaskType {
+  CODING
+  EMAIL
+  ANALYSIS
+  CREATIVE
+  RESEARCH
+  BUSINESS
+  EDUCATION
+  MARKETING
+  GENERAL
+}
+
+enum PromptTone {
+  PROFESSIONAL
+  CASUAL
+  TECHNICAL
+  ACADEMIC
+  CREATIVE
+  PERSUASIVE
+}
+
+enum OutputFormat {
+  DETAILED
+  CONCISE
+  STRUCTURED
+  STEP_BY_STEP
+  CONVERSATIONAL
+}
+
+enum TemplateCategory {
+  CODING
+  EMAIL
+  ANALYSIS
+  CREATIVE
+  RESEARCH
+  BUSINESS
+  EDUCATION
+  MARKETING
+}
+
+// ── Subscription & Billing Enums ──────────────────────────────────────
+
+enum SubscriptionTier {
+  GRATIS
+  PRO
+  TIM
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum BillingInterval {
+  MONTHLY
+  ANNUAL
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  EXPIRED
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  BANK_TRANSFER
+  EWALLET_GOPAY
+  EWALLET_OVO
+  EWALLET_DANA
+  EWALLET_SHOPEEPAY
+  QRIS
+}
+
+enum UsageType {
+  TRANSFORM
+  OPTIMIZE
+  EVALUATE
+  RECOMMEND
+}
+
+enum RateLimitScope {
+  IP
+  EMAIL
+}
+
+enum EmailJobType {
+  WELCOME
+}
+
+enum EmailJobStatus {
+  PENDING
+  PROCESSING
+  RETRYING
+  SENT
+  FAILED
+}
+
+// ── Models ───────────────────────────────────────────────────────────────
+
+model User {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  name        String?
+  supabaseId  String    @unique
+  avatarUrl   String?
+  locale      String    @default("id")
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  prompts      Prompt[]
+  evaluations  Evaluation[]
+  apiKeys      UserApiKey[]
+  subscription Subscription?
+  usageRecords UsageRecord[]
+
+  @@map("users")
+}
+
+model UserApiKey {
+  id              String      @id @default(cuid())
+  userId          String
+  provider        LLMProvider
+  encryptedKey    String      // AES-256-GCM encrypted
+  iv              String      // Initialization vector
+  authTag         String      // Authentication tag
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider])
+  @@map("user_api_keys")
+}
+
+model Prompt {
+  id            String      @id @default(cuid())
+  userId        String
+  rawInput      String
+  optimizedText String
+  taskType      TaskType
+  tone          PromptTone
+  format        OutputFormat
+  targetLlm     LLMProvider
+  tags          String[]    @default([])
+  isPublic      Boolean     @default(false)
+  embedding     Unsupported("vector(1536)")?
+  deletedAt     DateTime?   // Soft delete
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  evaluations   Evaluation[]
+
+  @@index([userId, deletedAt])
+  @@index([taskType])
+  @@index([isPublic, deletedAt])
+  @@map("prompts")
+}
+
+model Evaluation {
+  id              String   @id @default(cuid())
+  promptId        String?
+  userId          String
+  promptText      String
+  structureScore  Float
+  clarityScore    Float
+  completenessScore Float
+  specificityScore  Float
+  overallScore    Float
+  feedback        Json     // Per-dimension feedback
+  suggestions     String[] @default([])
+  provider        LLMProvider
+  model           String
+  createdAt       DateTime @default(now())
+
+  prompt          Prompt?  @relation(fields: [promptId], references: [id], onDelete: SetNull)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([promptId])
+  @@map("evaluations")
+}
+
+model PromptTemplate {
+  id          String           @id @default(cuid())
+  slug        String           @unique
+  name        String
+  description String
+  category    TemplateCategory
+  template    Json             // {role, taskStructure, cotGuidance, constraints[], formatSpec, qualityChecklist[]}
+  variables   Json             @default("[]") // [{name, description, required, defaultValue}]
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([category, isActive])
+  @@map("prompt_templates")
+}
+
+// ── Subscription & Billing Models ─────────────────────────────────────
+
+model Subscription {
+  id                    String             @id @default(cuid())
+  userId                String             @unique
+  tier                  SubscriptionTier   @default(GRATIS)
+  status                SubscriptionStatus @default(ACTIVE)
+  billingInterval       BillingInterval?
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+  trialEndsAt           DateTime?
+  canceledAt            DateTime?
+  gatewayCustomerId     String?            // Xendit customer ID
+  gatewaySubscriptionId String?            // Xendit subscription ID
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments Payment[]
+
+  @@index([status])
+  @@index([currentPeriodEnd])
+  @@map("subscriptions")
+}
+
+model Payment {
+  id               String        @id @default(cuid())
+  subscriptionId   String
+  amount           Int           // In IDR (no decimals needed)
+  currency         String        @default("IDR")
+  status           PaymentStatus @default(PENDING)
+  method           PaymentMethod?
+  gatewayPaymentId String?       @unique // Xendit transaction ID
+  gatewayResponse  Json?         // Raw gateway response for audit
+  invoiceNumber    String?       @unique
+  paidAt           DateTime?
+  failedAt         DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([gatewayPaymentId])
+  @@map("payments")
+}
+
+// ── Usage Tracking ────────────────────────────────────────────────────
+
+model UsageRecord {
+  id        String    @id @default(cuid())
+  userId    String
+  type      UsageType
+  count     Int       @default(1)
+  date      DateTime  @default(now()) @db.Date
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type, date])
+  @@index([userId, date])
+  @@map("usage_records")
+}
+
+// ── Feature Flags ─────────────────────────────────────────────────────
+
+model FeatureFlag {
+  id          String             @id @default(cuid())
+  key         String             @unique
+  name        String
+  description String?
+  enabledFor  SubscriptionTier[]
+  isGlobal    Boolean            @default(false)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@map("feature_flags")
+}
+
+model RateLimitCounter {
+  id          String         @id @default(cuid())
+  action      String
+  scope       RateLimitScope
+  keyHash     String
+  windowStart DateTime
+  windowEnd   DateTime
+  count       Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([action, scope, keyHash, windowStart])
+  @@index([windowEnd])
+  @@map("rate_limit_counters")
+}
+
+model EmailJob {
+  id             String         @id @default(cuid())
+  type           EmailJobType
+  toEmail        String
+  payload        Json
+  status         EmailJobStatus @default(PENDING)
+  attempts       Int            @default(0)
+  maxAttempts    Int            @default(5)
+  nextAttemptAt  DateTime       @default(now())
+  lastAttemptAt  DateTime?
+  sentAt         DateTime?
+  lastError      String?
+  idempotencyKey String?        @unique
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([status, nextAttemptAt])
+  @@map("email_jobs")
+}
