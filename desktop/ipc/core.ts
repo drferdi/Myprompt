@@ -20,11 +20,15 @@ import { resolveDesktopAppUser } from '../../lib/desktop/current-user'
 import { loadDesktopSession } from '../../lib/desktop/session-store'
 import { evaluatePrompt } from '../../lib/evaluator/engine'
 import { getAvailableProviders } from '../../lib/llm/provider-registry'
+import {
+  resolveGuestProvider as resolveAvailableGuestProvider,
+  type DesktopRemoteProvider,
+} from '../../lib/llm/provider-readiness'
 import { resolveProviderApiKey } from '../../lib/llm/user-api-keys'
 import { optimizePrompt, optimizePromptStreaming } from '../../lib/optimizer/engine'
 import { transformPrompt } from '../../lib/transform/engine'
 import { TransformRequestSchema } from '../../lib/transform/schemas'
-import { EvaluateRequestSchema, OptimizeRequestSchema, type LLMProviderName } from '../../types'
+import { EvaluateRequestSchema, OptimizeRequestSchema } from '../../types'
 
 import { listDesktopBenchmarks, runDesktopBenchmark, saveDesktopBenchmark } from './benchmark'
 import { createDesktopPrompt, listDesktopPrompts, listDesktopTemplates } from './library'
@@ -32,7 +36,7 @@ import { handleProviderCommand } from './provider-keys'
 import { handleSubscriptionCommand } from './subscription'
 import { createWorkspaceStore } from './workspace-store'
 
-type DesktopGuestProvider = Exclude<LLMProviderName, 'LOCAL'>
+type DesktopGuestProvider = DesktopRemoteProvider
 type DesktopOptimizeLane = 'INTERACTIVE' | 'DEEP'
 type DesktopWorkspaceSourceMode = 'transform' | 'optimize' | 'evaluate'
 type DesktopPayloadRecord = Record<string, unknown>
@@ -126,28 +130,15 @@ async function tryResolveDesktopUser(accessToken?: string) {
 }
 
 function resolveGuestProvider(requestedProvider?: unknown): DesktopGuestProvider {
-  const availableProviders = getAvailableProviders().filter(
-    (provider): provider is DesktopGuestProvider => provider !== 'LOCAL'
+  const resolution = resolveAvailableGuestProvider(requestedProvider, getAvailableProviders())
+
+  if (resolution.status === 'ready') {
+    return resolution.provider
+  }
+
+  throw new Error(
+    'No desktop LLM provider is configured. Add a supported provider key, then restart the desktop shell.'
   )
-
-  const normalizedRequestedProvider =
-    typeof requestedProvider === 'string'
-      ? (requestedProvider.toUpperCase() as DesktopGuestProvider)
-      : null
-
-  if (normalizedRequestedProvider) {
-    return normalizedRequestedProvider
-  }
-
-  if (availableProviders.includes('OPENAI')) {
-    return 'OPENAI'
-  }
-
-  if (availableProviders.length > 0) {
-    return availableProviders[0]
-  }
-
-  return normalizedRequestedProvider ?? 'GROK'
 }
 
 function buildGuestOptimizePayload(

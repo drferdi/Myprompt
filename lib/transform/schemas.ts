@@ -18,6 +18,15 @@ export const ModelId = z.enum([
 
 export const TransformMode = z.enum(['professional', 'creative', 'technical', 'academic', 'casual'])
 
+export const CompilerProfile = z.enum([
+  'claude-fable-5',
+  'claude-mythos-5',
+])
+
+export const EffortLevel = z.enum(['low', 'medium', 'high', 'xhigh', 'max'])
+
+export const TransformTarget = z.enum(['general', 'agent'])
+
 export const TransformRequestSchema = z.object({
   prompt: z
     .string()
@@ -29,6 +38,9 @@ export const TransformRequestSchema = z.object({
   temperature: z.number().min(0).max(2).default(0.7),
   maxTokens: z.number().min(100).max(4000).default(1024),
   locale: z.enum(['id', 'en']).default('id'),
+  profile: CompilerProfile.optional(),
+  effort: EffortLevel.optional().default('high'),
+  target: TransformTarget.optional().default('general'),
 })
 
 export const TransformResponseSchema = z.object({
@@ -37,6 +49,9 @@ export const TransformResponseSchema = z.object({
   transformedPrompt: z.string(),
   model: ModelId,
   mode: TransformMode,
+  profile: CompilerProfile.optional(),
+  effort: EffortLevel.optional(),
+  target: TransformTarget.optional(),
   metadata: z.object({
     tokensEstimate: z.number(),
     transformedAt: z.string().datetime(),
@@ -56,13 +71,19 @@ export const HistoryItemSchema = z.object({
   transformedPrompt: z.string(),
   model: ModelId,
   mode: TransformMode,
+  profile: CompilerProfile.optional(),
+  effort: EffortLevel.optional(),
+  target: TransformTarget.optional(),
   createdAt: z.string().datetime(),
   starred: z.boolean().default(false),
 })
 
 export type ModelId = z.infer<typeof ModelId>
 export type TransformMode = z.infer<typeof TransformMode>
-export type TransformRequest = z.infer<typeof TransformRequestSchema>
+export type CompilerProfile = z.infer<typeof CompilerProfile>
+export type EffortLevel = z.infer<typeof EffortLevel>
+export type TransformTarget = z.infer<typeof TransformTarget>
+export type TransformRequest = z.input<typeof TransformRequestSchema>
 export type TransformResponse = z.infer<typeof TransformResponseSchema>
 export type TransformError = z.infer<typeof TransformErrorSchema>
 export type HistoryItem = z.infer<typeof HistoryItemSchema>
