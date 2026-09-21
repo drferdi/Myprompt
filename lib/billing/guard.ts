@@ -1,4 +1,4 @@
-// Classy CTE V2 — Usage Quota & Feature Gate Enforcement
+// Drferdi CTE V2 — Usage Quota & Feature Gate Enforcement
 
 import type { SubscriptionTier, UsageType } from '@prisma/client'
 

@@ -1,10 +1,10 @@
-// Classy CTE V2 — localStorage Abstraction for History
+// Drferdi CTE V2 — localStorage Abstraction for History
 
 import { TRANSFORM_LIMITS } from './constants'
 import type { HistoryItem } from './schemas'
 import { HistoryItemSchema } from './schemas'
 
-const STORAGE_KEY = 'classy-cte-history'
+const STORAGE_KEY = 'drferdi-cte-history'
 
 function safeGetStorage(): HistoryItem[] {
   if (typeof window === 'undefined') return []

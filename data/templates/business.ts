@@ -1,4 +1,4 @@
-// Classy Transformer Engine — Business Templates
+// Drferdi Transformer Engine — Business Templates
 import type { TemplateDefinition } from '@/types'
 
 export const businessTemplates: TemplateDefinition[] = [

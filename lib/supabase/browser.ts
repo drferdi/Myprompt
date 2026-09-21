@@ -1,4 +1,4 @@
-// Classy CTE V2 — Supabase Browser Client
+// Drferdi CTE V2 — Supabase Browser Client
 // Use in Client Components
 
 import { createBrowserClient } from '@supabase/ssr'

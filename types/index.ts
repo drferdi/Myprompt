@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Zod Contracts & Types
+// Drferdi Transformer Engine V2 — Zod Contracts & Types
 import { z } from 'zod'
 
 // ── Enums ────────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Template Loader
+// Drferdi Transformer Engine V2 — Template Loader
 import { allTemplates, templatesByCategory } from '@/data/templates'
 import type { TemplateDefinition, TemplateCategory } from '@/types'
 

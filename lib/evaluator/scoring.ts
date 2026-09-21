@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Evaluation Scoring
+// Drferdi Transformer Engine V2 — Evaluation Scoring
 import { DIMENSIONS } from './dimensions'
 
 import type { EvaluationDimension } from '@/types'

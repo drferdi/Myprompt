@@ -1,4 +1,4 @@
-// Classy CTE V2 — Supabase Server Action / Route Handler Client (read/write cookies)
+// Drferdi CTE V2 — Supabase Server Action / Route Handler Client (read/write cookies)
 // Use in Server Actions and Route Handlers for mutations
 
 import { createServerClient } from '@supabase/ssr'

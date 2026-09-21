@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Provider Registry
+// Drferdi Transformer Engine V2 — Provider Registry
 import { OPENROUTER_LANE_MODEL_FALLBACKS } from './constants'
 import { AnthropicProvider } from './providers/anthropic'
 import { GrokProvider } from './providers/grok'

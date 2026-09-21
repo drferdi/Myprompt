@@ -1,4 +1,4 @@
-// Classy CTE V2 — Supabase Middleware Client
+// Drferdi CTE V2 — Supabase Middleware Client
 // Creates a client that can refresh sessions in middleware
 
 import { createServerClient } from '@supabase/ssr'

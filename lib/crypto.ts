@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — API Key Encryption (AES-256-GCM)
+// Drferdi Transformer Engine V2 — API Key Encryption (AES-256-GCM)
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'crypto'
 
 const ALGORITHM = 'aes-256-gcm'

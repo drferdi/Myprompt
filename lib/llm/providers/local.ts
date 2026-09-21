@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Local/Ollama Provider
+// Drferdi Transformer Engine V2 — Local/Ollama Provider
 import type { LLMProviderAdapter, ProviderConfig } from '../types'
 
 import { DEFAULT_MODEL_MAP, PROVIDER_BASE_URLS } from '@/lib/constants'

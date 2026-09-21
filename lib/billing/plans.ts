@@ -1,4 +1,4 @@
-// Classy CTE V2 — Subscription Tier Definitions & Limits
+// Drferdi CTE V2 — Subscription Tier Definitions & Limits
 
 import type { SubscriptionTier, UsageType } from '@prisma/client'
 

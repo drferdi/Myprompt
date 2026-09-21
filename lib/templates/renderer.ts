@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Template Renderer
+// Drferdi Transformer Engine V2 — Template Renderer
 import type { TemplateDefinition } from '@/types'
 
 interface RenderContext {

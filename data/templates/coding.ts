@@ -1,4 +1,4 @@
-// Classy
+// Drferdi
 import type { TemplateDefinition } from '@/types'
 
 export const codingTemplates: TemplateDefinition[] = [

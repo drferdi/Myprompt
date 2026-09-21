@@ -1,45 +1,29 @@
-# AGENTS.md — Sentra Prompt
+# Sentra Prompt Capsule Router
 
-Last updated: 2026-06-28 | Owner: Chief
+## Objective and ownership
 
-> Inherits root [`AGENTS.md`](../../../AGENTS.md) governance; this file may only
-> ADD scoped context. **Root wins** on conflict.
+- Project: Sentra Prompt (domain: internal)
+- Objective: run the migrated desktop prompt-engineering workspace independently of the SAFRS root.
+- Human owner: Chief
+- Default risk: R2 because this capsule handles desktop IPC, provider keys, user data, and payment integrations.
 
-## Identity
+## Standalone contract
 
-- Name: Sentra Prompt
-- Package: `@the-abyss/sentra-prompt`
-- Type: Next.js 15 multi-LLM prompt optimization platform (+ desktop/electron
-  paths)
-- Domain: Prompt transformation across Anthropic, OpenAI, Mistral, xAI
-- Stack: Next.js 15, React 19, Prisma, TypeScript strict
-- Owner: Chief (Dr. Ferdi Iskandar)
+All lifecycle commands execute from this directory and use only capsule-owned manifests, lockfile, source, Prisma schema, generated output, scripts, and tests.
 
-## Run
-
-```powershell
-pnpm --filter @the-abyss/sentra-prompt format:check
-pnpm --filter @the-abyss/sentra-prompt lint
-pnpm --filter @the-abyss/sentra-prompt typecheck
-pnpm --filter @the-abyss/sentra-prompt test
-pnpm --filter @the-abyss/sentra-prompt build
-pnpm --filter @the-abyss/sentra-prompt dev
-```
-
-## Operating Rules (scoped)
-
-- Safety: never commit API keys; use env injection only.
-- Task class: A trivial -> proceed · B standard -> plan, do, verify · C
-  (auth/db/infra) -> Chief GO.
-- Memory: read `.agent/` first; update `HANDOFF.md`/`PROGRESS.md` after
-  meaningful work.
+| Stage | Program | Arguments |
+| --- | --- | --- |
+| install | `pnpm` | `install --frozen-lockfile` |
+| lint | `pnpm` | `run lint` |
+| typecheck | `pnpm` | `run typecheck` |
+| test | `pnpm` | `run test` |
+| build | `pnpm` | `run build` |
+| run | `pnpm` | `run start` |
+| deployDryRun | `pnpm` | `run deploy:dry-run` |
 
 ## Boundaries
 
-- Database migrations are Class C — stop for Chief GO.
-- Desktop and web surfaces share contracts — coordinate breaking changes.
-
-## SSOT
-
-- `.agent/`: `CONTEXT.md`, `HANDOFF.md`, `VALIDATION.md` (required);
-  `PROGRESS.md`, `DECISIONS.md` (optional).
+- Provider, database, Supabase, Resend, and Xendit values remain outside the repository. Never read or commit `.env`.
+- Do not execute `db:migrate`, `db:migrate:deploy`, `db:migrate:apply`, `db:seed`, payment callbacks, or provider requests during migration verification.
+- Electron is recorded as R2 in `capabilities.json`; its root selector cannot address the required nested SAFRS capsule path, so this capsule-local record mirrors the reviewed manifest.
+- Retain context isolation and IPC validation; do not widen the preload API during migration.

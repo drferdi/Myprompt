@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Mistral Provider
+// Drferdi Transformer Engine V2 — Mistral Provider
 import { Mistral } from '@mistralai/mistralai'
 
 import type { LLMProviderAdapter, ProviderConfig } from '../types'

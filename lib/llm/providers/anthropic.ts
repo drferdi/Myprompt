@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Anthropic/Claude Provider
+// Drferdi Transformer Engine V2 — Anthropic/Claude Provider
 import Anthropic from '@anthropic-ai/sdk'
 
 import type { LLMProviderAdapter, ProviderConfig } from '../types'

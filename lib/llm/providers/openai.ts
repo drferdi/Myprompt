@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — OpenAI Provider
+// Drferdi Transformer Engine V2 — OpenAI Provider
 import OpenAI from 'openai'
 
 import type { LLMProviderAdapter, ProviderConfig } from '../types'

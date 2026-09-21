@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Evaluator Engine
+// Drferdi Transformer Engine V2 — Evaluator Engine
 import { normalizeScores, calculateOverallScore } from './scoring'
 
 import { buildEvaluateSystemPrompt, buildEvaluateUserPrompt } from '@/lib/llm/prompt-builder'

@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Token Counter (estimation)
+// Drferdi Transformer Engine V2 — Token Counter (estimation)
 import type { LLMProviderName } from '@/types'
 
 // Approximate chars-per-token ratios by provider family

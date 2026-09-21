@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Similarity Search
+// Drferdi Transformer Engine V2 — Similarity Search
 import { Prisma } from '@prisma/client'
 
 import { generateEmbedding } from './generator'

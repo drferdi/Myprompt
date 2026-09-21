@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Grok/xAI Provider (OpenAI-compatible)
+// Drferdi Transformer Engine V2 — Grok/xAI Provider (OpenAI-compatible)
 import type { ProviderConfig } from '../types'
 
 import { OpenAIProvider } from './openai'

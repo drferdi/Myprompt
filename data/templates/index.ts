@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Template Aggregator
+// Drferdi Transformer Engine V2 — Template Aggregator
 import { analysisTemplates } from './analysis'
 import { businessTemplates } from './business'
 import { codingTemplates } from './coding'

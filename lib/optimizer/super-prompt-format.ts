@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Super Prompt Formatter
+// Drferdi Transformer Engine V2 — Super Prompt Formatter
 import { z } from 'zod'
 
 import { PromptQualitySchema } from '@/lib/prompt-quality/contract'

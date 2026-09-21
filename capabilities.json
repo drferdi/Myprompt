@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "capabilities": [
+    {
+      "id": "electron",
+      "risk": "R2"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Structured Logger
+// Drferdi Transformer Engine V2 — Structured Logger
 // Wraps error logging with context for observability.
 // When Sentry is configured, errors are captured there;
 // otherwise falls back to structured console output.

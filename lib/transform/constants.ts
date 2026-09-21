@@ -1,4 +1,4 @@
-// Classy CTE V2 — Transform Feature Constants & Presets
+// Drferdi CTE V2 — Transform Feature Constants & Presets
 
 import type { ModelId, TransformMode } from './schemas'
 

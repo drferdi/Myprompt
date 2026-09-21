@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — App Constants
+// Drferdi Transformer Engine V2 — App Constants
 
 export const APP_NAME = 'CTE V2'
 export const APP_DESCRIPTION = 'Prompt Transformer & Optimizer'

@@ -1,4 +1,4 @@
-// Classy Transformer Engine — Research Templates
+// Drferdi Transformer Engine — Research Templates
 import type { TemplateDefinition } from '@/types'
 
 export const researchTemplates: TemplateDefinition[] = [
