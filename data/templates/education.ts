@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Education Templates
+// Drferdi Transformer Engine V2 — Education Templates
 import type { TemplateDefinition } from '@/types'
 
 export const educationTemplates: TemplateDefinition[] = [

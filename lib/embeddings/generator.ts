@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Embedding Generator
+// Drferdi Transformer Engine V2 — Embedding Generator
 import OpenAI from 'openai'
 
 import { EMBEDDING_MODEL, EMBEDDING_DIMENSIONS } from '@/lib/constants'

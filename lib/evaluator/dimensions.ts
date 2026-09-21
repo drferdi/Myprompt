@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Evaluation Dimensions
+// Drferdi Transformer Engine V2 — Evaluation Dimensions
 export interface DimensionDefinition {
   key: string
   label: string

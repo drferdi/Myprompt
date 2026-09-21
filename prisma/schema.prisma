@@ -1,4 +1,4 @@
-// Avvcenna+ Transformer Engine V2 — Prisma Schema
+// Drferdi Transformer Engine V2 — Prisma Schema
 
 generator client {
   provider        = "prisma-client-js"

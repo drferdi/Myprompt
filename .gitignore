@@ -1,89 +1,11 @@
-# ai tool local config
-.claude/
-
-# dependencies
-node_modules
-.pnpm-store
-
-# next.js
+node_modules/
 .next/
-out/
-
-# production
-build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# env
-.env
-.env*.local
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# prisma
-prisma/migrations/**/migration_lock.toml
-
-# electron build output
 dist-electron/
-
-# local data & workspace
-# data/* rather than data/: git cannot re-include anything under an excluded
-# directory, and data/templates holds the prompt template modules — source, not
-# local data. desktop/ipc/library.ts and lib/templates/loader.ts import them, so
-# the build breaks anywhere that directory is missing.
-data/*
-!data/templates/
-!data/templates/**
-*.bat
-
-# superpowers & agent local files
-docs/superpowers/
-skills-lock.json
-
-# local agent sessions
-.agent/sessions/
-.agent/archive/
-.agent/reports/
-.git-absorbed-backup/
-
-# ---- AI GOVERNANCE — SENTRA INTERNAL (JANGAN PUSH) ----
-# Ditambahkan oleh guardian-apply.ps1 — 2026-06-21
-# AGENTS.md tracked via monorepo root .gitignore — do not re-ignore
-AGENTS.override.md
-CLAUDE.md
-GEMINI.md
-.agent/
-.claude/
-.codex/
-.gemini/
-.cursor/
-.clinerules
-.mcp.json
-.qoder/
-.qoderignore
-.superpowers/
-.superdesign/
-.roomodes
-.playwright-mcp/
-
-!CLAUDE.md
-!.agent/
-!.agent/CONTEXT.md
-!.agent/DECISIONS.md
-!.agent/HANDOFF.md
-!.agent/LESSONS.md
-!.agent/PLANS.md
-!.agent/PROGRESS.md
-!.agent/VALIDATION.md
+prisma/generated/
+coverage/
+dist/
+build/
+.turbo/
+.env
+.env.local
+*.tsbuildinfo

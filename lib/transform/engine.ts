@@ -1,4 +1,4 @@
-// Classy CTE V2 — Transform Engine
+// Drferdi CTE V2 — Transform Engine
 // Pure function: raw prompt -> structured super prompt
 // No external API calls — deterministic string builder
 

@@ -1,20 +1,20 @@
-// Classy CTE V2 — Welcome Email
+// Drferdi CTE V2 — Welcome Email
 // Sent once after new user is created in Prisma via /api/auth/callback
 // Fire-and-forget: failures are logged but never break the registration flow
 
 import { Resend } from 'resend'
 
-const FROM = process.env.RESEND_FROM_EMAIL ?? 'Classy <noreply@classy.com>'
+const FROM = process.env.RESEND_FROM_EMAIL ?? 'Drferdi <noreply@sentrahai.com>'
 
 function buildWelcomeHtml(name: string): string {
-  const displayName = name || 'Sobat Classy'
+  const displayName = name || 'Sobat Drferdi'
 
   return `<!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Selamat Datang di Classy CTE</title>
+  <title>Selamat Datang di Drferdi CTE</title>
 </head>
 <body style="margin:0;padding:0;background-color:#0d0d0d;font-family:'Inter',Arial,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0d0d0d;padding:40px 0;">
@@ -31,7 +31,7 @@ function buildWelcomeHtml(name: string): string {
                     <span style="color:#ffffff;font-size:16px;font-weight:700;">⚡</span>
                   </td>
                   <td style="padding-left:12px;">
-                    <span style="color:#b7ab98;font-size:18px;font-weight:700;letter-spacing:-0.3px;">Classy CTE</span>
+                    <span style="color:#b7ab98;font-size:18px;font-weight:700;letter-spacing:-0.3px;">Drferdi CTE</span>
                   </td>
                 </tr>
               </table>
@@ -45,7 +45,7 @@ function buildWelcomeHtml(name: string): string {
                 Selamat datang, ${displayName}! 🎉
               </h1>
               <p style="color:#b7ab98;font-size:15px;line-height:1.7;margin:0 0 24px;">
-                Akun Classy CTE kamu sudah aktif. Kamu sekarang bisa mulai mengoptimalkan prompt dan mendapatkan hasil yang lebih baik dari AI manapun.
+                Akun Drferdi CTE kamu sudah aktif. Kamu sekarang bisa mulai mengoptimalkan prompt dan mendapatkan hasil yang lebih baik dari AI manapun.
               </p>
 
               <!-- Feature list -->
@@ -94,7 +94,7 @@ function buildWelcomeHtml(name: string): string {
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="center">
-                    <a href="${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.classy.com'}/optimizer"
+                    <a href="${process.env.NEXT_PUBLIC_APP_URL ?? 'https://sentrahai.com'}/optimizer"
                        style="display:inline-block;background-color:#eb5939;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 32px;border-radius:8px;letter-spacing:-0.2px;">
                       Mulai Sekarang →
                     </a>
@@ -108,7 +108,7 @@ function buildWelcomeHtml(name: string): string {
           <tr>
             <td style="padding:20px 40px;border-top:1px solid #1a1a1a;">
               <p style="color:#555555;font-size:12px;line-height:1.6;margin:0;text-align:center;">
-                Kamu menerima email ini karena baru mendaftar di Classy CTE.<br/>
+                Kamu menerima email ini karena baru mendaftar di Drferdi CTE.<br/>
                 Jika bukan kamu yang mendaftar, abaikan email ini.
               </p>
             </td>
@@ -123,12 +123,12 @@ function buildWelcomeHtml(name: string): string {
 }
 
 function buildWelcomePlainText(name: string): string {
-  const displayName = name || 'Sobat Classy'
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.classy.com'
+  const displayName = name || 'Sobat Drferdi'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://sentrahai.com'
   return [
     `Selamat datang, ${displayName}!`,
     '',
-    'Akun Classy CTE kamu sudah aktif. Mulai optimalkan prompt kamu di:',
+    'Akun Drferdi CTE kamu sudah aktif. Mulai optimalkan prompt kamu di:',
     `${appUrl}/optimizer`,
     '',
     'Fitur yang tersedia:',
@@ -136,7 +136,7 @@ function buildWelcomePlainText(name: string): string {
     '- Prompt Evaluator: Skor kualitas prompt dengan feedback spesifik',
     '- Template Library: Ratusan template siap pakai',
     '',
-    'Kamu menerima email ini karena baru mendaftar di Classy CTE.',
+    'Kamu menerima email ini karena baru mendaftar di Drferdi CTE.',
     'Jika bukan kamu yang mendaftar, abaikan email ini.',
     '',
     `Berhenti berlangganan: ${appUrl}/unsubscribe`,
@@ -150,12 +150,12 @@ export async function sendWelcomeEmail(email: string, name: string | null): Prom
   }
 
   const resend = new Resend(process.env.RESEND_API_KEY)
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.classy.com'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://sentrahai.com'
 
   await resend.emails.send({
     from: FROM,
     to: email,
-    subject: 'Selamat datang di Classy CTE ⚡',
+    subject: 'Selamat datang di Drferdi CTE ⚡',
     html: buildWelcomeHtml(name ?? ''),
     text: buildWelcomePlainText(name ?? ''),
     headers: {

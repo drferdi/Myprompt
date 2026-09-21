@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Creative Templates
+// Drferdi Transformer Engine V2 — Creative Templates
 import type { TemplateDefinition } from '@/types'
 
 export const creativeTemplates: TemplateDefinition[] = [

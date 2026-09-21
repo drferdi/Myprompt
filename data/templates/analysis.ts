@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Analysis Templates
+// Drferdi Transformer Engine V2 — Analysis Templates
 import type { TemplateDefinition } from '@/types'
 
 export const analysisTemplates: TemplateDefinition[] = [

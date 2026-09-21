@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — LLM Provider Interface
+// Drferdi Transformer Engine V2 — LLM Provider Interface
 import type { LLMRequest, LLMResponse } from '@/types'
 
 export interface LLMProviderAdapter {

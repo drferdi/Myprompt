@@ -1,4 +1,4 @@
-// Classy CTE V2 — Xendit Payment Gateway Client
+// Drferdi CTE V2 — Xendit Payment Gateway Client
 
 import { timingSafeEqual } from 'crypto'
 

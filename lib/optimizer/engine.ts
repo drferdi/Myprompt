@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Optimizer Engine
+// Drferdi Transformer Engine V2 — Optimizer Engine
 import { getStrategyHints } from './strategies'
 import { parseSuperPromptMarkdown } from './super-prompt-format'
 

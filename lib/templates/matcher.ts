@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Template Matcher
+// Drferdi Transformer Engine V2 — Template Matcher
 import { allTemplates, templatesByCategory } from '@/data/templates'
 import { generateEmbedding, generateEmbeddings } from '@/lib/embeddings/generator'
 import { cosineSimilarity } from '@/lib/embeddings/similarity'

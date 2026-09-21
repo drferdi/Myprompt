@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Qwen Provider (OpenAI-compatible)
+// Drferdi Transformer Engine V2 — Qwen Provider (OpenAI-compatible)
 import type { ProviderConfig } from '../types'
 
 import { OpenAIProvider } from './openai'

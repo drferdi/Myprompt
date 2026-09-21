@@ -1,4 +1,4 @@
-// Classy CTE V2 — Supabase Admin Client (service role key)
+// Drferdi CTE V2 — Supabase Admin Client (service role key)
 // Use ONLY for admin operations: user management, subscription tier updates
 // NEVER expose to client
 

@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Marketing Templates
+// Drferdi Transformer Engine V2 — Marketing Templates
 import type { TemplateDefinition } from '@/types'
 
 export const marketingTemplates: TemplateDefinition[] = [

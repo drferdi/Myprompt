@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Optimization Strategies
+// Drferdi Transformer Engine V2 — Optimization Strategies
 import type { TaskType, PromptTone, OutputFormat } from '@/types'
 
 interface StrategyHints {

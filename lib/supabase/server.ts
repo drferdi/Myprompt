@@ -1,4 +1,4 @@
-// Classy CTE V2 — Supabase Server Component Client (read-only cookies)
+// Drferdi CTE V2 — Supabase Server Component Client (read-only cookies)
 // Use in Server Components for data fetching
 
 import { createServerClient } from '@supabase/ssr'

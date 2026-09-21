@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "internal/prompt",
+  "owner": "Chief",
+  "risk": "R2",
+  "runtime": { "name": "node", "version": "24.18.0" },
+  "packageManager": { "name": "pnpm", "version": "11.21.0", "lockfile": "pnpm-lock.yaml" },
+  "commands": {
+    "install": { "program": "pnpm", "args": ["install", "--frozen-lockfile"] },
+    "lint": { "program": "pnpm", "args": ["run", "lint"] },
+    "typecheck": { "program": "pnpm", "args": ["run", "typecheck"] },
+    "test": { "program": "pnpm", "args": ["run", "test"] },
+    "build": { "program": "pnpm", "args": ["run", "build"] },
+    "run": { "program": "pnpm", "args": ["run", "start"] },
+    "deployDryRun": { "program": "pnpm", "args": ["run", "deploy:dry-run"] }
+  },
+  "smoke": { "kind": "desktop-build", "command": { "program": "pnpm", "args": ["run", "desktop:smoke"] } },
+  "artifacts": ["dist-electron/desktop/bootstrap.js", "dist-electron/desktop/renderer/index.html"],
+  "externalDependencies": ["npm registry", "PostgreSQL", "optional LLM providers", "Supabase", "Resend", "Xendit"],
+  "mutableStatePaths": ["Prisma-managed PostgreSQL database", "operator-managed provider credentials"]
+}

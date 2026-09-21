@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Prompt Builder
+// Drferdi Transformer Engine V2 — Prompt Builder
 import type { TaskType, PromptTone, OutputFormat, LLMProviderName, OptimizeLane } from '@/types'
 
 interface OptimizePromptParams {

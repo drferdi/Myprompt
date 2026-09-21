@@ -1,4 +1,4 @@
-// Classy CTE V2 — Subscription Management Service
+// Drferdi CTE V2 — Subscription Management Service
 
 import type { SubscriptionTier, BillingInterval } from '@prisma/client'
 
@@ -29,7 +29,7 @@ export async function createSubscriptionInvoice(params: {
   const invoice = await createInvoice({
     external_id: invoiceNumber,
     amount,
-    description: `Classy CTE ${tier} — ${periodLabel}`,
+    description: `Drferdi CTE ${tier} — ${periodLabel}`,
     customer: {
       given_names: name || 'User',
       email,

@@ -1,4 +1,4 @@
-// Classy Transformer Engine V2 — Prisma Client Singleton
+// Drferdi Transformer Engine V2 — Prisma Client Singleton
 import { PrismaClient } from '@prisma/client'
 
 const globalForPrisma = globalThis as unknown as {
