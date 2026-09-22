@@ -261,7 +261,6 @@ const shell = document.getElementById('consoleShell') as HTMLElement | null
 const display = document.getElementById('display') as HTMLElement | null
 const promptLine = document.getElementById('promptLine') as HTMLElement | null
 const input = document.getElementById('cmdInput') as HTMLInputElement | null
-const appTitle = document.getElementById('appTitle') as HTMLElement | null
 const closeBtn = document.getElementById('closeBtn') as HTMLElement | null
 const minimizeBtn = document.getElementById('minimizeBtn') as HTMLElement | null
 
@@ -2140,11 +2139,10 @@ async function loadShellState() {
   try {
     const state = await desktopWindow.sentraDesktop?.getShellState?.()
 
+    // The title bar text is static chrome ("sentra prompt console" in index.html, from
+    // the pixel reference); only the OS window title follows the app name.
     if (state?.appName) {
       document.title = state.appName
-      if (appTitle) {
-        appTitle.textContent = state.appName
-      }
     }
 
     if (state?.preferredProvider) {
