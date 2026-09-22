@@ -9,3 +9,23 @@ build/
 .env
 .env.local
 *.tsbuildinfo
+
+# Test output (Playwright artifacts, reports)
+tests/e2e/results/
+playwright-report/
+test-results/
+
+# Local-only project records: governance packs, plans, progress logs,
+# and AI working notes. Kept on the maintainer's machine, not in Git.
+docs/spds/
+docs/plans/
+PROJECT_GENOME.yaml
+.agent/
+.agents/
+.claude/
+.codex/
+.cursor/
+.kilo/
+.specstory/
+HANDOFF.md
+PROGRESS.md

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { classifyOptimizerFailure } from '../../desktop/ipc/optimizer-failure'
+import { classifyOptimizerFailure } from '../../../desktop/ipc/optimizer-failure'
 
 describe('optimizer IPC failure contract', () => {
   it('classifies provider authentication failures without returning the provider message', () => {

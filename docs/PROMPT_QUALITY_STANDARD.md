@@ -234,4 +234,4 @@ Before promoting a prompt to production or the template library, verify:
 - Embedding generator: `lib/embeddings/generator.ts`
 - Cosine similarity: `lib/embeddings/similarity.ts` → `cosineSimilarity()`
 - System prompt: `lib/llm/prompt-builder.ts` → `buildOptimizeSystemPrompt()`
-- Test suite: `__tests__/optimizer/prompt-quality.test.ts`
+- Test suites: `tests/unit/optimizer/`

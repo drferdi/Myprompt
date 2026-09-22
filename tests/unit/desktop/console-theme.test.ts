@@ -5,9 +5,9 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 const testDir = path.dirname(fileURLToPath(import.meta.url))
-const rendererCss = readFileSync(path.resolve(testDir, '../../desktop/renderer/index.css'), 'utf8')
+const rendererCss = readFileSync(path.resolve(testDir, '../../../desktop/renderer/index.css'), 'utf8')
 const rendererHtml = readFileSync(
-  path.resolve(testDir, '../../desktop/renderer/index.html'),
+  path.resolve(testDir, '../../../desktop/renderer/index.html'),
   'utf8'
 )
 

@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const testDir = path.dirname(fileURLToPath(import.meta.url))
 const rendererHtml = readFileSync(
-  path.resolve(testDir, '../../desktop/renderer/index.html'),
+  path.resolve(testDir, '../../../desktop/renderer/index.html'),
   'utf8'
 )
 
@@ -77,7 +77,7 @@ describe('native window dragging', () => {
         windowListeners.push([type, listener, options])
         addWindowListener(type, listener, options)
       })
-    await import('../../desktop/renderer/renderer')
+    await import('../../../desktop/renderer/renderer')
     documentAddEventListenerSpy.mockRestore()
     windowAddEventListenerSpy.mockRestore()
   })

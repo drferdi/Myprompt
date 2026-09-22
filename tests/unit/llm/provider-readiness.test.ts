@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   createProviderReadiness,
   resolveGuestProvider,
-} from '../../lib/llm/provider-readiness'
+} from '../../../lib/llm/provider-readiness'
 
 describe('desktop provider readiness', () => {
   it('falls back from a stale GROK request to the configured OpenAI provider', () => {
