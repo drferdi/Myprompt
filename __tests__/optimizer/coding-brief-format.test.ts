@@ -369,6 +369,25 @@ ${REPORT_SECTION}`)
     expect(result.valid).toBe(true)
   })
 
+  it('does not treat a bare ## line followed by text as a heading', () => {
+    const result = validateCodingBrief(`## GOAL
+Rename the export.
+
+## WHERE
+lib/optimizer/engine.ts
+##
+Notes about the location.
+
+## DONE WHEN
+\`pnpm run test\` passes.
+
+${REPORT_SECTION}`)
+
+    expect(result.issues).toEqual([])
+    expect(result.valid).toBe(true)
+    expect(result.brief?.where).toContain('Notes about the location.')
+  })
+
   it('accepts a DONE WHEN that names a test file instead of a command', () => {
     const result = validateCodingBrief(`## GOAL
 Rename the export.

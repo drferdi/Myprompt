@@ -1,9 +1,9 @@
 # Coding Brief Standard — Sentra Prompt
 
-**Status:** Draft v0.1
-**Authority:** `lib/prompt-quality/contract.ts` (planned `CodingBriefSchema`, runtime source of truth)
+**Status:** v1.0 — validator implemented
+**Authority:** `lib/prompt-quality/contract.ts` (`CodingBriefSchema`, runtime source of truth)
 **Companion:** `docs/PROMPT_QUALITY_STANDARD.md` (Super Prompt format for non-coding tasks)
-**Last updated:** 2026-09-22
+**Last updated:** 2026-09-23
 
 ---
 
@@ -72,6 +72,8 @@ A brief that fails any rule is invalid.
 
 Validator output is `{ valid: boolean, issues: string[] }`, where each issue names the
 rule ID. Rules V4 and V6 are heuristics and will be recalibrated using evaluation data.
+
+Rules V4, V6, and V7 are heuristics scheduled for calibration with Phase 4 evaluation data.
 
 ## 5. Missing information and clarification
 
