@@ -94,6 +94,11 @@ interface DesktopShellState {
   modelChip?: string
   preferredModel?: string
   preferredProvider?: DesktopLLMProvider
+  providerReadiness?: {
+    status: 'ready' | 'missing'
+    availableProviders: DesktopLLMProvider[]
+    activeProvider: DesktopLLMProvider | null
+  }
   optimizerLaneStates?: Partial<
     Record<
       DesktopOptimizeLane,
@@ -324,11 +329,22 @@ const optimizerLaneControls = document.getElementById('optimizerLaneControls') a
 const optimizerLaneButtons = Array.from(
   document.querySelectorAll<HTMLElement>('.optimizer-lane-btn')
 )
+const transformControls = document.getElementById('transformControls') as HTMLElement | null
+const transformProfileButtons = Array.from(
+  document.querySelectorAll<HTMLElement>('#transformProfileSwitch .transform-btn')
+)
+const transformEffortButtons = Array.from(
+  document.querySelectorAll<HTMLElement>('#transformEffortSwitch .transform-btn')
+)
 
 let currentMode: DesktopPrimaryModeId = 'transform'
+let currentCompilerProfile: 'default' | 'claude' | 'codex' | 'gemini' | 'grok' = 'default'
+let currentEffortLevel: 'low' | 'medium' | 'high' | 'xhigh' | 'max' = 'high'
 let currentOptimizerLane: DesktopOptimizeLane = 'INTERACTIVE'
-let currentProvider: DesktopLLMProvider = 'GROK'
-let currentModelLabel = 'grok-3-fast'
+let currentProvider: DesktopLLMProvider | null = null
+let currentModelLabel = 'provider-resolving'
+let providerReadinessStatus: 'resolving' | 'ready' | 'missing' = 'resolving'
+
 type WidgetState = 'full' | 'minimized'
 
 let widgetState: WidgetState = 'full'
@@ -874,7 +890,7 @@ async function evaluateRecentRecord(record: DesktopRecentRunRecord) {
       command: 'evaluate:run',
       payload: {
         promptText: record.outputText,
-        provider: currentProvider,
+        provider: requireActiveDesktopProvider(),
       },
     })
     const formattedText = formatDesktopResult(result)
@@ -914,7 +930,7 @@ async function runBenchmarkRecord(record: DesktopBenchmarkRecord) {
       command: 'benchmark:run',
       payload: {
         id: record.id,
-        provider: currentProvider,
+        provider: requireActiveDesktopProvider(),
       },
     })
 
@@ -1043,14 +1059,25 @@ function buildPromptInvocation(
           model: 'claude-sonnet',
           mode: 'professional',
           temperature: 0.7,
-          maxTokens: 1024,
+          maxTokens: {
+            low: 700,
+            medium: 1200,
+            high: 1800,
+            xhigh: 2600,
+            max: 3200,
+          }[currentEffortLevel],
           locale: 'id',
+          profile: currentCompilerProfile === 'default' ? undefined : currentCompilerProfile,
+          effort: currentEffortLevel,
+          target: 'general',
         },
+
       },
     }
   }
 
   const suggestion = suggestOptimizerConfig(value)
+  const provider = requireActiveDesktopProvider()
 
   return {
     channel: 'desktop:command',
@@ -1061,8 +1088,8 @@ function buildPromptInvocation(
         taskType: suggestion.taskType,
         tone: 'PROFESSIONAL',
         format: 'STRUCTURED',
-        targetLlm: currentProvider,
-        provider: currentProvider,
+        targetLlm: provider,
+        provider,
         optimizerLane: currentOptimizerLane,
         requestId,
       },
@@ -1074,13 +1101,14 @@ function buildCommandInvocation(
   parsed: Extract<ParsedConsoleInput, { kind: 'command' }>
 ): DesktopInvocation {
   if (parsed.command === 'evaluate') {
+    const provider = requireActiveDesktopProvider()
     return {
       channel: 'desktop:command',
       payload: {
         command: 'evaluate:run',
         payload: {
           promptText: parsed.args[0] ?? '',
-          provider: currentProvider,
+          provider,
         },
       },
     }
@@ -1193,6 +1221,7 @@ function buildCommandInvocation(
     if (!benchmarkId) {
       throw new Error('Benchmark run memerlukan benchmark id.')
     }
+    const provider = requireActiveDesktopProvider()
 
     return {
       channel: 'desktop:command',
@@ -1200,7 +1229,7 @@ function buildCommandInvocation(
         command: 'benchmark:run',
         payload: {
           id: benchmarkId,
-          provider: currentProvider,
+          provider,
         },
       },
     }
@@ -1629,7 +1658,7 @@ function buildRunRecord(
       taskType: suggestOptimizerConfig(rawInput).taskType,
       tone: 'PROFESSIONAL',
       format: 'STRUCTURED',
-      targetLlm: currentProvider,
+      targetLlm: currentProvider ?? 'OPENAI',
     }
   }
 
@@ -1644,7 +1673,7 @@ function buildRunRecord(
     const targetLlm =
       typeof metadata.provider === 'string'
         ? (metadata.provider as DesktopLLMProvider)
-        : currentProvider
+        : (currentProvider ?? 'OPENAI')
 
     return {
       id: requestId,
@@ -1697,15 +1726,32 @@ function syncOptimizerLaneModelPresentation() {
   }
 }
 
+function isOptimizerProviderReady() {
+  return providerReadinessStatus === 'ready' && currentProvider !== null
+}
+
+function requireActiveDesktopProvider(): DesktopLLMProvider {
+  if (providerReadinessStatus === 'ready' && currentProvider !== null) {
+    return currentProvider
+  }
+
+  if (providerReadinessStatus === 'resolving') {
+    throw new Error('Provider desktop sedang diverifikasi. Tunggu hingga status provider siap.')
+  }
+
+  throw new Error('Tidak ada provider desktop yang siap. Tambahkan provider key lalu jalankan ulang desktop shell.')
+}
+
 function setExecutionState(running: boolean) {
   isExecuting = running
+  const optimizerBlocked = currentMode === 'optimize' && !isOptimizerProviderReady()
 
   if (input) {
-    input.disabled = running
+    input.disabled = running || optimizerBlocked
   }
 
   if (runBtn) {
-    runBtn.disabled = running
+    runBtn.disabled = running || optimizerBlocked
     runBtn.textContent = running ? 'WAIT' : 'EXEC'
   }
 
@@ -1718,9 +1764,31 @@ function setExecutionState(running: boolean) {
   }
 
   for (const button of optimizerLaneButtons) {
+    button.toggleAttribute('disabled', running || optimizerBlocked)
+  }
+
+  for (const button of transformProfileButtons) {
     button.toggleAttribute('disabled', running)
   }
+
+  for (const button of transformEffortButtons) {
+    button.toggleAttribute('disabled', running)
+  }
+
+  if (mCmdInput) {
+    mCmdInput.disabled = running || optimizerBlocked
+  }
+
+  if (mRunBtn) {
+    mRunBtn.disabled = running || optimizerBlocked
+    mRunBtn.textContent = running ? 'WAIT' : 'EXEC'
+  }
+
+  if (mClearBtn) {
+    mClearBtn.disabled = running
+  }
 }
+
 
 function buildPendingLabel() {
   if (currentMode === 'transform') {
@@ -1728,7 +1796,7 @@ function buildPendingLabel() {
   }
 
   const laneLabel = currentOptimizerLane === 'INTERACTIVE' ? 'Interactive' : 'Deep'
-  return `Optimizer ${laneLabel} berjalan di ${currentProvider}/${currentModelLabel}...`
+  return `Optimizer ${laneLabel} berjalan di ${currentProvider ?? 'provider-unavailable'}/${currentModelLabel}...`
 }
 
 function isOptimizeInvocation(invocation: DesktopInvocation) {
@@ -1916,7 +1984,7 @@ async function executeOptimizeStream(
       }
 
       statusLine.textContent = `[STATE] ${payload.message}`
-      if (payload.message === 'waiting') {
+      if (payload.stage === 'waiting') {
         startScramble()
       }
       container.scrollTop = container.scrollHeight
@@ -1999,7 +2067,15 @@ async function executeOptimizeStream(
       clearScramble()
       clearOptimizeTransientFailureArtifacts(requestId)
       cleanup()
-      reject(new Error(payload.message))
+      const failure = payload.failure
+      const safeFailureMessage =
+        isObjectRecord(failure) &&
+        typeof failure.code === 'string' &&
+        typeof failure.publicMessage === 'string'
+          ? `[${failure.code}] ${failure.publicMessage}`
+          : payload.message
+
+      reject(new Error(safeFailureMessage))
     }
 
     onStream('optimize:status', handleStatus)
@@ -2065,6 +2141,18 @@ function applyMode(
     inputElement.placeholder = copy.placeholder
   }
 
+  if (transformControls) {
+    transformControls.hidden = mode !== 'transform'
+  }
+
+  for (const button of transformProfileButtons) {
+    button.classList.toggle('active', (button.dataset.profile || 'default') === currentCompilerProfile)
+  }
+
+  for (const button of transformEffortButtons) {
+    button.classList.toggle('active', (button.dataset.effort || 'high') === currentEffortLevel)
+  }
+
   if (optimizerLaneControls) {
     optimizerLaneControls.hidden = mode !== 'optimize'
   }
@@ -2072,6 +2160,7 @@ function applyMode(
   for (const button of optimizerLaneButtons) {
     button.classList.toggle('active', button.dataset.lane === currentOptimizerLane)
   }
+
 
   for (const button of buttons) {
     button.classList.toggle('active', button.dataset.mode === mode)
@@ -2329,6 +2418,7 @@ function updateMiniPanel() {
 
 function updateMode(mode: DesktopPrimaryModeId) {
   currentMode = mode
+  setExecutionState(isExecuting)
 
   if (!shell || !display || isExecuting) {
     updateMiniPanel()
@@ -2373,6 +2463,13 @@ async function loadShellState() {
       currentProvider = state.preferredProvider
     }
 
+    if (state?.providerReadiness) {
+      providerReadinessStatus = state.providerReadiness.status
+      currentProvider = state.providerReadiness.activeProvider
+    } else {
+      providerReadinessStatus = state?.preferredProvider ? 'ready' : 'missing'
+    }
+
     if (state?.preferredModel) {
       currentModelLabel = state.preferredModel
     }
@@ -2383,7 +2480,13 @@ async function loadShellState() {
       optimizerLaneStates = state.optimizerLaneStates
       syncOptimizerLaneModelPresentation()
     }
+
+    setExecutionState(isExecuting)
+    updateMiniPanel()
   } catch (error) {
+    providerReadinessStatus = 'missing'
+    currentProvider = null
+    setExecutionState(isExecuting)
     const message = error instanceof Error ? error.message : 'Unable to load desktop shell state.'
     if (display) {
       appendConsoleLine(display, 'sys', `[WARN] ${message}`)
@@ -2584,6 +2687,55 @@ for (const button of optimizerLaneButtons) {
     updateOptimizerLane(nextLane)
   })
 }
+
+function updateCompilerProfile(
+  nextProfile: 'default' | 'claude' | 'codex' | 'gemini' | 'grok'
+) {
+  currentCompilerProfile = nextProfile
+  for (const button of transformProfileButtons) {
+    button.classList.toggle(
+      'active',
+      (button.dataset.profile || 'default') === currentCompilerProfile
+    )
+  }
+}
+
+function updateEffortLevel(
+  nextEffort: 'low' | 'medium' | 'high' | 'xhigh' | 'max'
+) {
+  currentEffortLevel = nextEffort
+  for (const button of transformEffortButtons) {
+    button.classList.toggle(
+      'active',
+      (button.dataset.effort || 'high') === currentEffortLevel
+    )
+  }
+}
+
+for (const button of transformProfileButtons) {
+  button.addEventListener('click', () => {
+    const p = (button.dataset.profile || 'default') as
+      | 'default'
+      | 'claude'
+      | 'codex'
+      | 'gemini'
+      | 'grok'
+    updateCompilerProfile(p)
+  })
+}
+
+for (const button of transformEffortButtons) {
+  button.addEventListener('click', () => {
+    const eff = (button.dataset.effort || 'high') as
+      | 'low'
+      | 'medium'
+      | 'high'
+      | 'xhigh'
+      | 'max'
+    updateEffortLevel(eff)
+  })
+}
+
 
 closeBtn?.addEventListener('click', () => desktopWindow.sentraDesktop?.close?.())
 powerBtn?.addEventListener('click', () => desktopWindow.sentraDesktop?.close?.())

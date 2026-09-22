@@ -12,13 +12,20 @@ import { registerWorkspaceIpc } from './ipc/workspace'
 
 import { DEFAULT_MODEL_MAP } from '@/lib/constants'
 import { loadDesktopSession } from '@/lib/desktop/session-store'
-import { getScopedProviderOverrides } from '@/lib/llm/provider-registry'
+import { getAvailableProviders, getScopedProviderOverrides } from '@/lib/llm/provider-registry'
+import {
+  createProviderReadiness,
+  type ProviderReadiness,
+} from '@/lib/llm/provider-readiness'
 
 let mainWindow: BrowserWindow | null = null
 const isSmokeMode =
   process.env.SENTRA_DESKTOP_SMOKE === '1' ||
   process.argv.includes('--smoke') ||
   app.commandLine.hasSwitch('smoke')
+
+app.commandLine.appendSwitch('disable-features', 'DirectCompositionVideoOverlays')
+app.commandLine.appendSwitch('log-level', '3')
 
 function resolveDesktopProjectDir() {
   const sourceProjectDir = path.resolve(__dirname, '..')
@@ -90,6 +97,7 @@ interface DesktopShellProviderState {
   modelChip: string
   preferredModel: string
   preferredProvider: DesktopProviderName
+  providerReadiness: ProviderReadiness
   optimizerLaneStates?: Record<
     'INTERACTIVE' | 'DEEP',
     {
@@ -148,8 +156,31 @@ function buildOpenAiLaneState(lane: DesktopOptimizerLane) {
   }
 }
 
+function getPreferredLoadedProvider(): DesktopProviderName | null {
+  if (process.env.XAI_API_KEY?.trim()) return 'GROK'
+  if (process.env.OPENAI_API_KEY?.trim()) return 'OPENAI'
+  if (process.env.ANTHROPIC_API_KEY?.trim()) return 'CLAUDE'
+  if (process.env.MISTRAL_API_KEY?.trim()) return 'MISTRAL'
+  if (process.env.QWEN_API_KEY?.trim()) return 'QWEN'
+  return null
+}
+
 function getShellProviderState(): DesktopShellProviderState {
-  if (process.env.OPENAI_API_KEY?.trim() && usesPioneerOpenAiCompat('INTERACTIVE')) {
+  const providerReadiness = createProviderReadiness(
+    getAvailableProviders(),
+    getPreferredLoadedProvider()
+  )
+
+  if (providerReadiness.status === 'missing') {
+    return {
+      preferredProvider: 'GROK',
+      preferredModel: 'grok-3-fast',
+      modelChip: 'env-required',
+      providerReadiness,
+    }
+  }
+
+  if (providerReadiness.activeProvider === 'OPENAI' && usesPioneerOpenAiCompat('INTERACTIVE')) {
     const interactiveLaneState = buildOpenAiLaneState('INTERACTIVE')
     const deepLaneState = buildOpenAiLaneState('DEEP')
     return {
@@ -160,18 +191,20 @@ function getShellProviderState(): DesktopShellProviderState {
         INTERACTIVE: interactiveLaneState,
         DEEP: deepLaneState,
       },
+      providerReadiness,
     }
   }
 
-  if (process.env.XAI_API_KEY?.trim()) {
+  if (providerReadiness.activeProvider === 'GROK') {
     return {
       preferredProvider: 'GROK',
       preferredModel: 'grok-3-fast',
       modelChip: 'grok-3-fast',
+      providerReadiness,
     }
   }
 
-  if (process.env.OPENAI_API_KEY?.trim()) {
+  if (providerReadiness.activeProvider === 'OPENAI') {
     const interactiveLaneState = buildOpenAiLaneState('INTERACTIVE')
     const deepLaneState = buildOpenAiLaneState('DEEP')
     return {
@@ -182,21 +215,24 @@ function getShellProviderState(): DesktopShellProviderState {
         INTERACTIVE: interactiveLaneState,
         DEEP: deepLaneState,
       },
+      providerReadiness,
     }
   }
 
-  if (process.env.ANTHROPIC_API_KEY?.trim()) {
+  if (providerReadiness.activeProvider === 'CLAUDE') {
     return {
       preferredProvider: 'CLAUDE',
       preferredModel: 'claude-sonnet-4',
       modelChip: 'claude-ready',
+      providerReadiness,
     }
   }
 
   return {
-    preferredProvider: 'GROK',
-    preferredModel: 'grok-3-fast',
-    modelChip: 'env-required',
+    preferredProvider: providerReadiness.activeProvider,
+    preferredModel: DEFAULT_MODEL_MAP[providerReadiness.activeProvider],
+    modelChip: `${providerReadiness.activeProvider.toLowerCase()}/${DEFAULT_MODEL_MAP[providerReadiness.activeProvider]}`,
+    providerReadiness,
   }
 }
 
@@ -214,7 +250,7 @@ async function buildShellBadges(
     })
   }
 
-  if (providerState.modelChip.includes('required')) {
+  if (providerState.providerReadiness.status === 'missing') {
     badges.push({
       id: 'provider-missing',
       label: 'Provider Missing',
@@ -373,10 +409,10 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  const providerState = getShellProviderState()
   registerWorkspaceIpc(resolveDesktopWorkspaceFilePath())
 
   ipcMain.handle('app:get-shell-state', async () => {
+    const providerState = getShellProviderState()
     const badges = await buildShellBadges(providerState)
 
     return {
@@ -384,6 +420,7 @@ app.whenReady().then(() => {
       modelChip: providerState.modelChip,
       preferredModel: providerState.preferredModel,
       preferredProvider: providerState.preferredProvider,
+      providerReadiness: providerState.providerReadiness,
       ...(providerState.optimizerLaneStates
         ? { optimizerLaneStates: providerState.optimizerLaneStates }
         : {}),

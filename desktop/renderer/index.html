@@ -168,6 +168,28 @@
               <span class="status-label" id="statusTag">Default Mode</span>
             </div>
             <div class="status-copy" id="statusCopy">Wrap raw prompts into a deterministic prompt-engineering scaffold.</div>
+            <div class="transform-controls-row" id="transformControls">
+              <div class="transform-control-group">
+                <span class="transform-control-label">Profile</span>
+                <div class="transform-switch" id="transformProfileSwitch">
+                  <button class="transform-btn active" type="button" data-profile="default">Default</button>
+                  <button class="transform-btn" type="button" data-profile="claude">Claude</button>
+                  <button class="transform-btn" type="button" data-profile="codex">Codex</button>
+                  <button class="transform-btn" type="button" data-profile="gemini">Gemini</button>
+                  <button class="transform-btn" type="button" data-profile="grok">Grok</button>
+                </div>
+              </div>
+              <div class="transform-control-group">
+                <span class="transform-control-label">Effort</span>
+                <div class="transform-switch" id="transformEffortSwitch">
+                  <button class="transform-btn" type="button" data-effort="low">Low</button>
+                  <button class="transform-btn" type="button" data-effort="medium">Med</button>
+                  <button class="transform-btn active" type="button" data-effort="high">High</button>
+                  <button class="transform-btn" type="button" data-effort="xhigh">XHigh</button>
+                  <button class="transform-btn" type="button" data-effort="max">Max</button>
+                </div>
+              </div>
+            </div>
             <div class="optimizer-lane-row" id="optimizerLaneControls" hidden>
               <span class="optimizer-lane-label">drferdiskandar Algorithme</span>
               <div class="optimizer-lane-switch">

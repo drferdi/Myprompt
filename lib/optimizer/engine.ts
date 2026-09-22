@@ -1,5 +1,6 @@
 // Drferdi Transformer Engine V2 — Optimizer Engine
 import { getStrategyHints } from './strategies'
+import { collectProviderStream } from './provider-stream'
 import { parseSuperPromptMarkdown } from './super-prompt-format'
 
 import { buildOptimizeSystemPrompt, buildOptimizeUserPrompt } from '@/lib/llm/prompt-builder'
@@ -183,12 +184,7 @@ export async function optimizePromptStreaming(
     providerOverrides.baseUrl
   )
   const llmRequest = buildStreamingRequest(systemPrompt, userPrompt, optimizerLane)
-  let accumulated = ''
-
-  for await (const chunk of provider.generateStream(llmRequest)) {
-    onChunk(chunk)
-    accumulated += chunk
-  }
+  let accumulated = await collectProviderStream(provider, llmRequest, onChunk)
 
   const visibleOutput = accumulated.trim()
 
