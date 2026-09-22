@@ -1,0 +1,44 @@
+name: Refresh maintenance lockfile
+
+on:
+  push:
+    branches:
+      - chore/dependabot-maintenance-cleanup
+    paths:
+      - .github/workflows/refresh-maintenance-lockfile.yml
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: chore/dependabot-maintenance-cleanup
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.21.0
+          run_install: false
+
+      - name: Regenerate lockfile
+        run: pnpm install --lockfile-only --no-frozen-lockfile
+
+      - name: Commit lockfile
+        run: |
+          if git diff --quiet -- pnpm-lock.yaml; then
+            echo "Lockfile already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml
+          git commit -m "chore(deps): refresh consolidated maintenance lockfile"
+          git push
