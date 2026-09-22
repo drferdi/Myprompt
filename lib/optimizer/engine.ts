@@ -9,7 +9,7 @@ import { logger } from '@/lib/logger'
 import { getTemplateBySlug } from '@/lib/templates/loader'
 import { matchTemplateWithEmbeddings } from '@/lib/templates/matcher'
 import { renderTemplate } from '@/lib/templates/renderer'
-import type { OptimizeLane, OptimizeRequest, OptimizeResponse, SuperPrompt } from '@/types'
+import type { OptimizeLane, OptimizeQuality, OptimizeRequest, OptimizeResponse, SuperPrompt } from '@/types'
 
 function buildStreamingRequest(
   systemPrompt: string,
@@ -95,15 +95,18 @@ export async function optimizePrompt(request: OptimizeRequest): Promise<Optimize
     providerOverrides.baseUrl
   )
   const llmRequest = buildStreamingRequest(systemPrompt, userPrompt, optimizerLane)
+  let attempts = 0
   let llmResponse = await provider.generate({
     ...llmRequest,
   })
+  attempts += 1
 
   if (optimizerLane === 'INTERACTIVE' && llmResponse.finishReason === 'length') {
     const recoveryResponse = await provider.generate({
       ...llmRequest,
       maxTokens: INTERACTIVE_RECOVERY_MAX_TOKENS,
     })
+    attempts += 1
 
     if (recoveryResponse.content.trim().length > 0) {
       llmResponse = recoveryResponse
@@ -112,8 +115,10 @@ export async function optimizePrompt(request: OptimizeRequest): Promise<Optimize
 
   // 6. Parse response into SuperPrompt
   let superPrompt: SuperPrompt
+  let quality: OptimizeQuality
   try {
     superPrompt = parseSuperPromptMarkdown(llmResponse.content)
+    quality = { complete: true, degraded: false, attempts }
   } catch {
     logger.warn(
       { route: 'optimizePrompt', provider: request.provider, model: llmResponse.model },
@@ -129,6 +134,7 @@ export async function optimizePrompt(request: OptimizeRequest): Promise<Optimize
       formatSpec: '',
       fullPrompt: llmResponse.content,
     }
+    quality = { complete: false, degraded: true, reason: 'parse_failed', attempts }
   }
 
   const latencyMs = Date.now() - startTime
@@ -144,6 +150,7 @@ export async function optimizePrompt(request: OptimizeRequest): Promise<Optimize
       format: request.format,
       tokensUsed: llmResponse.tokensUsed,
       latencyMs,
+      quality,
     },
   }
 }
@@ -184,12 +191,15 @@ export async function optimizePromptStreaming(
     providerOverrides.baseUrl
   )
   const llmRequest = buildStreamingRequest(systemPrompt, userPrompt, optimizerLane)
+  let attempts = 0
   let accumulated = await collectProviderStream(provider, llmRequest, onChunk)
+  attempts += 1
 
   const visibleOutput = accumulated.trim()
 
   if (!visibleOutput) {
     const fallbackResponse = await provider.generate(llmRequest)
+    attempts += 1
     if (
       optimizerLane === 'INTERACTIVE' &&
       fallbackResponse.finishReason === 'length' &&
@@ -199,6 +209,7 @@ export async function optimizePromptStreaming(
         ...llmRequest,
         maxTokens: INTERACTIVE_RECOVERY_MAX_TOKENS,
       })
+      attempts += 1
       accumulated = recoveryResponse.content
     } else {
       accumulated = fallbackResponse.content
@@ -206,20 +217,24 @@ export async function optimizePromptStreaming(
   }
 
   let superPrompt: SuperPrompt
+  let quality: OptimizeQuality
   try {
     superPrompt = parseSuperPromptMarkdown(accumulated)
+    quality = { complete: true, degraded: false, attempts }
   } catch {
     if (optimizerLane === 'INTERACTIVE') {
       const recoveryResponse = await provider.generate({
         ...llmRequest,
         maxTokens: INTERACTIVE_RECOVERY_MAX_TOKENS,
       })
+      attempts += 1
 
       if (recoveryResponse.content.trim().length > 0) {
         accumulated = recoveryResponse.content
 
         try {
           superPrompt = parseSuperPromptMarkdown(accumulated)
+          quality = { complete: true, degraded: false, attempts }
 
           const latencyMs = Date.now() - startTime
 
@@ -233,6 +248,7 @@ export async function optimizePromptStreaming(
               tone: request.tone,
               format: request.format,
               latencyMs,
+              quality,
             },
           }
         } catch {
@@ -250,6 +266,7 @@ export async function optimizePromptStreaming(
       formatSpec: '',
       fullPrompt: accumulated,
     }
+    quality = { complete: false, degraded: true, reason: 'parse_failed', attempts }
   }
 
   const latencyMs = Date.now() - startTime
@@ -263,6 +280,7 @@ export async function optimizePromptStreaming(
       taskType: request.taskType,
       tone: request.tone,
       format: request.format,
+      quality,
       latencyMs,
     },
   }

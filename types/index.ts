@@ -157,6 +157,14 @@ export const SuperPromptSchema = z.object({
 })
 export type SuperPrompt = z.infer<typeof SuperPromptSchema>
 
+export const OptimizeQualitySchema = z.object({
+  complete: z.boolean(),
+  degraded: z.boolean(),
+  reason: z.enum(['parse_failed', 'invalid_brief']).optional(),
+  attempts: z.number().int().min(1),
+})
+export type OptimizeQuality = z.infer<typeof OptimizeQualitySchema>
+
 export const OptimizeResponseSchema = z.object({
   superPrompt: SuperPromptSchema,
   metadata: z.object({
@@ -168,6 +176,7 @@ export const OptimizeResponseSchema = z.object({
     format: OutputFormatSchema,
     tokensUsed: z.number().optional(),
     latencyMs: z.number(),
+    quality: OptimizeQualitySchema.optional(),
   }),
 })
 export type OptimizeResponse = z.infer<typeof OptimizeResponseSchema>
