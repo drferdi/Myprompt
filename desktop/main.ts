@@ -283,11 +283,11 @@ function appendDesktopEnvWarning() {
   )
 }
 
-const DEFAULT_WINDOW = { width: 420, height: 580, x: 0, y: 0 }
+const DEFAULT_WINDOW = { width: 1280, height: 860, x: 0, y: 0 }
 
 // Bumped whenever the default shell size changes, so a persisted size from an older
 // layout is discarded instead of pinning the window to the previous dimensions.
-const WINDOW_STATE_VERSION = 2
+const WINDOW_STATE_VERSION = 3
 
 function resolveWindowStatePath() {
   const baseDir = app.getPath('userData')
@@ -354,8 +354,8 @@ function createWindow() {
       ? { x: winState.x, y: winState.y }
       : {}),
     resizable: true,
-    minWidth: 320,
-    minHeight: 480,
+    minWidth: 960,
+    minHeight: 600,
     frame: false,
     transparent: true,
     backgroundColor: '#00000000',

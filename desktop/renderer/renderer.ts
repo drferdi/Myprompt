@@ -2168,14 +2168,13 @@ async function loadShellState() {
     }
 
     if (display) {
+      // Only badges with a system-facing string in strings.ts reach the transcript.
+      // Raw badge labels from the main process (for example the FTDR score) are
+      // not printed: the transcript never shows text that has no English string.
       for (const badge of state?.badges ?? []) {
-        const badgeText =
-          badge.id === 'provider-missing'
-            ? strings.providerMissingBadge
-            : badge.tone === 'danger'
-              ? `[WARN] ${badge.label}`
-              : badge.label
-        appendConsoleLine(display, 'sys', badgeText)
+        if (badge.id === 'provider-missing') {
+          appendConsoleLine(display, 'sys', strings.providerMissingBadge)
+        }
       }
     }
 

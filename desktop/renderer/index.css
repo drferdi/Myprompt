@@ -7,12 +7,15 @@
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  /* Console palette (approved mockups, artboard "Hasil — lengkap") */
-  --console-bg-window: #2b303b;
-  --console-bg-app: #1a1a1a;
-  --console-text: #d8dee9;
+  /* Console palette and measurements: every value below is copied from
+     desktop/renderer/reference/reference-console-sentra.html (the pixel
+     reference). Change the reference first, then this block; never the reverse. */
+  --console-bg-window: #282c34;
+  --console-bg-chrome: #21252b;
+  --console-bg-app: #282c34;
+  --console-text: #abb2bf;
   --console-text-strong: #ffffff;
-  --console-text-dim: #5c6370;
+  --console-text-dim: #7f8792;
   --console-prompt: #98c379;
   --console-success: #98c379;
   --console-path: #61afef;
@@ -20,13 +23,14 @@
   --console-error: #e06c75;
   --console-warn: #d19a66;
   --console-accent: #56b6c2;
+  --console-yellow: #e5c07b;
   --console-rule: rgba(255, 255, 255, 0.08);
 
   /* Typography: JetBrains Mono everywhere, two sizes only */
   --console-font: 'JetBrains Mono', 'Fira Code', monospace;
   --console-size-body: 13px;
   --console-leading-body: 1.45;
-  --console-size-chrome: 11px;
+  --console-size-chrome: 12px;
   --console-leading-chrome: 1.2;
 }
 
@@ -41,6 +45,7 @@ html, body {
   font-family: var(--console-font);
   font-size: var(--console-size-body);
   line-height: var(--console-leading-body);
+  letter-spacing: 0;
   color: var(--console-text);
   user-select: none;
 }
@@ -55,7 +60,6 @@ button, input {
   width: 100%;
   height: 100%;
   background: var(--console-bg-window);
-  border: 1px solid var(--console-rule);
   border-radius: 10px;
   display: flex;
   flex-direction: column;
@@ -70,9 +74,9 @@ button, input {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  height: 32px;
+  height: 30px;
   padding: 0 12px;
-  border-bottom: 1px solid var(--console-rule);
+  background: var(--console-bg-chrome);
   cursor: grab;
   user-select: none;
   -webkit-app-region: no-drag !important;
@@ -110,9 +114,11 @@ button, input {
   background: var(--console-text-dim);
 }
 
-.traffic-light.close { background: var(--console-error); }
-.traffic-light.minimize { background: var(--console-warn); }
-.traffic-light.zoom { background: var(--console-success); cursor: default; }
+/* macOS traffic lights are chrome, not content: literal system colours,
+   never the status tokens. */
+.traffic-light.close { background: #ff5f57; }
+.traffic-light.minimize { background: #febc2e; }
+.traffic-light.zoom { background: #28c840; cursor: default; }
 
 .traffic-light:focus-visible {
   outline: 1px solid var(--console-text-strong);
@@ -126,11 +132,12 @@ button, input {
   min-width: 0;
   max-inline-size: 100%;
   margin: 0;
-  padding: 12px 16px;
+  padding: 10px 14px;
   background: var(--console-bg-app);
   font-family: var(--console-font);
   font-size: var(--console-size-body);
   line-height: var(--console-leading-body);
+  letter-spacing: 0;
   color: var(--console-text);
   overflow-y: auto;
   overflow-x: hidden;
@@ -142,13 +149,13 @@ button, input {
 }
 
 /* ═══ TRANSCRIPT LINES ═══ */
+/* A line is one row of the transcript: no extra spacing, exactly like a <pre>. */
 .line {
   position: relative;
   display: block;
   min-width: 0;
   max-inline-size: 100%;
   overflow-wrap: anywhere;
-  margin-bottom: 4px;
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -164,15 +171,15 @@ button, input {
 }
 
 /* Result status prefixes: ok / warn / error, rendered as a coloured pseudo-element
-   so the DOM and the copied text stay unchanged. */
-.line.status-ok::before { content: 'ok '; color: var(--console-success); font-weight: 600; }
-.line.status-warn::before { content: 'warn '; color: var(--console-warn); font-weight: 600; }
-.line.status-error::before { content: 'error '; color: var(--console-error); font-weight: 600; }
-.line.status-error { color: var(--console-error); }
+   so the DOM and the copied text stay unchanged. Each prefix is padded to the same
+   six-column width so the payloads line up, as in the reference. */
+.line.status-ok::before { content: 'ok    '; color: var(--console-success); font-weight: 700; }
+.line.status-warn::before { content: 'warn  '; color: var(--console-warn); font-weight: 700; }
+.line.status-error::before { content: 'error '; color: var(--console-error); font-weight: 700; }
 
 /* Meta line is settings, not a verdict; the quality line is the verdict. */
 .line.meta-line { color: var(--console-text-dim); }
-.line.quality-line { font-weight: 600; }
+.line.quality-line { font-weight: 700; }
 .line.quality-ok { color: var(--console-success); }
 .line.quality-degraded { color: var(--console-error); }
 
@@ -195,7 +202,6 @@ button, input {
    keyboard focusable, accessible name in aria-label. */
 .tx-actions {
   display: block;
-  margin: 2px 0 8px;
 }
 
 .tx-action {
@@ -241,6 +247,7 @@ button, input {
   padding: 0;
   background: transparent;
   font: inherit;
+  letter-spacing: 0;
   color: var(--console-text-strong);
   caret-color: var(--console-prompt);
 }

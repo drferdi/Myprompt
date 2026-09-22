@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sentra Prompt Console — pixel reference</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap">
+<style>
+  /* ============================================================
+     Reference values measured from the source screenshot.
+     The renderer must copy these, not reinterpret them.
+     ============================================================ */
+  :root {
+    --term-bg:        #282c34;  /* window body            */
+    --term-chrome:    #21252b;  /* title bar              */
+    --term-page:      #ffffff;  /* area outside the window */
+    --term-text:      #abb2bf;  /* default output          */
+    --term-bright:    #ffffff;  /* emphasised output       */
+    --term-dim:       #7f8792;  /* title, secondary chrome */
+    --term-dir:       #61afef;  /* directory names, bold   */
+    --term-green:     #98c379;  /* prompt segments, ok     */
+    --term-yellow:    #e5c07b;  /* git branch              */
+    --term-cyan:      #56b6c2;  /* path segment            */
+    --term-mark:      #5b6b52;  /* iTerm mark badge        */
+    --term-radius:    10px;
+    --term-pad-x:     14px;
+    --term-pad-y:     10px;
+    --term-font-size: 13px;
+    --term-line:      1.45;
+  }
+
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--term-page);
+    font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    box-sizing: border-box;
+  }
+
+  /* ---- Window ------------------------------------------------ */
+  .window {
+    width: min(980px, 100%);
+    background: var(--term-bg);
+    border-radius: var(--term-radius);
+    overflow: hidden;
+    box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.45);
+  }
+
+  /* ---- Title bar: 30px, dots left, dim title centred --------- */
+  .title-bar {
+    height: 30px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 0 12px;
+    background: var(--term-chrome);
+  }
+  .dots { display: flex; gap: 8px; align-items: center; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot-close { background: #ff5f57; }
+  .dot-min   { background: #febc2e; }
+  .dot-zoom  { background: #28c840; }
+  .shortcut {
+    justify-self: start;
+    margin-left: 16px;
+    font-size: 11px;
+    color: var(--term-dim);
+  }
+  .title { font-size: 12px; color: var(--term-dim); }
+
+  /* ---- Status prefixes: same palette, content-zone meaning ---- */
+  .ok    { color: var(--term-green);  font-weight: 700; }
+  .warn  { color: #d19a66;            font-weight: 700; }
+  .err   { color: #e06c75;            font-weight: 700; }
+  .head  { color: #c678dd; }
+  .dim   { color: var(--term-dim); }
+
+  /* ---- Transcript -------------------------------------------- */
+  .transcript {
+    margin: 0;
+    padding: var(--term-pad-y) var(--term-pad-x);
+    font-family: inherit;
+    font-size: var(--term-font-size);
+    line-height: var(--term-line);
+    color: var(--term-text);
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .row { display: flex; align-items: center; }
+  .row > .cmd { flex: 1 1 auto; }
+
+  /* Prompt: apple glyph, cyan path, green segment, yellow branch */
+  .apple  { color: var(--term-bright); }
+  .seg    { color: var(--term-cyan); }
+  .seg-b  { color: var(--term-green); }
+  .branch { color: var(--term-yellow); }
+  .dir    { color: var(--term-dir); font-weight: 700; }
+  .bright { color: var(--term-bright); }
+
+  /* iTerm mark badge at the right edge of a command line */
+  .mark {
+    flex: 0 0 auto;
+    width: 26px;
+    height: 13px;
+    border-radius: 3px;
+    background: var(--term-mark);
+  }
+
+  /* ls output laid out in three columns, like the shell does */
+  .cols {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 220px));
+    column-gap: 40px;
+  }
+
+  .caret {
+    display: inline-block;
+    width: 7px;
+    height: 15px;
+    background: var(--term-text);
+    vertical-align: text-bottom;
+  }
+</style>
+</head>
+<body>
+  <div class="window">
+    <div class="title-bar">
+      <div class="dots">
+        <span class="dot dot-close"></span>
+        <span class="dot dot-min"></span>
+        <span class="dot dot-zoom"></span>
+        <span class="shortcut">&#8997;&#8984;1</span>
+      </div>
+      <div class="title">sentra prompt console</div>
+      <div></div>
+    </div>
+
+<pre class="transcript"><span class="bright">Sentra Prompt Console 0.1.0</span>
+<span class="dim">Sentra Artificial Intelligence &middot; prompt engineering workspace</span>
+<span class="dim">───────────────────────────────────────────────────────────</span>
+Type your idea to build a Coding Brief, or 'help' for the command list.
+
+<span class="warn">warn</span>  Provider missing — add a provider key with 'key &lt;provider&gt; &lt;apikey&gt;'
+<div class="row"><span class="cmd"><span class="apple">&#63743;</span> <span class="seg">~ myprompt</span>  <span class="seg-b">&#9095;</span> <span class="branch">&#42371; main</span>  key anthropic sk-ant-&hellip;</span><span class="mark"></span></div>
+<span class="ok">ok</span>    provider=anthropic saved
+<div class="row"><span class="cmd"><span class="apple">&#63743;</span> <span class="seg">~ myprompt</span>  <span class="seg-b">&#9095;</span> <span class="branch">&#42371; main</span>  brief "optimizer returns truncated prompts as successful results"</span><span class="mark"></span></div>
+<span class="dim">task=coding  provider=anthropic  lane=interactive  model=claude-sonnet-4-6  output=coding_brief  3.4s</span>
+
+<span class="head">## GOAL</span>
+Stop the optimizer from returning truncated prompts as successful results.
+
+<span class="head">## WHERE</span>
+<span class="dir">lib/optimizer/</span><span class="bright">engine.ts</span>
+<span class="dir">lib/llm/</span><span class="bright">types.ts</span>
+
+<span class="head">## SCENARIO</span>
+A streamed result ending mid-list is accepted as complete.
+Expected: detected, then continued or flagged.
+
+<span class="head">## DONE WHEN</span>
+<span class="seg-b">pnpm run test</span> passes, including a new test feeding the truncated
+fixture and expecting a truncation flag.
+
+<span class="head">## REPORT</span>
+Show each command you ran and its actual output.
+Do not claim a result you did not execute.
+
+<span class="ok">ok</span>    complete &middot; 5 sections &middot; 1 attempt
+<span class="dim">      [c] copy   [r] rerun   [e] evaluate   [l] library</span>
+<div class="row"><span class="cmd"><span class="apple">&#63743;</span> <span class="seg">~ myprompt</span>  <span class="seg-b">&#9095;</span> <span class="branch">&#42371; main</span>  <span class="caret"></span></span><span class="mark"></span></div></pre>
+  </div>
+</body>
+</html>

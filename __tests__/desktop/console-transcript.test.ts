@@ -313,6 +313,27 @@ describe('console transcript command language', () => {
     }
   })
 
+  it('prints the banner before the first status line, unprefixed and in English', async () => {
+    const indonesian = /\b(siap|ketik|tidak|tambahkan|jalankan|salin)\b/i
+
+    // The first status line the shell can print: a [DONE] echo of a setting command.
+    type('lane deep')
+    await vi.waitFor(() => expect(findLine('lane=deep')).toBeTruthy())
+
+    const lines = transcriptLines()
+    const firstStatusIndex = lines.findIndex((line) => /\bstatus-/.test(line.className))
+    const bannerIndices = lines
+      .map((line, index) => (/\bbanner-/.test(line.className) ? index : -1))
+      .filter((index) => index >= 0)
+
+    expect(bannerIndices).toEqual([0, 1, 2, 3, 4])
+    expect(firstStatusIndex).toBeGreaterThan(4)
+    for (const index of bannerIndices) {
+      expect(lines[index].className).not.toMatch(/\bstatus-/)
+      expect(lines[index].textContent ?? '').not.toMatch(indonesian)
+    }
+  })
+
   it('never prints Indonesian text on a system line', async () => {
     const indonesian = /\b(siap|ketik|tidak|tambahkan|lalu|jalankan|ulang|susun|salin)\b/i
     const idle = () =>

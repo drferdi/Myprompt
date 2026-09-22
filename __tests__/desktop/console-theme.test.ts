@@ -18,11 +18,11 @@ describe('Sentra console visual contract', () => {
   })
 
   it('uses the approved console palette tokens', () => {
-    expect(rendererCss).toContain('--console-bg-app: #1a1a1a;')
-    expect(rendererCss).toContain('--console-bg-window: #2b303b;')
-    expect(rendererCss).toContain('--console-text: #d8dee9;')
+    expect(rendererCss).toContain('--console-bg-app: #282c34;')
+    expect(rendererCss).toContain('--console-bg-window: #282c34;')
+    expect(rendererCss).toContain('--console-text: #abb2bf;')
     expect(rendererCss).toContain('--console-text-strong: #ffffff;')
-    expect(rendererCss).toContain('--console-text-dim: #5c6370;')
+    expect(rendererCss).toContain('--console-text-dim: #7f8792;')
     expect(rendererCss).toContain('--console-accent: #56b6c2;')
   })
 
