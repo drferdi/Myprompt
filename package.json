@@ -17,7 +17,7 @@
     "desktop:dev": "pnpm run desktop:build && electron ./dist-electron/desktop/bootstrap.js",
     "desktop:smoke": "pnpm run desktop:build && powershell -NoProfile -Command \"$env:SENTRA_DESKTOP_SMOKE='1'; & .\\node_modules\\.bin\\electron.cmd .\\dist-electron\\desktop\\bootstrap.js\"",
     "lint": "eslint .",
-    "audit:security": "pnpm audit --audit-level high",
+    "audit:security": "pnpm audit",
     "optimizer:acceptance": "tsx scripts/optimizer-acceptance.ts",
     "typecheck": "pnpm run db:generate && tsc --noEmit",
     "pretest": "tsx scripts/optimizer-acceptance.ts --dry-run",
