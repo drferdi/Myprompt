@@ -353,8 +353,8 @@ button, input {
 
 .optimizer-lane-btn {
   padding: 4px 10px;
-  font-size: var(--console-size-chrome);
-  line-height: var(--console-leading-chrome);
+  font-size: var(--console-size-body);
+  line-height: var(--console-leading-body);
   border-radius: 4px;
   border: none;
   background: transparent;
@@ -413,8 +413,8 @@ button, input {
   flex: 1 1 auto;
   min-width: 0;
   padding: 3px 7px;
-  font-size: var(--console-size-chrome);
-  line-height: var(--console-leading-chrome);
+  font-size: var(--console-size-body);
+  line-height: var(--console-leading-body);
   border-radius: 4px;
   border: none;
   background: transparent;
@@ -733,8 +733,8 @@ button, input {
   right: 0;
   padding: 2px 7px;
   font-family: var(--console-font);
-  font-size: var(--console-size-chrome);
-  line-height: var(--console-leading-chrome);
+  font-size: var(--console-size-body);
+  line-height: var(--console-leading-body);
   letter-spacing: 0.04em;
   color: var(--console-text-dim);
   background: transparent;
@@ -1043,8 +1043,8 @@ button, input {
   transition: all 0.15s ease;
 }
 
-.mini-mode-btn strong { font-size: var(--console-size-chrome); line-height: var(--console-leading-chrome); font-weight: 600; }
-.mini-mode-btn span { font-size: var(--console-size-chrome); line-height: var(--console-leading-chrome); opacity: 0.8; }
+.mini-mode-btn strong { font-size: var(--console-size-body); line-height: var(--console-leading-body); font-weight: 600; }
+.mini-mode-btn span { font-size: var(--console-size-body); line-height: var(--console-leading-body); opacity: 0.8; }
 
 .mini-mode-btn.active {
   background: var(--console-rule);
@@ -1147,8 +1147,8 @@ button, input {
 .mini-btn-sm {
   padding: 7px 10px;
   font-family: var(--console-font);
-  font-size: var(--console-size-chrome);
-  line-height: var(--console-leading-chrome);
+  font-size: var(--console-size-body);
+  line-height: var(--console-leading-body);
   font-weight: 600;
   border-radius: 6px;
   cursor: pointer;
