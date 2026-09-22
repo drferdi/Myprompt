@@ -22,10 +22,9 @@
 // See DECISIONS.md (2026-06-04): SSOT prompt-quality contract established;
 // Transform + template migration deferred to P2.
 
-import { z } from 'zod'
-
 import {
   CODING_BRIEF_HEADINGS,
+  CODING_BRIEF_REPORT_TEXT,
   countWords,
   hasBacktickToken,
   hasTestIdentifier,
@@ -34,7 +33,7 @@ import {
   splitSentences,
   type CodingBriefHeading,
 } from '@/lib/optimizer/coding-brief-format'
-import { SuperPromptSchema, type SuperPrompt } from '@/types'
+import { CodingBriefSchema, SuperPromptSchema, type CodingBrief, type SuperPrompt } from '@/types'
 
 /** Canonical schema for structured prompt quality (SSOT). */
 export const PromptQualitySchema = SuperPromptSchema
@@ -48,27 +47,14 @@ export type PromptQuality = SuperPrompt
 // the canonical REPORT text (§6), the parsed shape (§3), and the deterministic
 // validator implementing V1–V9 (§4).
 
-/** Canonical `## REPORT` body from §6, without the heading line. */
-export const CODING_BRIEF_REPORT_TEXT = [
-  '- Read every file you reference before changing or describing it.',
-  '- If a referenced file, function, or command does not exist, stop and ask.',
-  '- Show each command you ran and its actual output.',
-  '- Do not claim a result you did not execute.',
-  '- List every file you changed and anything you left undone.',
-].join('\n')
+/**
+ * Canonical `## REPORT` body from §6, without the heading line. Defined in the
+ * lexical layer so the engine can append it without importing this module.
+ */
+export { CODING_BRIEF_REPORT_TEXT }
 
 /** Parsed Coding Brief (§3). Optional sections are absent, never empty strings. */
-export const CodingBriefSchema = z.object({
-  goal: z.string(),
-  where: z.string(),
-  scenario: z.string().optional(),
-  followPattern: z.string().optional(),
-  outOfScope: z.string().optional(),
-  doneWhen: z.string(),
-  report: z.string(),
-})
-
-export type CodingBrief = z.infer<typeof CodingBriefSchema>
+export { CodingBriefSchema, type CodingBrief }
 
 export interface CodingBriefValidation {
   valid: boolean

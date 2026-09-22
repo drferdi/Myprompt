@@ -72,10 +72,13 @@ interface DesktopCommandCatalogEntry {
   transportCommand: string
 }
 
+type DesktopOutputKind = 'SUPER_PROMPT' | 'CODING_BRIEF'
+
 interface DesktopOptimizerSuggestion {
   taskType: string
   optimizerLane: DesktopOptimizeLane
   templateSlug?: string
+  outputKind: DesktopOutputKind
   reasons: string[]
 }
 
@@ -487,11 +490,15 @@ function suggestOptimizerConfig(rawIdea: string): DesktopOptimizerSuggestion {
     ? 'DEEP'
     : 'INTERACTIVE'
   const templateSlug = inferTemplateSlug(rawIdea, taskType)
+  const outputKind: DesktopOutputKind = taskType === 'CODING' ? 'CODING_BRIEF' : 'SUPER_PROMPT'
   const reasons = [
     `Task type inferred as ${taskType}.`,
     optimizerLane === 'DEEP'
       ? 'Deep lane suggested because the prompt asks for richer analysis or trade-offs.'
       : 'Interactive lane suggested because the prompt looks execution-first and short-horizon.',
+    outputKind === 'CODING_BRIEF'
+      ? 'Coding Brief output selected because the task type is CODING.'
+      : 'Super Prompt output selected.',
   ]
 
   if (templateSlug) {
@@ -502,6 +509,7 @@ function suggestOptimizerConfig(rawIdea: string): DesktopOptimizerSuggestion {
     taskType,
     optimizerLane,
     templateSlug,
+    outputKind,
     reasons,
   }
 }
@@ -682,6 +690,7 @@ function renderSuggestionPanel(rawIdea: string) {
   suggestionChips.innerHTML = [
     `Task · ${suggestion.taskType}`,
     `Lane · ${suggestion.optimizerLane}`,
+    `Output · ${suggestion.outputKind}`,
     suggestion.templateSlug ? `Template · ${suggestion.templateSlug}` : null,
   ]
     .filter((item): item is string => Boolean(item))
@@ -1091,6 +1100,7 @@ function buildPromptInvocation(
         targetLlm: provider,
         provider,
         optimizerLane: currentOptimizerLane,
+        outputKind: suggestion.outputKind,
         requestId,
       },
     },
@@ -2237,6 +2247,10 @@ function formatMetadataList(metadata: Record<string, unknown>) {
 
   if (typeof metadata.taskType === 'string') {
     lines.push(`- Task Type: ${metadata.taskType}`)
+  }
+
+  if (typeof metadata.outputKind === 'string') {
+    lines.push(`- Output Kind: ${metadata.outputKind}`)
   }
 
   if (typeof metadata.tone === 'string') {

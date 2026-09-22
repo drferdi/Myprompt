@@ -48,6 +48,9 @@ export type OutputFormat = z.infer<typeof OutputFormatSchema>
 export const OptimizeLaneSchema = z.enum(['INTERACTIVE', 'DEEP'])
 export type OptimizeLane = z.infer<typeof OptimizeLaneSchema>
 
+export const OutputKindSchema = z.enum(['SUPER_PROMPT', 'CODING_BRIEF'])
+export type OutputKind = z.infer<typeof OutputKindSchema>
+
 export const TemplateCategorySchema = z.enum([
   'CODING',
   'EMAIL',
@@ -70,6 +73,8 @@ export const OptimizeRequestSchema = z.object({
   targetLlm: LLMProviderNameSchema.default('OPENAI'),
   provider: LLMProviderNameSchema.default('OPENAI'),
   optimizerLane: OptimizeLaneSchema.default('INTERACTIVE'),
+  // No default: absence is resolved from taskType in the Optimizer engine.
+  outputKind: OutputKindSchema.optional(),
   templateSlug: z.string().optional(),
   apiKey: z.string().optional(),
 })
@@ -157,6 +162,19 @@ export const SuperPromptSchema = z.object({
 })
 export type SuperPrompt = z.infer<typeof SuperPromptSchema>
 
+// Shape only, mirroring SuperPromptSchema: lib/prompt-quality/contract.ts remains
+// the documented source of truth for prompt quality (it re-exports this schema).
+export const CodingBriefSchema = z.object({
+  goal: z.string(),
+  where: z.string(),
+  scenario: z.string().optional(),
+  followPattern: z.string().optional(),
+  outOfScope: z.string().optional(),
+  doneWhen: z.string(),
+  report: z.string(),
+})
+export type CodingBrief = z.infer<typeof CodingBriefSchema>
+
 export const OptimizeQualitySchema = z.object({
   complete: z.boolean(),
   degraded: z.boolean(),
@@ -167,6 +185,7 @@ export type OptimizeQuality = z.infer<typeof OptimizeQualitySchema>
 
 export const OptimizeResponseSchema = z.object({
   superPrompt: SuperPromptSchema,
+  codingBrief: CodingBriefSchema.optional(),
   metadata: z.object({
     provider: LLMProviderNameSchema,
     model: z.string(),
@@ -177,6 +196,7 @@ export const OptimizeResponseSchema = z.object({
     tokensUsed: z.number().optional(),
     latencyMs: z.number(),
     quality: OptimizeQualitySchema.optional(),
+    outputKind: OutputKindSchema.optional(),
   }),
 })
 export type OptimizeResponse = z.infer<typeof OptimizeResponseSchema>

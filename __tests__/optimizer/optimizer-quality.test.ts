@@ -98,7 +98,7 @@ describe('optimizer quality metadata', () => {
     })
     vi.mocked(getProvider).mockReturnValue(fake as never)
 
-    const response = await optimizePrompt(baseRequest)
+    const response = await optimizePrompt({ ...baseRequest, outputKind: 'SUPER_PROMPT' })
 
     expect(response.metadata.quality).toEqual({
       complete: false,
@@ -117,7 +117,7 @@ describe('optimizer quality metadata', () => {
     })
     vi.mocked(getProvider).mockReturnValue(fake as never)
 
-    const response = await optimizePrompt(baseRequest)
+    const response = await optimizePrompt({ ...baseRequest, outputKind: 'SUPER_PROMPT' })
 
     expect(response.metadata.quality).toEqual({
       complete: true,
@@ -136,7 +136,7 @@ describe('optimizer quality metadata', () => {
     })
     vi.mocked(getProvider).mockReturnValue(fake as never)
 
-    const response = await optimizePromptStreaming(baseRequest, () => undefined)
+    const response = await optimizePromptStreaming({ ...baseRequest, outputKind: 'SUPER_PROMPT' }, () => undefined)
 
     expect(response.metadata.quality).toEqual({
       complete: false,
@@ -154,7 +154,7 @@ describe('optimizer quality metadata', () => {
     })
     vi.mocked(getProvider).mockReturnValue(fake as never)
 
-    const response = await optimizePromptStreaming(baseRequest, () => undefined)
+    const response = await optimizePromptStreaming({ ...baseRequest, outputKind: 'SUPER_PROMPT' }, () => undefined)
 
     expect(response.metadata.quality).toEqual({
       complete: true,
@@ -171,7 +171,7 @@ describe('optimizer quality metadata', () => {
     })
     vi.mocked(getProvider).mockReturnValue(fake as never)
 
-    const response = await optimizePromptStreaming(baseRequest, () => undefined)
+    const response = await optimizePromptStreaming({ ...baseRequest, outputKind: 'SUPER_PROMPT' }, () => undefined)
 
     expect(response.metadata.quality).toEqual({
       complete: true,

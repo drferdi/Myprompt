@@ -18,6 +18,15 @@ export const CODING_BRIEF_HEADINGS = [
 
 export type CodingBriefHeading = (typeof CODING_BRIEF_HEADINGS)[number]
 
+/** Canonical `## REPORT` body from §6, without the heading line. */
+export const CODING_BRIEF_REPORT_TEXT = [
+  '- Read every file you reference before changing or describing it.',
+  '- If a referenced file, function, or command does not exist, stop and ask.',
+  '- Show each command you ran and its actual output.',
+  '- Do not claim a result you did not execute.',
+  '- List every file you changed and anything you left undone.',
+].join('\n')
+
 export interface CodingBriefSection {
   heading: CodingBriefHeading
   /** Section body, trimmed. Empty when the heading has no content (V2). */
@@ -60,12 +69,16 @@ export function normaliseCodingBrief(raw: string): string {
  * Split a Coding Brief into its sections. Any `##` heading is detected (not only
  * the known seven) so the validator can report unknown headings under V1.
  */
-export function parseCodingBriefSections(markdown: string): ParsedCodingBrief {
-  const text = normaliseCodingBrief(markdown)
+interface HeadingMatch {
+  heading: string
+  matchStart: number
+  contentStart: number
+}
 
-  // `[ \t]+` (not `\s+`) so a bare `##` line never swallows the next line as its heading.
+/** Scan `## ` headings. `[ \t]+` (not `\s+`) so a bare `##` line never swallows the next line. */
+function scanHeadings(text: string): HeadingMatch[] {
   const headingRe = /^##[ \t]+(.+)$/gm
-  const found: { heading: string; matchStart: number; contentStart: number }[] = []
+  const found: HeadingMatch[] = []
   let match: RegExpExecArray | null
   while ((match = headingRe.exec(text)) !== null) {
     found.push({
@@ -74,6 +87,35 @@ export function parseCodingBriefSections(markdown: string): ParsedCodingBrief {
       contentStart: match.index + match[0].length,
     })
   }
+  return found
+}
+
+/**
+ * Replace whatever `## REPORT` the model emitted with the canonical §6 text.
+ *
+ * Invariant: the result carries exactly one REPORT section, so V8 can only fail on an
+ * engine bug and never on model output. Normalisation runs first, otherwise a fenced
+ * response would get the canonical REPORT appended outside its own fence.
+ */
+export function applyCanonicalReport(markdown: string): string {
+  const text = normaliseCodingBrief(markdown)
+  const found = scanHeadings(text)
+
+  let stripped = text
+  for (let i = found.length - 1; i >= 0; i--) {
+    if (found[i].heading !== 'REPORT') {
+      continue
+    }
+    const end = i + 1 < found.length ? found[i + 1].matchStart : stripped.length
+    stripped = stripped.slice(0, found[i].matchStart) + stripped.slice(end)
+  }
+
+  return `${stripped.trim()}\n\n## REPORT\n${CODING_BRIEF_REPORT_TEXT}`
+}
+
+export function parseCodingBriefSections(markdown: string): ParsedCodingBrief {
+  const text = normaliseCodingBrief(markdown)
+  const found = scanHeadings(text)
 
   const sections: CodingBriefSection[] = []
   const unknownHeadings: string[] = []

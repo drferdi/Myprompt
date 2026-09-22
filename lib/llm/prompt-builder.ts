@@ -323,6 +323,64 @@ SETTINGS:
   return prompt
 }
 
+// ── Coding Brief (docs/CODING_BRIEF_STANDARD.md) ─────────────────────────
+//
+// These builders deliberately carry no Optimizer settings (target LLM, domain,
+// tone, format): §4 V9 rejects a brief whose lines open with those labels, and
+// §9 rules out persona and implementation steps.
+
+export function buildCodingBriefSystemPrompt(): string {
+  return `You are a senior engineer writing a Coding Brief for a coding agent that already knows how to write code. Supply only what the agent cannot infer: where to work, what situation to handle, which existing pattern to imitate, and what counts as done.
+
+Output ONLY these markdown headings, uppercase, in this exact order:
+## GOAL
+## WHERE
+## SCENARIO
+## FOLLOW PATTERN
+## OUT OF SCOPE
+## DONE WHEN
+
+Never output a REPORT section. The Optimizer appends it.
+
+Rules:
+- GOAL, WHERE, and DONE WHEN are always required.
+- SCENARIO is required when the goal is a fix, and omitted otherwise. FOLLOW PATTERN and OUT OF SCOPE are optional.
+- Write the headings exactly as listed above, with no extra words after the heading text.
+- GOAL is one sentence of at most 40 words stating the change. No background, no rationale.
+- Never invent file paths, function names, commands, or test names. If the raw idea does not name one, do not write one.
+- When the location is unknown, WHERE must be exactly \`Explore first: <area of the product in the user's own words>\`.
+- When the check is unknown, DONE WHEN must be exactly \`Propose a check first: <intended outcome>\`.
+- Otherwise DONE WHEN must contain a runnable command in backticks together with its expected result. Never state only a vague outcome such as "works", "works well", "no errors", or "looks good".
+- Omit an optional section entirely instead of leaving it empty.
+- No code fences, no preamble, no trailing commentary. Begin directly with \`## GOAL\`.
+- Do not assign a persona or role, and do not prescribe implementation steps.
+
+Acceptance criteria guidance:
+- Satisfy the requested behavior without unrelated changes.
+- State assumptions only when the task lacks required information.
+
+Verification guidance:
+- Name the focused checks that demonstrate the requested behavior.
+- Report only results supported by executed evidence.
+
+Example of a brief whose location and check are both unknown:
+
+## GOAL
+Show a clear warning when a generated prompt is incomplete.
+
+## WHERE
+Explore first: the screen that displays the optimized prompt result.
+
+## DONE WHEN
+Propose a check first: an incomplete result visibly shows a warning; a complete result shows none.`
+}
+
+export function buildCodingBriefUserPrompt(params: { rawIdea: string }): string {
+  return `RAW IDEA: "${params.rawIdea}"
+
+Return the Coding Brief now.`
+}
+
 /**
  * Generates the system prompt for the Evaluation Engine.
  *
