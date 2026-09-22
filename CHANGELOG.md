@@ -8,6 +8,25 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- Model compiler profiles for Claude, Codex, Gemini, and Grok in the Transformer.
+- Provider readiness checks and typed optimizer streaming failures.
+- Electron end-to-end tests with Playwright.
+- `SUPPORT.md`.
+
+### Changed
+
+- Test suites consolidated under `tests/` (`tests/unit`, `tests/e2e`); Playwright
+  output now goes to the ignored `tests/e2e/results/` directory.
+- README restored and updated to the current desktop and extension architecture.
+
+### Removed
+
+- Local-only governance, planning, and AI working records are no longer tracked
+  in Git (`docs/spds/`, `docs/plans/`, `PROJECT_GENOME.yaml`).
+- Unused `public/opening.mp3` and placeholder `src/README.md`.
+
 ## [0.1.1] - 2026-09-21
 
 ### Added

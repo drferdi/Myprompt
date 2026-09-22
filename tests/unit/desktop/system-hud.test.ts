@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const testDir = path.dirname(fileURLToPath(import.meta.url))
 const rendererHtml = readFileSync(
-  path.resolve(testDir, '../../desktop/renderer/index.html'),
+  path.resolve(testDir, '../../../desktop/renderer/index.html'),
   'utf8'
 )
 
@@ -46,7 +46,7 @@ describe('system HUD', () => {
       setWindowPos: vi.fn(),
     })
 
-    await import('../../desktop/renderer/renderer')
+    await import('../../../desktop/renderer/renderer')
     // Let the initial poll resolve.
     await vi.waitFor(() => expect(document.getElementById('hudUptime')?.textContent).not.toBe('—'))
   })

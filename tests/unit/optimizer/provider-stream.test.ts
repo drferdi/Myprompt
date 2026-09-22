@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { collectProviderStream } from '../../lib/optimizer/provider-stream'
+import { collectProviderStream } from '../../../lib/optimizer/provider-stream'
 
 describe('provider stream boundary', () => {
   it('collects chunks from a provider stream and forwards each chunk', async () => {

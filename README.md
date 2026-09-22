@@ -416,9 +416,9 @@ rigor doesn't get lost going from English to Indonesian:
 <img src="https://i.ibb.co.com/Ps5TZPYN/Prompt.png" alt="Myprompt — Bahasa Indonesia native prompting" width="700">
 </p>
 
-**Use case:** tim klinis, akademik, atau korporat di Indonesia yang menulis
-instruksi langsung dalam Bahasa Indonesia tanpa harus melalui terjemahan ke
-Inggris dulu.
+**Use case:** clinical, academic, or corporate teams in Indonesia who write
+instructions directly in Bahasa Indonesia, without translating them into
+English first.
 
 </td>
 </tr>
@@ -768,15 +768,14 @@ Myprompt/
 │   ├── schema.prisma
 │   └── migrations/
 │
-├── __tests__/                  Vitest test suites
-├── e2e/                        Playwright Electron end-to-end tests
+├── tests/                      Test suites
+│   ├── unit/                   Vitest unit tests
+│   └── e2e/                    Playwright Electron end-to-end tests
 ├── scripts/                    Acceptance harness, verification, and utilities
 ├── public/                     Static assets
 ├── types/                      Global TypeScript types
 │
 ├── docs/                       Architecture, operations, data, testing, release
-│   ├── spds/                   Governance pack — read_first.md, ADRs
-│   └── plans/                  Implementation plans
 │
 ├── AGENTS.md                   Agent workflow and task protocol
 ├── project.contract.json       Standalone lifecycle contract

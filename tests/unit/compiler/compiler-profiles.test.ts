@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { transformPrompt } from '../../lib/transform/engine'
-import { TransformRequestSchema } from '../../lib/transform/schemas'
+import { transformPrompt } from '../../../lib/transform/engine'
+import { TransformRequestSchema } from '../../../lib/transform/schemas'
 
 const baseRequest = {
   prompt: 'Implement a payment webhook handler with signature validation and retry safety.',

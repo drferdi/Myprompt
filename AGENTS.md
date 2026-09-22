@@ -9,7 +9,8 @@
 
 ## Required context
 
-Before substantial work, read `docs/spds/read_first.md`, then use the linked
+Before substantial work, read `docs/spds/read_first.md` when it is present on the
+local machine (it is a local-only record and is not tracked in Git), then use the linked
 authority, architecture, risk, and verification records relevant to the task.
 
 ## Standalone contract

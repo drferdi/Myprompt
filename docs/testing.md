@@ -8,8 +8,15 @@
 | Type safety | `pnpm run typecheck` | TypeScript validation after Prisma generation. |
 | Behavioural tests | `pnpm run test` | Optimizer acceptance dry-run and Vitest suites. |
 | Desktop runtime | `pnpm run desktop:smoke` | Builds Electron and verifies controlled startup. |
+| End-to-end | `pnpm run test:e2e` | Playwright drives the built Electron app (Windows). |
 | Structure gate | `pnpm run verify:structure` | Confirms capsule-local files and dependency boundaries. |
 | Extraction gate | `pnpm run verify:extraction` | Reinstalls and validates a fresh temporary copy. |
+
+## Test locations
+
+- `tests/unit/` — Vitest unit tests, grouped by area (compiler, desktop, llm, optimizer).
+- `tests/e2e/` — Playwright Electron tests and their screenshot baselines.
+- `tests/e2e/results/` — Playwright output; generated locally and ignored by Git.
 
 ## Recommended local gate
 

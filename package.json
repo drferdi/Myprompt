@@ -21,7 +21,7 @@
     "typecheck": "pnpm run db:generate && tsc --noEmit",
     "pretest": "tsx scripts/optimizer-acceptance.ts --dry-run",
     "test": "vitest run",
-    "test:desktop": "vitest run __tests__/desktop",
+    "test:desktop": "vitest run tests/unit/desktop",
     "test:e2e": "pnpm run desktop:build && playwright test",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
