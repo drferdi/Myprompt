@@ -1,7 +1,7 @@
 # Coding Brief Standard — Sentra Prompt
 
 **Status:** v1.0 — validator implemented
-**Authority:** `lib/prompt-quality/contract.ts` (`CodingBriefSchema`, runtime source of truth)
+**Authority:** `lib/prompt-quality/contract.ts` (runtime source of truth: `validateCodingBrief`; re-exports `CodingBriefSchema` from `types/index.ts` and `CODING_BRIEF_REPORT_TEXT` from `lib/optimizer/coding-brief-format.ts`)
 **Companion:** `docs/PROMPT_QUALITY_STANDARD.md` (Super Prompt format for non-coding tasks)
 **Last updated:** 2026-09-23
 

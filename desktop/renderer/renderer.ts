@@ -2234,7 +2234,29 @@ function tryParseStructuredDesktopResult(value: string): unknown {
   }
 }
 
-function formatMetadataList(metadata: Record<string, unknown>) {
+/** One text line for metadata.quality; `sectionCount` is the number of `## ` headings shown. */
+function formatQualityLine(quality: unknown, sectionCount?: number): string | null {
+  if (!isObjectRecord(quality) || typeof quality.degraded !== 'boolean') {
+    return null
+  }
+
+  const attempts = typeof quality.attempts === 'number' ? quality.attempts : 1
+  const attemptsText = `${attempts} percobaan`
+
+  if (quality.degraded) {
+    const reason = typeof quality.reason === 'string' ? quality.reason : 'unknown'
+    return `perlu diperiksa · ${reason} · ${attemptsText}`
+  }
+
+  const sectionsText = typeof sectionCount === 'number' ? `${sectionCount} bagian` : null
+  return ['ok', sectionsText, attemptsText].filter(Boolean).join(' · ')
+}
+
+function countPromptSections(promptText: string): number {
+  return (promptText.match(/^##[ \t]+\S/gm) ?? []).length
+}
+
+function formatMetadataList(metadata: Record<string, unknown>, sectionCount?: number) {
   const lines: string[] = []
 
   if (typeof metadata.provider === 'string') {
@@ -2251,6 +2273,11 @@ function formatMetadataList(metadata: Record<string, unknown>) {
 
   if (typeof metadata.outputKind === 'string') {
     lines.push(`- Output Kind: ${metadata.outputKind}`)
+  }
+
+  const qualityLine = formatQualityLine(metadata.quality, sectionCount)
+  if (qualityLine) {
+    lines.push(`- Quality: ${qualityLine}`)
   }
 
   if (typeof metadata.tone === 'string') {
@@ -2377,7 +2404,9 @@ function formatDesktopResult(result: unknown): string {
       '',
       promptBody || '[No visible prompt content returned by provider.]',
     ]
-    const metadataLines = metadata ? formatMetadataList(metadata) : []
+    const metadataLines = metadata
+      ? formatMetadataList(metadata, countPromptSections(promptBody))
+      : []
 
     if (metadataLines.length > 0) {
       lines.push('', '## Metadata', ...metadataLines)
