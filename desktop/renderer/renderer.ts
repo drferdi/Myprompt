@@ -308,6 +308,9 @@ const closeBtn = document.getElementById('closeBtn') as HTMLElement | null
 const clearBtn = document.getElementById('clearBtn') as HTMLButtonElement | null
 const runBtn = document.getElementById('runBtn') as HTMLButtonElement | null
 const copyLastBtn = document.getElementById('copyLastBtn') as HTMLButtonElement | null
+if (copyLastBtn) {
+  copyLastBtn.textContent = '[c] salin'
+}
 const miniToggleBtn = document.getElementById('miniToggleBtn') as HTMLButtonElement | null
 const powerBtn = document.getElementById('powerBtn') as HTMLButtonElement | null
 const consoleRig = document.getElementById('consoleRig') as HTMLElement | null
@@ -1007,12 +1010,12 @@ async function openWorkbenchPanel() {
       const actionRow = document.createElement('div')
       actionRow.className = 'output-action-row'
       actionRow.appendChild(
-        createActionButton('Re-run', async () => {
+        createActionButton('[r] ulang', async () => {
           await rerunRecentRecord(record)
         })
       )
       actionRow.appendChild(
-        createActionButton('Evaluate', async () => {
+        createActionButton('[e] evaluasi', async () => {
           await evaluateRecentRecord(record)
         })
       )
@@ -1041,7 +1044,7 @@ async function openWorkbenchPanel() {
       const actionRow = document.createElement('div')
       actionRow.className = 'output-action-row'
       actionRow.appendChild(
-        createActionButton('Run Benchmark', async () => {
+        createActionButton('[b] jalankan', async () => {
           await runBenchmarkRecord(record)
         })
       )
@@ -1351,11 +1354,12 @@ function buildCommandInvocation(
 function extractCopyableText(formattedText: string): string {
   let text = formattedText
   text = text.replace(/^# (?:Optimized|Transformed) Prompt\n\n/, '')
-  const metaIdx = text.indexOf('\n\n## Metadata\n')
-  if (metaIdx !== -1) {
-    text = text.slice(0, metaIdx)
+  // The meta flag line and the quality line close the result; neither is part of the prompt.
+  const lines = text.trimEnd().split('\n')
+  while (lines.length > 1 && isTrailingResultLine(lines[lines.length - 1])) {
+    lines.pop()
   }
-  return text.trim()
+  return lines.join('\n').trim()
 }
 
 function attachCopyButton(line: HTMLElement, textToCopy: string) {
@@ -1369,19 +1373,19 @@ function attachCopyButton(line: HTMLElement, textToCopy: string) {
   btn.className = 'copy-line-btn'
   btn.type = 'button'
   btn.title = 'Copy output'
-  btn.textContent = 'COPY'
+  btn.textContent = '[c] salin'
   btn.addEventListener('click', (e) => {
     e.stopPropagation()
     navigator.clipboard
       .writeText(extractCopyableText(textToCopy))
       .then(() => {
-        btn.textContent = 'COPIED'
+        btn.textContent = '[c] tersalin'
         setTimeout(() => {
-          btn.textContent = 'COPY'
+          btn.textContent = '[c] salin'
         }, 1500)
       })
       .catch(() => {
-        btn.textContent = 'FAILED'
+        btn.textContent = '[c] gagal'
       })
   })
   line.appendChild(btn)
@@ -1414,12 +1418,12 @@ function attachOutputActions(line: HTMLElement, runRecord: DesktopRunRecord) {
   row.className = 'output-action-row'
 
   row.appendChild(
-    createActionButton('Save to Library', async (button) => {
+    createActionButton('[l] library', async (button) => {
       if (!desktopWindow.sentraDesktop?.invoke || !display) {
         return
       }
 
-      const originalLabel = button.textContent ?? 'Save to Library'
+      const originalLabel = button.textContent ?? '[l] library'
       button.disabled = true
       button.textContent = 'Saving...'
 
@@ -1458,12 +1462,12 @@ function attachOutputActions(line: HTMLElement, runRecord: DesktopRunRecord) {
   )
 
   row.appendChild(
-    createActionButton('Save as Draft', async (button) => {
+    createActionButton('[d] draft', async (button) => {
       if (!desktopWindow.sentraDesktop?.invoke || !display) {
         return
       }
 
-      const originalLabel = button.textContent ?? 'Save as Draft'
+      const originalLabel = button.textContent ?? '[d] draft'
       button.disabled = true
       button.textContent = 'Saving...'
 
@@ -1499,12 +1503,12 @@ function attachOutputActions(line: HTMLElement, runRecord: DesktopRunRecord) {
   )
 
   row.appendChild(
-    createActionButton('Save as Benchmark', async (button) => {
+    createActionButton('[b] benchmark', async (button) => {
       if (!desktopWindow.sentraDesktop?.invoke || !display) {
         return
       }
 
-      const originalLabel = button.textContent ?? 'Save as Benchmark'
+      const originalLabel = button.textContent ?? '[b] benchmark'
       button.disabled = true
       button.textContent = 'Saving...'
 
@@ -1547,7 +1551,7 @@ function attachOutputActions(line: HTMLElement, runRecord: DesktopRunRecord) {
   )
 
   row.appendChild(
-    createActionButton('Re-run', () => {
+    createActionButton('[r] ulang', () => {
       if (!input || isExecuting) {
         return
       }
@@ -1569,12 +1573,12 @@ function attachOutputActions(line: HTMLElement, runRecord: DesktopRunRecord) {
   )
 
   row.appendChild(
-    createActionButton('Evaluate', async (button) => {
+    createActionButton('[e] evaluasi', async (button) => {
       if (!desktopWindow.sentraDesktop?.invoke || !display || isExecuting) {
         return
       }
 
-      const originalLabel = button.textContent ?? 'Evaluate'
+      const originalLabel = button.textContent ?? '[e] evaluasi'
       button.disabled = true
       button.textContent = 'Running...'
       setExecutionState(true)
@@ -1704,6 +1708,24 @@ function buildRunRecord(
   return null
 }
 
+const STATUS_PREFIX_PATTERN = /^\[(DONE|SAVED|DRAFT|BENCHMARK|BOOT|INFO|WORKBENCH|WAIT|STATE|ERROR)\]\s*/
+
+/**
+ * Result status lines carry an ok / warn / error prefix rendered by CSS (`::before`),
+ * so the legacy `[TAG]` marker is stripped from the text and mapped to a class.
+ */
+function applyStatusPrefix(line: HTMLElement, text: string): string {
+  const match = STATUS_PREFIX_PATTERN.exec(text)
+  if (!match) {
+    return text
+  }
+
+  const tag = match[1]
+  const status = tag === 'ERROR' ? 'error' : tag === 'WAIT' || tag === 'STATE' ? 'warn' : 'ok'
+  line.classList.add(`status-${status}`)
+  return text.slice(match[0].length)
+}
+
 function appendConsoleLine(
   container: HTMLElement,
   type: 'sys' | 'user' | 'agent',
@@ -1712,7 +1734,8 @@ function appendConsoleLine(
 ) {
   const line = document.createElement('div')
   line.className = `line type-${type}`
-  line.textContent = text
+  const split = type === 'agent' ? splitTrailingResultLines(text) : null
+  line.textContent = type === 'sys' ? applyStatusPrefix(line, text) : (split?.body ?? text)
   if (type === 'agent') {
     attachCopyButton(line, options.copyText ?? text)
     if (options.runRecord) {
@@ -1720,6 +1743,9 @@ function appendConsoleLine(
     }
   }
   container.appendChild(line)
+  if (split && split.trailing.length > 0) {
+    appendTrailingResultLines(line, split.trailing)
+  }
   container.scrollTop = container.scrollHeight
   return line
 }
@@ -1844,9 +1870,9 @@ function ensureOptimizeStatusLine(container: HTMLElement, requestId: string) {
   }
 
   const line = document.createElement('div')
-  line.className = 'line type-sys'
+  line.className = 'line type-sys status-warn'
   line.dataset.requestStatusId = requestId
-  line.textContent = '[STATE] Menyiapkan Optimizer...'
+  line.textContent = 'Menyiapkan Optimizer...'
   container.appendChild(line)
   container.scrollTop = container.scrollHeight
   activeOptimizeStatusLines.set(requestId, line)
@@ -1993,7 +2019,7 @@ async function executeOptimizeStream(
         return
       }
 
-      statusLine.textContent = `[STATE] ${payload.message}`
+      statusLine.textContent = payload.message
       if (payload.stage === 'waiting') {
         startScramble()
       }
@@ -2045,7 +2071,9 @@ async function executeOptimizeStream(
 
       clearScramble()
       const formattedText = formatDesktopResult(payload.response)
-      streamLine.textContent = formattedText
+      const { body, trailing } = splitTrailingResultLines(formattedText)
+      streamLine.textContent = body
+      appendTrailingResultLines(streamLine, trailing)
       attachCopyButton(streamLine, formattedText)
       const runRecord = buildRunRecord('optimize', rawInput, payload.response, requestId)
       if (runRecord) {
@@ -2234,6 +2262,8 @@ function tryParseStructuredDesktopResult(value: string): unknown {
   }
 }
 
+const META_FLAG_SEPARATOR = '  '
+
 /** One text line for metadata.quality; `sectionCount` is the number of `## ` headings shown. */
 function formatQualityLine(quality: unknown, sectionCount?: number): string | null {
   if (!isObjectRecord(quality) || typeof quality.degraded !== 'boolean') {
@@ -2256,43 +2286,83 @@ function countPromptSections(promptText: string): number {
   return (promptText.match(/^##[ \t]+\S/gm) ?? []).length
 }
 
-function formatMetadataList(metadata: Record<string, unknown>, sectionCount?: number) {
-  const lines: string[] = []
+/**
+ * The meta line is one row of settings flags, never a verdict:
+ * `task=coding  provider=anthropic  lane=interactive  model=<model>  output=coding_brief  3.4s`.
+ * Quality and attempts live on the separate quality line.
+ */
+function formatMetaFlags(metadata: Record<string, unknown>, lane?: DesktopOptimizeLane): string {
+  const flags: string[] = []
+
+  if (typeof metadata.taskType === 'string') {
+    flags.push(`task=${metadata.taskType.toLowerCase()}`)
+  }
 
   if (typeof metadata.provider === 'string') {
-    lines.push(`- Provider: ${metadata.provider}`)
+    flags.push(`provider=${metadata.provider.toLowerCase()}`)
+  }
+
+  if (lane) {
+    flags.push(`lane=${lane.toLowerCase()}`)
   }
 
   if (typeof metadata.model === 'string') {
-    lines.push(`- Model: ${metadata.model}`)
-  }
-
-  if (typeof metadata.taskType === 'string') {
-    lines.push(`- Task Type: ${metadata.taskType}`)
+    flags.push(`model=${metadata.model}`)
   }
 
   if (typeof metadata.outputKind === 'string') {
-    lines.push(`- Output Kind: ${metadata.outputKind}`)
-  }
-
-  const qualityLine = formatQualityLine(metadata.quality, sectionCount)
-  if (qualityLine) {
-    lines.push(`- Quality: ${qualityLine}`)
-  }
-
-  if (typeof metadata.tone === 'string') {
-    lines.push(`- Tone: ${metadata.tone}`)
-  }
-
-  if (typeof metadata.format === 'string') {
-    lines.push(`- Format: ${metadata.format}`)
+    flags.push(`output=${metadata.outputKind.toLowerCase()}`)
   }
 
   if (typeof metadata.latencyMs === 'number') {
-    lines.push(`- Latency: ${metadata.latencyMs}ms`)
+    flags.push(`${(metadata.latencyMs / 1000).toFixed(1)}s`)
   }
 
-  return lines
+  return flags.join(META_FLAG_SEPARATOR)
+}
+
+function isMetaFlagLine(line: string): boolean {
+  return /^(task|provider|lane|model|output|code|tokens)=/.test(line)
+}
+
+function isQualityLine(line: string): boolean {
+  return /^(ok|perlu diperiksa) · /.test(line)
+}
+
+function isTrailingResultLine(line: string): boolean {
+  return isMetaFlagLine(line) || isQualityLine(line)
+}
+
+/** Split the meta flag line and the quality line off the end of a formatted result. */
+function splitTrailingResultLines(formattedText: string): { body: string; trailing: string[] } {
+  const lines = formattedText.trimEnd().split('\n')
+  const trailing: string[] = []
+
+  while (lines.length > 1 && isTrailingResultLine(lines[lines.length - 1])) {
+    trailing.unshift(lines.pop() as string)
+  }
+
+  return { body: lines.join('\n').trimEnd(), trailing }
+}
+
+/**
+ * The meta line is settings (dim); the quality line is a verdict (coloured by status).
+ * Both render as their own console lines right after the result block.
+ */
+function appendTrailingResultLines(afterLine: HTMLElement, trailing: string[]) {
+  let anchor = afterLine
+
+  for (const text of trailing) {
+    const line = document.createElement('div')
+    if (isQualityLine(text)) {
+      line.className = `line type-sys quality-line ${text.startsWith('ok') ? 'quality-ok' : 'quality-degraded'}`
+    } else {
+      line.className = 'line type-sys meta-line'
+    }
+    line.textContent = text
+    anchor.insertAdjacentElement('afterend', line)
+    anchor = line
+  }
 }
 
 function formatBenchmarkReport(result: {
@@ -2382,14 +2452,15 @@ function formatDesktopResult(result: unknown): string {
         ? failure.message
         : 'Evaluator could not parse provider output.',
     ]
-    const metadataLines = metadata ? formatMetadataList(metadata) : []
+    const metaFlags = [
+      typeof failure?.code === 'string' ? `code=${failure.code}` : null,
+      metadata ? formatMetaFlags(metadata) : null,
+    ]
+      .filter((flag): flag is string => Boolean(flag))
+      .join(META_FLAG_SEPARATOR)
 
-    if (typeof failure?.code === 'string') {
-      metadataLines.unshift(`- Code: ${failure.code}`)
-    }
-
-    if (metadataLines.length > 0) {
-      lines.push('', '## Metadata', ...metadataLines)
+    if (metaFlags) {
+      lines.push('', metaFlags)
     }
 
     lines.push('', '## Retry', '- Re-run with the same provider from the action row.')
@@ -2404,12 +2475,17 @@ function formatDesktopResult(result: unknown): string {
       '',
       promptBody || '[No visible prompt content returned by provider.]',
     ]
-    const metadataLines = metadata
-      ? formatMetadataList(metadata, countPromptSections(promptBody))
-      : []
+    const metaFlags = metadata ? formatMetaFlags(metadata, currentOptimizerLane) : ''
+    const qualityLine = metadata
+      ? formatQualityLine(metadata.quality, countPromptSections(promptBody))
+      : null
 
-    if (metadataLines.length > 0) {
-      lines.push('', '## Metadata', ...metadataLines)
+    if (metaFlags) {
+      lines.push('', metaFlags)
+    }
+
+    if (qualityLine) {
+      lines.push(qualityLine)
     }
 
     return lines.join('\n')
@@ -2419,7 +2495,7 @@ function formatDesktopResult(result: unknown): string {
     const lines = ['# Transformed Prompt', '', result.transformedPrompt.trim()]
 
     if (typeof result.tokensEstimate === 'number') {
-      lines.push('', '## Metadata', `- Tokens Estimate: ${result.tokensEstimate}`)
+      lines.push('', `tokens=${result.tokensEstimate}`)
     }
 
     return lines.join('\n')
@@ -2804,9 +2880,9 @@ copyLastBtn?.addEventListener('click', () => {
   if (!lastCopyText) return
   navigator.clipboard.writeText(extractCopyableText(lastCopyText)).then(() => {
     if (copyLastBtn) {
-      copyLastBtn.textContent = 'COPIED'
+      copyLastBtn.textContent = '[c] tersalin'
       setTimeout(() => {
-        copyLastBtn.textContent = 'COPY'
+        copyLastBtn.textContent = '[c] salin'
       }, 1500)
     }
   })

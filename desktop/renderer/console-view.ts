@@ -26,6 +26,21 @@ const MODE_COPY: Record<
   },
 }
 
+const STATUS_PREFIX_PATTERN = /^\[(DONE|SAVED|DRAFT|BENCHMARK|BOOT|INFO|WORKBENCH|WAIT|STATE|ERROR)\]\s*/
+
+/** Status lines carry an ok / warn / error prefix rendered by CSS; the `[TAG]` marker becomes a class. */
+function applyStatusPrefix(line: HTMLElement, text: string): string {
+  const match = STATUS_PREFIX_PATTERN.exec(text)
+  if (!match) {
+    return text
+  }
+
+  const tag = match[1]
+  const status = tag === 'ERROR' ? 'error' : tag === 'WAIT' || tag === 'STATE' ? 'warn' : 'ok'
+  line.classList.add(`status-${status}`)
+  return text.slice(match[0].length)
+}
+
 export function appendConsoleLine(
   display: HTMLElement,
   type: 'sys' | 'user' | 'agent',
@@ -33,7 +48,7 @@ export function appendConsoleLine(
 ) {
   const line = document.createElement('div')
   line.className = `line type-${type}`
-  line.textContent = text
+  line.textContent = type === 'sys' ? applyStatusPrefix(line, text) : text
   display.appendChild(line)
   display.scrollTop = display.scrollHeight
 }

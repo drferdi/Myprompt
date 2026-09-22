@@ -19,18 +19,18 @@ describe('Sentra console visual contract', () => {
     expect(rendererCss).toMatch(/\.status-copy[\s\S]*?overflow-wrap:\s*anywhere/)
   })
 
-  it('uses the approved Sentra DesignOption material tokens', () => {
-    expect(rendererCss).toContain('--bg-deep: #0D0F14;')
-    expect(rendererCss).toContain('--card-bg: #161922;')
-    expect(rendererCss).toContain('--text-primary: #F2F4F7;')
-    expect(rendererCss).toContain('--text-secondary: #9CA3AF;')
-    expect(rendererCss).toContain('--text-muted: #6B7280;')
-    expect(rendererCss).toContain('--accent: #3B82F6;')
+  it('uses the approved console palette tokens', () => {
+    expect(rendererCss).toContain('--console-bg-app: #1a1a1a;')
+    expect(rendererCss).toContain('--console-bg-window: #2b303b;')
+    expect(rendererCss).toContain('--console-text: #d8dee9;')
+    expect(rendererCss).toContain('--console-text-strong: #ffffff;')
+    expect(rendererCss).toContain('--console-text-dim: #5c6370;')
+    expect(rendererCss).toContain('--console-accent: #56b6c2;')
   })
 
   it('renders a card enclosure with a recessed console display', () => {
-    expect(rendererCss).toMatch(/\.console-body\s*\{[\s\S]*?background:\s*var\(--card-bg\)/)
-    expect(rendererCss).toMatch(/\.console-box\s*\{[\s\S]*?background:\s*var\(--bg-deep\)/)
+    expect(rendererCss).toMatch(/\.console-body\s*\{[\s\S]*?background:\s*var\(--console-bg-window\)/)
+    expect(rendererCss).toMatch(/\.console-box\s*\{[\s\S]*?background:\s*var\(--console-bg-app\)/)
     expect(rendererCss).toMatch(/\.console-box\s*\{[\s\S]*?box-shadow:\s*inset/)
     expect(rendererCss).toMatch(/\.card-header\s*\{[\s\S]*?cursor:\s*grab/)
     // The rack hardware from the previous theme must stay collapsed.
