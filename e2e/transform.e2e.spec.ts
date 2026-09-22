@@ -210,7 +210,10 @@ test('Optimizer stage selection is contained and does not invoke a provider', as
     const spied = await app.evaluate(() => {
       const nodeModule = (process as unknown as { getBuiltinModule: (id: string) => unknown })
         .getBuiltinModule('node:module') as {
-        createRequire: (from: string) => (id: string) => Record<string, unknown>
+        createRequire: (from: string) => ((id: string) => Record<string, unknown>) & {
+          resolve: (id: string) => string
+          cache: Record<string, unknown>
+        }
       }
       const mainRequire = nodeModule.createRequire(
         `${process.cwd()}/dist-electron/desktop/main.js`,
@@ -224,6 +227,12 @@ test('Optimizer stage selection is contained and does not invoke a provider', as
       ]
       const patched: string[] = []
       for (const [id, names] of targets) {
+        // Patch only a module the app has already loaded. A fresh copy would be spied on
+        // while core.ts keeps calling the original, and the assertion would pass vacuously.
+        const resolved = mainRequire.resolve(id)
+        if (!(resolved in mainRequire.cache)) {
+          throw new Error(`Provider spy: ${id} is not in the app's module cache (${resolved})`)
+        }
         const moduleExports = mainRequire(id)
         for (const name of names) {
           const original = moduleExports[name]

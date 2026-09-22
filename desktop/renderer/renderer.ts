@@ -2691,6 +2691,16 @@ input?.addEventListener('keydown', (event) => {
 
 if (display) {
   resetConsoleView(display)
+  // The web font can finish loading after the last line was appended; that reflow
+  // changes scrollHeight and leaves the last line just above the fold on a cold start.
+  // Re-apply the end-of-transcript scroll once the fonts are in: after the initial load,
+  // and after every later load set (a weight is only fetched when first used). jsdom has
+  // no document.fonts, hence the guard.
+  const scrollToEnd = () => {
+    display.scrollTop = display.scrollHeight
+  }
+  document.fonts?.ready.then(scrollToEnd)
+  document.fonts?.addEventListener('loadingdone', scrollToEnd)
 }
 setExecutionState(false)
 void loadShellState()
