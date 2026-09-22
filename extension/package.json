@@ -21,7 +21,7 @@
   "devDependencies": {
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@vitejs/plugin-react": "^4.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
     "@wxt-dev/module-react": "^1.1.0",
     "autoprefixer": "^10.4.27",
     "postcss": "^8.5",
