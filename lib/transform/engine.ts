@@ -3,6 +3,7 @@
 // No external API calls — deterministic string builder
 
 import type { TransformRequest, ModelId, TransformMode } from './schemas'
+import { compileProfilePrompt, hasCompilerProfile } from './compiler'
 
 interface TransformResult {
   transformedPrompt: string
@@ -215,18 +216,47 @@ export function estimateTokens(text: string, model?: ModelId, locale?: 'id' | 'e
 }
 
 export function transformPrompt(request: TransformRequest): TransformResult {
-  const { prompt, model, mode, temperature, maxTokens, locale } = request
+  const {
+    prompt,
+    model = 'claude-sonnet',
+    mode = 'professional',
+    temperature = 0.7,
+    maxTokens = 1024,
+    locale = 'id',
+    profile,
+    effort = 'high',
+    target = 'general',
+  } = request
+
   const persona = MODE_PERSONAS[mode]
-  const modelHint = MODEL_HINTS[model]
   const intent = detectIntent(prompt)
   const intentInstruction = getIntentInstruction(intent, locale)
 
+  if (hasCompilerProfile(profile)) {
+    const transformedPrompt = compileProfilePrompt(profile, {
+      prompt,
+      mode,
+      locale,
+      temperature,
+      maxTokens,
+      effort,
+      target,
+      intent,
+      intentInstruction,
+      persona,
+    })
+    const tokensEstimate = estimateTokens(transformedPrompt, model, locale)
+    return { transformedPrompt, tokensEstimate }
+  }
+
+  const modelHint = MODEL_HINTS[model]
   const isClaudeModel = model === 'claude-sonnet' || model === 'claude-opus'
 
   const sections: string[] = []
 
   if (isClaudeModel) {
     sections.push(`<role>\n${persona.role}\n</role>`)
+
     sections.push(`<context>`)
     sections.push(`- Intent: ${intent}`)
     sections.push(`- Target audience: ${locale === 'id' ? 'Indonesia' : 'International'}`)

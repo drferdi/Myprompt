@@ -377,3 +377,20 @@ export const DesktopWorkspaceSnapshotSchema = z.object({
   benchmarks: z.array(DesktopBenchmarkCaseSchema).default([]),
 })
 export type DesktopWorkspaceSnapshot = z.infer<typeof DesktopWorkspaceSnapshotSchema>
+
+// ── Transform Feature Re-exports ─────────────────────────────────────────
+
+export {
+  CompilerProfile,
+  EffortLevel,
+  TransformTarget,
+  TransformRequestSchema,
+  TransformResponseSchema,
+  TransformErrorSchema,
+  HistoryItemSchema,
+  type CompilerProfile as CompilerProfileType,
+  type EffortLevel as EffortLevelType,
+  type TransformTarget as TransformTargetType,
+  type TransformRequest,
+  type TransformResponse,
+} from '../lib/transform/schemas'
