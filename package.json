@@ -41,7 +41,7 @@
     "@anthropic-ai/sdk": "^0.39.0",
     "@hookform/resolvers": "^3.9.0",
     "@mistralai/mistralai": "^1.5.0",
-    "@next/env": "15.5.24",
+    "@next/env": "16.3.5",
     "@phosphor-icons/react": "^2.1.10",
     "@prisma/client": "6.5.0",
     "@radix-ui/react-accordion": "1.2.2",
