@@ -1,4 +1,4 @@
-name: Refresh extension security lockfile
+name: Security audit probe
 
 on:
   push:
@@ -8,16 +8,13 @@ on:
       - .github/workflows/refresh-security-lockfile.yml
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  refresh-lockfile:
+  audit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: chore/dependency-security-hardening
-          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -28,18 +25,9 @@ jobs:
           version: 11.21.0
           run_install: false
 
-      - name: Regenerate extension lockfile
-        working-directory: extension
-        run: pnpm install --lockfile-only --no-frozen-lockfile
+      - name: Audit root
+        run: pnpm audit --audit-level high
 
-      - name: Commit extension lockfile
-        run: |
-          if git diff --quiet -- extension/pnpm-lock.yaml; then
-            echo "Extension lockfile already current."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add extension/pnpm-lock.yaml
-          git commit -m "chore(deps): refresh extension security lockfile"
-          git push
+      - name: Audit extension
+        working-directory: extension
+        run: pnpm audit --audit-level high
