@@ -283,11 +283,50 @@ function appendDesktopEnvWarning() {
   )
 }
 
-const DEFAULT_WINDOW = { width: 1280, height: 860, x: 0, y: 0 }
+// The window is sized in transcript columns and rows, never in fixed pixels. The renderer
+// measures the real character cell once its fonts are loaded and reports it over
+// 'window:fit-grid'; the chrome offsets below mirror index.css (title bar 30px, transcript
+// padding 10px 14px) so that columns × cell width + padding is the content width.
+const GRID_TARGET = { columns: 120, rows: 30 }
+const GRID_MIN = { columns: 80, rows: 20 }
+const CHROME = { titleBar: 30, padX: 14, padY: 10 }
+// JetBrains Mono at 13px / 1.45 measures 7.8 × 18.85; used when measurement fails (964×616).
+const FALLBACK_CELL = { width: 7.8, height: 18.85 }
+
+interface GridCell {
+  width: number
+  height: number
+}
+
+function gridToContentSize(cell: GridCell, grid: { columns: number; rows: number }) {
+  return {
+    width: Math.round(grid.columns * cell.width + CHROME.padX * 2),
+    height: Math.round(grid.rows * cell.height + CHROME.padY * 2 + CHROME.titleBar),
+  }
+}
+
+const DEFAULT_WINDOW = { ...gridToContentSize(FALLBACK_CELL, GRID_TARGET), x: 0, y: 0 }
+const FALLBACK_MIN_SIZE = gridToContentSize(FALLBACK_CELL, GRID_MIN)
 
 // Bumped whenever the default shell size changes, so a persisted size from an older
 // layout is discarded instead of pinning the window to the previous dimensions.
-const WINDOW_STATE_VERSION = 3
+// v4: the stored 1280×860 from the pixel-sized era is discarded for the grid fit.
+const WINDOW_STATE_VERSION = 4
+
+// The grid fit runs once, on the first launch with no persisted state at the current
+// version. After that the user's own size always wins.
+let windowStatePersisted = false
+let gridFitApplied = false
+
+function parseGridCell(payload: unknown): GridCell | null {
+  if (typeof payload !== 'object' || payload === null) return null
+  const { cellWidth, cellHeight } = payload as { cellWidth?: unknown; cellHeight?: unknown }
+  if (typeof cellWidth !== 'number' || typeof cellHeight !== 'number') return null
+  if (!Number.isFinite(cellWidth) || !Number.isFinite(cellHeight)) return null
+  // Sane monospace cells only: a 13px face is roughly 6–9px wide and 15–22px tall.
+  if (cellWidth < 3 || cellWidth > 30 || cellHeight < 6 || cellHeight > 60) return null
+  return { width: cellWidth, height: cellHeight }
+}
 
 function resolveWindowStatePath() {
   const baseDir = app.getPath('userData')
@@ -301,6 +340,7 @@ function loadWindowState(): typeof DEFAULT_WINDOW {
       const content = readFileSync(statePath, 'utf8')
       const saved = JSON.parse(content)
       if (saved?.version === WINDOW_STATE_VERSION) {
+        windowStatePersisted = true
         return {
           width: typeof saved.width === 'number' ? saved.width : DEFAULT_WINDOW.width,
           height: typeof saved.height === 'number' ? saved.height : DEFAULT_WINDOW.height,
@@ -354,8 +394,8 @@ function createWindow() {
       ? { x: winState.x, y: winState.y }
       : {}),
     resizable: true,
-    minWidth: 960,
-    minHeight: 600,
+    minWidth: FALLBACK_MIN_SIZE.width,
+    minHeight: FALLBACK_MIN_SIZE.height,
     frame: false,
     transparent: true,
     backgroundColor: '#00000000',
@@ -464,6 +504,40 @@ app.whenReady().then(() => {
     mainWindow?.minimize()
   })
   ipcMain.handle('window:get-pos', () => mainWindow?.getPosition())
+  // Renderer-measured character cell → window size in columns and rows. The minimum
+  // (80 × 20) is applied on every launch; the target (120 × 30) only on the first launch
+  // without persisted state, and it is persisted at once so later launches keep the user's
+  // own size. Only the shell's own renderer may call this, and only with a sane cell.
+  ipcMain.handle('window:fit-grid', (event, payload) => {
+    if (!mainWindow || isSmokeMode || event.sender.id !== mainWindow.webContents.id) {
+      return { applied: false, reason: 'rejected' }
+    }
+    const cell = parseGridCell(payload)
+    if (!cell) {
+      return { applied: false, reason: 'invalid-cell' }
+    }
+    const minimum = gridToContentSize(cell, GRID_MIN)
+    mainWindow.setMinimumSize(minimum.width, minimum.height)
+    if (windowStatePersisted || gridFitApplied) {
+      return {
+        applied: false,
+        reason: windowStatePersisted ? 'persisted' : 'already-applied',
+        minWidth: minimum.width,
+        minHeight: minimum.height,
+      }
+    }
+    const target = gridToContentSize(cell, GRID_TARGET)
+    mainWindow.setContentSize(target.width, target.height)
+    gridFitApplied = true
+    saveWindowState(mainWindow.getBounds())
+    return {
+      applied: true,
+      width: target.width,
+      height: target.height,
+      minWidth: minimum.width,
+      minHeight: minimum.height,
+    }
+  })
   ipcMain.on('window:set-pos', (_event, { x, y }: { x: number; y: number }) => {
     mainWindow?.setPosition(Math.round(x), Math.round(y))
   })

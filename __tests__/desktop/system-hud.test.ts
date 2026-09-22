@@ -81,6 +81,11 @@ describe('system telemetry', () => {
     expect(line.textContent).toContain('cpu=12.3%')
     expect(line.textContent).toContain('mem=10.4 / 32 GB')
     expect(line.textContent).toContain('uptime=01:01:11')
+    // Text after the six-character status prefix starts at column 7, so the second pair
+    // (column 40) sits at text index 33 and the fourth pair opens the second row.
+    const [firstRow, secondRow] = (line.textContent ?? '').split('\n')
+    expect(firstRow.indexOf('cpu=')).toBe(33)
+    expect(secondRow.indexOf('uptime=')).toBe(0)
   })
 
   it('invokes system:stats exactly once per stat command', async () => {

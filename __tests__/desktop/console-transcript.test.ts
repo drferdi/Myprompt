@@ -261,12 +261,65 @@ describe('console transcript command language', () => {
       `#display .line[data-request-id="${sentRequestId}"]`
     )
     expect(streamLine?.textContent).toContain('## ROLE')
-    // Result block order: body, trailing meta line, then the action line.
-    expect(streamLine?.nextElementSibling?.classList.contains('meta-line')).toBe(true)
-    expect(
-      streamLine?.nextElementSibling?.nextElementSibling?.classList.contains('tx-actions')
-    ).toBe(true)
+    // Result block order: body, one blank line, trailing meta line, then the action line.
+    const blank = streamLine?.nextElementSibling
+    expect(blank?.classList.contains('blank-line')).toBe(true)
+    expect(blank?.nextElementSibling?.classList.contains('meta-line')).toBe(true)
+    expect(blank?.nextElementSibling?.nextElementSibling?.classList.contains('tx-actions')).toBe(
+      true
+    )
     expect(document.querySelector('#display .line[data-request-status-id]')).toBeNull()
+  })
+
+  it('separates blocks with exactly one blank line, never two, never zero', async () => {
+    invoke.mockResolvedValue({ transformedPrompt: 'x' })
+
+    type('lane deep')
+    await vi.waitFor(() => expect(findLine('lane=deep')).toBeTruthy())
+    type('transform x')
+    await vi.waitFor(() => expect(findLine('Finished in')).toBeTruthy())
+    type('clear')
+    await vi.waitFor(() => expect(findLine('Finished in')).toBeUndefined())
+    type('mode')
+    await vi.waitFor(() => expect(findLine('mode=transform')).toBeTruthy())
+
+    const isBlank = (line: HTMLElement) =>
+      line.classList.contains('blank-line') || line.classList.contains('banner-blank')
+    const lines = transcriptLines()
+    // Never two: no blank line directly follows another.
+    for (let index = 1; index < lines.length; index += 1) {
+      expect(isBlank(lines[index]) && isBlank(lines[index - 1])).toBe(false)
+    }
+    // Never zero: every echoed command is preceded by a blank line, and the last block
+    // (the mode line) is closed by one before the prompt.
+    for (const echo of lines.filter((line) => line.classList.contains('type-user'))) {
+      expect(isBlank(echo.previousElementSibling as HTMLElement)).toBe(true)
+    }
+    const promptLine = document.getElementById('promptLine') as HTMLElement
+    expect(isBlank(promptLine.previousElementSibling as HTMLElement)).toBe(true)
+  })
+
+  it('lays label/value pairs out in fixed columns, the second pair at column 40', async () => {
+    // Content starts at column 3 (two-space margin), so column 40 is text index 37.
+    type('mode')
+    const modeLine = await vi.waitFor(() => {
+      const line = findLine('mode=optimize')
+      expect(line).toBeTruthy()
+      return line as HTMLElement
+    })
+    const [firstRow, secondRow] = (modeLine.textContent ?? '').split('\n')
+    expect(firstRow.indexOf('lane=')).toBe(37)
+    expect(firstRow.indexOf('profile=')).toBe(74)
+    expect(secondRow.indexOf('effort=')).toBe(0)
+    expect(secondRow.indexOf('output=')).toBe(37)
+
+    type('help')
+    const helpLine = await vi.waitFor(() => {
+      const line = findLine('Build a Coding Brief from a raw idea')
+      expect(line).toBeTruthy()
+      return line as HTMLElement
+    })
+    expect((helpLine.textContent ?? '').indexOf('Build a Coding Brief')).toBe(37)
   })
 
   it('renders result actions as accessible plain-text buttons', async () => {
@@ -304,7 +357,7 @@ describe('console transcript command language', () => {
     expect(banner.map((line) => line.textContent)).toEqual([
       `Sentra Prompt Console ${packageVersion}`,
       'Sentra Artificial Intelligence \u00b7 prompt engineering workspace',
-      '\u2500'.repeat(59),
+      '\u2500'.repeat(72),
       "Type your idea to build a Coding Brief, or 'help' for the command list.",
       '\u00a0',
     ])

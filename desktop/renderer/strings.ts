@@ -17,7 +17,8 @@ export function bannerTitle(version: string): string {
 
 export const bannerSubtitle = 'Sentra Artificial Intelligence · prompt engineering workspace'
 
-export const bannerRule = '─'.repeat(59)
+/** Decorative rules are 72 characters (the prose width), never the window width. */
+export const bannerRule = '─'.repeat(72)
 
 export const bannerHint = "Type your idea to build a Coding Brief, or 'help' for the command list."
 

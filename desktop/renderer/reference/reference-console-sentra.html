@@ -20,7 +20,6 @@
     --term-green:     #98c379;  /* prompt segments, ok     */
     --term-yellow:    #e5c07b;  /* git branch              */
     --term-cyan:      #56b6c2;  /* path segment            */
-    --term-mark:      #5b6b52;  /* iTerm mark badge        */
     --term-radius:    10px;
     --term-pad-x:     14px;
     --term-pad-y:     10px;
@@ -63,13 +62,8 @@
   .dot-close { background: #ff5f57; }
   .dot-min   { background: #febc2e; }
   .dot-zoom  { background: #28c840; }
-  .shortcut {
-    justify-self: start;
-    margin-left: 16px;
-    font-size: 11px;
-    color: var(--term-dim);
-  }
-  .title { font-size: 12px; color: var(--term-dim); }
+  /* One font size everywhere (Chief, 2026-09-23): the title uses the body size too. */
+  .title { font-size: var(--term-font-size); color: var(--term-dim); }
 
   /* ---- Status prefixes: same palette, content-zone meaning ---- */
   .ok    { color: var(--term-green);  font-weight: 700; }
@@ -89,32 +83,12 @@
     white-space: pre;
     overflow-x: auto;
   }
-  .row { display: flex; align-items: center; }
-  .row > .cmd { flex: 1 1 auto; }
-
-  /* Prompt: apple glyph, cyan path, green segment, yellow branch */
-  .apple  { color: var(--term-bright); }
-  .seg    { color: var(--term-cyan); }
+  /* Prompt: the app's own prompt text, green. It never prints a developer's shell
+     prompt (apple glyph, git branch) because it has no such information. */
+  .prompt { color: var(--term-green); }
   .seg-b  { color: var(--term-green); }
-  .branch { color: var(--term-yellow); }
   .dir    { color: var(--term-dir); font-weight: 700; }
   .bright { color: var(--term-bright); }
-
-  /* iTerm mark badge at the right edge of a command line */
-  .mark {
-    flex: 0 0 auto;
-    width: 26px;
-    height: 13px;
-    border-radius: 3px;
-    background: var(--term-mark);
-  }
-
-  /* ls output laid out in three columns, like the shell does */
-  .cols {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 220px));
-    column-gap: 40px;
-  }
 
   .caret {
     display: inline-block;
@@ -132,7 +106,6 @@
         <span class="dot dot-close"></span>
         <span class="dot dot-min"></span>
         <span class="dot dot-zoom"></span>
-        <span class="shortcut">&#8997;&#8984;1</span>
       </div>
       <div class="title">sentra prompt console</div>
       <div></div>
@@ -144,10 +117,10 @@
 Type your idea to build a Coding Brief, or 'help' for the command list.
 
 <span class="warn">warn</span>  Provider missing — add a provider key with 'key &lt;provider&gt; &lt;apikey&gt;'
-<div class="row"><span class="cmd"><span class="apple">&#63743;</span> <span class="seg">~ myprompt</span>  <span class="seg-b">&#9095;</span> <span class="branch">&#42371; main</span>  key anthropic sk-ant-&hellip;</span><span class="mark"></span></div>
-<span class="ok">ok</span>    provider=anthropic saved
-<div class="row"><span class="cmd"><span class="apple">&#63743;</span> <span class="seg">~ myprompt</span>  <span class="seg-b">&#9095;</span> <span class="branch">&#42371; main</span>  brief "optimizer returns truncated prompts as successful results"</span><span class="mark"></span></div>
-<span class="dim">task=coding  provider=anthropic  lane=interactive  model=claude-sonnet-4-6  output=coding_brief  3.4s</span>
+<span class="prompt">sentra ~/myprompt $ </span>key openai sk-&hellip;
+<span class="ok">ok</span>    provider=openai saved
+<span class="prompt">sentra ~/myprompt $ </span>brief "optimizer returns truncated prompts as successful results"
+<span class="dim">task=coding  provider=openai  lane=interactive  model=openai/gpt-5.6-luna  output=coding_brief  3.8s</span>
 
 <span class="head">## GOAL</span>
 Stop the optimizer from returning truncated prompts as successful results.
@@ -165,12 +138,15 @@ Expected: detected, then continued or flagged.
 fixture and expecting a truncation flag.
 
 <span class="head">## REPORT</span>
-Show each command you ran and its actual output.
-Do not claim a result you did not execute.
+- Read every file you reference before changing or describing it.
+- If a referenced file, function, or command does not exist, stop and ask.
+- Show each command you ran and its actual output.
+- Do not claim a result you did not execute.
+- List every file you changed and anything you left undone.
 
 <span class="ok">ok</span>    complete &middot; 5 sections &middot; 1 attempt
 <span class="dim">      [c] copy   [r] rerun   [e] evaluate   [l] library</span>
-<div class="row"><span class="cmd"><span class="apple">&#63743;</span> <span class="seg">~ myprompt</span>  <span class="seg-b">&#9095;</span> <span class="branch">&#42371; main</span>  <span class="caret"></span></span><span class="mark"></span></div></pre>
+<span class="prompt">sentra ~/myprompt $ </span><span class="caret"></span></pre>
   </div>
 </body>
 </html>

@@ -17,6 +17,20 @@ describe('Sentra console visual contract', () => {
     expect(rendererCss).toMatch(/\.line[\s\S]*?max-inline-size:\s*100%/)
   })
 
+  it('lays text out in character cells: one font size, a two-space margin, a six-character prefix column, 72-character prose', () => {
+    expect(rendererCss).toContain('--console-size-body: 13px;')
+    expect(rendererCss).toContain('--console-size-chrome: 13px;')
+    expect(rendererCss).toContain('--console-margin: 2ch;')
+    expect(rendererCss).toContain('--console-prefix: 6ch;')
+    expect(rendererCss).toContain('--console-prose: 72ch;')
+    expect(rendererCss).toMatch(/\.line\s*\{[\s\S]*?padding-left:\s*var\(--console-margin\)/)
+    expect(rendererCss).toMatch(
+      /\.line\.status-ok,\s*\.line\.status-warn,\s*\.line\.status-error\s*\{[\s\S]*?padding-left:\s*var\(--console-prefix\);[\s\S]*?text-indent:\s*calc\(-1 \* var\(--console-prefix\)\)/
+    )
+    expect(rendererCss).toMatch(/\.prompt-line\s*\{[\s\S]*?padding-left:\s*var\(--console-margin\)/)
+    expect(rendererCss).not.toMatch(/font-size:\s*1[0-2]px/)
+  })
+
   it('uses the approved console palette tokens', () => {
     expect(rendererCss).toContain('--console-bg-app: #282c34;')
     expect(rendererCss).toContain('--console-bg-window: #282c34;')
@@ -62,6 +76,8 @@ describe('Sentra console visual contract', () => {
       'banner-rule',
       'banner-hint',
       'banner-blank',
+      'blank-line',
+      'cell-probe',
     ]) {
       expect(rendererCss).toMatch(new RegExp(`\\.${cls}[\\s,:{)]`))
     }

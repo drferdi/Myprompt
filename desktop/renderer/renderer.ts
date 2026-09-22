@@ -1428,6 +1428,41 @@ function appendConsoleLine(
   return line
 }
 
+function isBlankLine(element: Element | null): boolean {
+  return (
+    element instanceof HTMLElement &&
+    element.classList.contains('line') &&
+    (element.classList.contains('blank-line') || element.classList.contains('banner-blank'))
+  )
+}
+
+function createBlankLine() {
+  const line = document.createElement('div')
+  line.className = 'line blank-line'
+  line.textContent = strings.bannerBlank
+  return line
+}
+
+/**
+ * Exactly one blank line between blocks: appends a blank line before the prompt unless the
+ * previous line already is one, so no path through the shell can print two in a row.
+ */
+function appendBlankLine(container: HTMLElement) {
+  const last =
+    promptLine && promptLine.parentNode === container
+      ? promptLine.previousElementSibling
+      : container.lastElementChild
+
+  if (isBlankLine(last)) {
+    return last as HTMLElement
+  }
+
+  const line = createBlankLine()
+  insertBeforePrompt(container, line)
+  container.scrollTop = container.scrollHeight
+  return line
+}
+
 /** Dim settings line; never a verdict. */
 function appendMetaLine(container: HTMLElement, text: string) {
   const line = document.createElement('div')
@@ -1821,6 +1856,52 @@ async function executeOptimizeStream(
   })
 }
 
+/**
+ * Measure the real character cell of the transcript font (a hidden run of 100 "M", width
+ * divided by 100; row height is font-size × line-height) and hand it to the main process,
+ * which sizes the window in columns and rows: the target on first run only, the minimum on
+ * every run. Skips silently when nothing can be measured (no fonts API, zero-sized layout).
+ */
+async function fitWindowToGrid(container: HTMLElement) {
+  const probe = document.createElement('span')
+  probe.className = 'cell-probe'
+  probe.setAttribute('aria-hidden', 'true')
+  probe.textContent = 'M'.repeat(100)
+  container.appendChild(probe)
+  const cellWidth = probe.getBoundingClientRect().width / 100
+  probe.remove()
+
+  const style = getComputedStyle(container)
+  const fontSize = parseFloat(style.fontSize)
+  const cellHeight = parseFloat(style.lineHeight)
+
+  if (!Number.isFinite(cellWidth) || cellWidth <= 0 || !Number.isFinite(cellHeight) || cellHeight <= 0) {
+    return
+  }
+
+  if (shell) {
+    shell.dataset.cellWidth = cellWidth.toFixed(3)
+    shell.dataset.cellHeight = cellHeight.toFixed(3)
+    shell.dataset.fontLoaded = String(
+      Boolean(document.fonts?.check?.(`${fontSize}px "JetBrains Mono"`))
+    )
+  }
+
+  try {
+    const result = await desktopWindow.sentraDesktop?.invoke?.('window:fit-grid', {
+      cellWidth,
+      cellHeight,
+    })
+    if (shell) {
+      shell.dataset.gridFit = isObjectRecord(result) ? JSON.stringify(result) : 'no-bridge'
+    }
+  } catch (error) {
+    if (shell) {
+      shell.dataset.gridFit = `error:${error instanceof Error ? error.message : String(error)}`
+    }
+  }
+}
+
 function resetConsoleView(container: HTMLElement) {
   for (const child of Array.from(container.childNodes)) {
     if (child !== promptLine) {
@@ -1877,7 +1958,47 @@ function tryParseStructuredDesktopResult(value: string): unknown {
   }
 }
 
-const META_FLAG_SEPARATOR = '  '
+/**
+ * Screen columns where label/value pairs sit, counted from the window edge: content starts
+ * at column 3 (two-space margin), the second pair at column 40, the third at 77. A line
+ * holds three pairs; more pairs continue on the next row at the same columns.
+ */
+const LABEL_COLUMNS = [3, 40, 77]
+
+/**
+ * Lay `label=value` pairs out in fixed-width columns. `firstColumn` is the screen column
+ * where the text starts: 3 for content, 7 for text after a status prefix. A pair too long
+ * for its column pushes the next one right by at least two spaces instead of overlapping.
+ */
+function formatLabelColumns(pairs: string[], firstColumn = LABEL_COLUMNS[0]): string {
+  const rows: string[] = []
+  let row = ''
+  let column = firstColumn
+  let slot = 0
+
+  for (const pair of pairs) {
+    if (slot === LABEL_COLUMNS.length) {
+      rows.push(row)
+      row = ''
+      column = firstColumn
+      slot = 0
+    }
+    if (slot > 0) {
+      const pad = Math.max(2, LABEL_COLUMNS[slot] - column)
+      row += ' '.repeat(pad)
+      column += pad
+    }
+    row += pair
+    column += pair.length
+    slot += 1
+  }
+
+  if (row) {
+    rows.push(row)
+  }
+
+  return rows.join('\n')
+}
 
 /** One text line for metadata.quality; `sectionCount` is the number of `## ` headings shown. */
 function formatQualityLine(quality: unknown, sectionCount?: number): string | null {
@@ -1902,11 +2023,11 @@ function countPromptSections(promptText: string): number {
 }
 
 /**
- * The meta line is one row of settings flags, never a verdict:
- * `task=coding  provider=anthropic  lane=interactive  model=<model>  output=coding_brief  3.4s`.
+ * The meta flags are settings, never a verdict:
+ * `task=coding  provider=openai  lane=interactive  model=<model>  output=coding_brief  3.8s`.
  * Quality and attempts live on the separate quality line.
  */
-function formatMetaFlags(metadata: Record<string, unknown>, lane?: DesktopOptimizeLane): string {
+function collectMetaFlags(metadata: Record<string, unknown>, lane?: DesktopOptimizeLane): string[] {
   const flags: string[] = []
 
   if (typeof metadata.taskType === 'string') {
@@ -1933,11 +2054,16 @@ function formatMetaFlags(metadata: Record<string, unknown>, lane?: DesktopOptimi
     flags.push(`${(metadata.latencyMs / 1000).toFixed(1)}s`)
   }
 
-  return flags.join(META_FLAG_SEPARATOR)
+  return flags
+}
+
+/** Meta flags laid out in label columns; rows are separate meta lines in the transcript. */
+function formatMetaFlags(metadata: Record<string, unknown>, lane?: DesktopOptimizeLane): string {
+  return formatLabelColumns(collectMetaFlags(metadata, lane))
 }
 
 function isMetaFlagLine(line: string): boolean {
-  return /^(task|provider|lane|model|output|code|tokens)=/.test(line)
+  return /^((task|provider|lane|model|output|code|tokens)=|\d+\.\d+s(\s|$))/.test(line)
 }
 
 function isQualityLine(line: string): boolean {
@@ -1957,16 +2083,21 @@ function splitTrailingResultLines(formattedText: string): { body: string; traili
     trailing.unshift(lines.pop() as string)
   }
 
-  return { body: lines.join('\n').trimEnd(), trailing }
+  // Exactly one blank line between blocks inside the body as well: collapse doubled blanks.
+  const body = lines.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd()
+  return { body, trailing }
 }
 
 /**
  * The meta line is settings (dim); the quality line is a verdict (coloured by status).
- * Both render as their own console lines right after the result block. Returns the last
- * element written so an action line can follow the whole result block.
+ * Both render as their own console lines after the result block, separated from the body
+ * by exactly one blank line. Returns the last element written so an action line can
+ * follow the whole result block.
  */
 function appendTrailingResultLines(afterLine: HTMLElement, trailing: string[]) {
-  let anchor = afterLine
+  const blank = createBlankLine()
+  afterLine.insertAdjacentElement('afterend', blank)
+  let anchor: HTMLElement = blank
 
   for (const text of trailing) {
     const line = document.createElement('div')
@@ -2070,12 +2201,12 @@ function formatDesktopResult(result: unknown): string {
         ? failure.message
         : 'Evaluator could not parse provider output.',
     ]
-    const metaFlags = [
-      typeof failure?.code === 'string' ? `code=${failure.code}` : null,
-      metadata ? formatMetaFlags(metadata) : null,
-    ]
-      .filter((flag): flag is string => Boolean(flag))
-      .join(META_FLAG_SEPARATOR)
+    const metaFlags = formatLabelColumns(
+      [
+        typeof failure?.code === 'string' ? `code=${failure.code}` : null,
+        ...(metadata ? collectMetaFlags(metadata) : []),
+      ].filter((flag): flag is string => Boolean(flag))
+    )
 
     if (metaFlags) {
       lines.push('', metaFlags)
@@ -2172,6 +2303,7 @@ async function loadShellState() {
       for (const badge of state?.badges ?? []) {
         if (badge.id === 'provider-missing') {
           appendConsoleLine(display, 'sys', strings.providerMissingBadge)
+          appendBlankLine(display)
         }
       }
     }
@@ -2214,24 +2346,24 @@ function stripQuotes(value: string) {
 
 function printHelp(container: HTMLElement) {
   for (const entry of strings.bareCommandCatalog) {
-    appendConsoleLine(container, 'sys', `${entry.usage}  ${entry.summary}`)
+    appendConsoleLine(container, 'sys', formatLabelColumns([entry.usage, entry.summary]))
   }
 
   for (const entry of COMMAND_CATALOG) {
-    appendConsoleLine(container, 'sys', `${entry.slash}  ${entry.summary}`)
+    appendConsoleLine(container, 'sys', formatLabelColumns([entry.slash, entry.summary]))
   }
 }
 
 function printModeLine(container: HTMLElement) {
   appendMetaLine(
     container,
-    [
+    formatLabelColumns([
       `mode=${currentMode}`,
       `lane=${currentOptimizerLane.toLowerCase()}`,
       `profile=${currentCompilerProfile}`,
       `effort=${currentEffortLevel}`,
       `output=${currentOutputKind.toLowerCase()}`,
-    ].join(META_FLAG_SEPARATOR)
+    ])
   )
 }
 
@@ -2324,7 +2456,15 @@ async function runStatCommand(container: HTMLElement) {
     appendConsoleLine(
       container,
       'sys',
-      `[DONE] heap=${stats.heapMb.toFixed(1)} MB  cpu=${stats.cpuPercent.toFixed(1)}%  mem=${stats.usedMemGb.toFixed(1)} / ${Math.round(stats.totalMemGb)} GB  uptime=${formatUptime(stats.uptimeSeconds)}`
+      `[DONE] ${formatLabelColumns(
+        [
+          `heap=${stats.heapMb.toFixed(1)} MB`,
+          `cpu=${stats.cpuPercent.toFixed(1)}%`,
+          `mem=${stats.usedMemGb.toFixed(1)} / ${Math.round(stats.totalMemGb)} GB`,
+          `uptime=${formatUptime(stats.uptimeSeconds)}`,
+        ],
+        7
+      )}`
     )
   } catch (error) {
     appendConsoleLine(container, 'sys', `[ERROR] ${formatDesktopErrorMessage(error)}`)
@@ -2421,6 +2561,7 @@ async function runInvocation(container: HTMLElement, invocation: DesktopInvocati
     }
 
     pendingLine.remove()
+    appendBlankLine(container)
     appendConsoleLine(container, 'agent', formatDesktopResult(result))
     appendConsoleLine(
       container,
@@ -2454,16 +2595,18 @@ async function runPromptCommand(
     const suggestion = suggestOptimizerConfig(rawValue)
     appendMetaLine(
       container,
-      [
-        `task=${suggestion.taskType.toLowerCase()}`,
-        `lane=${currentOptimizerLane.toLowerCase()}`,
-        `output=${outputKind.toLowerCase()}`,
-        suggestion.templateSlug ? `template=${suggestion.templateSlug}` : null,
-      ]
-        .filter((flag): flag is string => Boolean(flag))
-        .join(META_FLAG_SEPARATOR)
+      formatLabelColumns(
+        [
+          `task=${suggestion.taskType.toLowerCase()}`,
+          `lane=${currentOptimizerLane.toLowerCase()}`,
+          `output=${outputKind.toLowerCase()}`,
+          suggestion.templateSlug ? `template=${suggestion.templateSlug}` : null,
+        ].filter((flag): flag is string => Boolean(flag))
+      )
     )
   }
+  // The command header (echo plus meta) is one block; the result body is the next.
+  appendBlankLine(container)
 
   setExecutionState(true)
 
@@ -2671,6 +2814,7 @@ async function execute() {
   try {
     await runConsoleInput(display, value)
   } finally {
+    appendBlankLine(display)
     input.focus()
   }
 }
@@ -2699,7 +2843,10 @@ if (display) {
   const scrollToEnd = () => {
     display.scrollTop = display.scrollHeight
   }
-  document.fonts?.ready.then(scrollToEnd)
+  document.fonts?.ready.then(() => {
+    scrollToEnd()
+    void fitWindowToGrid(display)
+  })
   document.fonts?.addEventListener('loadingdone', scrollToEnd)
 }
 setExecutionState(false)

@@ -26,12 +26,21 @@
   --console-yellow: #e5c07b;
   --console-rule: rgba(255, 255, 255, 0.08);
 
-  /* Typography: JetBrains Mono everywhere, two sizes only */
+  /* Typography: JetBrains Mono everywhere, one size everywhere. Hierarchy comes from
+     colour and spacing only; the chrome token exists so the title bar keeps its own
+     leading, it never carries a different size. */
   --console-font: 'JetBrains Mono', 'Fira Code', monospace;
   --console-size-body: 13px;
   --console-leading-body: 1.45;
-  --console-size-chrome: 12px;
+  --console-size-chrome: 13px;
   --console-leading-chrome: 1.2;
+
+  /* Text layout, in character cells: content sits behind a two-space margin, a status
+     prefix hangs left in a fixed six-character column, prose wraps at 72 characters even
+     when the window fits 120. */
+  --console-margin: 2ch;
+  --console-prefix: 6ch;
+  --console-prose: 72ch;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -149,15 +158,39 @@ button, input {
 }
 
 /* ═══ TRANSCRIPT LINES ═══ */
-/* A line is one row of the transcript: no extra spacing, exactly like a <pre>. */
+/* A line is one row of the transcript: no extra spacing, exactly like a <pre>.
+   Content lines start two cells in; label rows (meta, help) may use the full width. */
 .line {
   position: relative;
   display: block;
   min-width: 0;
   max-inline-size: 100%;
+  padding-left: var(--console-margin);
   overflow-wrap: anywhere;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* Prose wraps at 72 characters: the margin is added because the box includes its padding. */
+.line.type-agent,
+.line.type-user,
+.line.banner-title,
+.line.banner-subtitle,
+.line.banner-hint {
+  max-inline-size: min(100%, calc(var(--console-prose) + var(--console-margin)));
+}
+
+/* Exactly one blank line between blocks; the row keeps its line box via a no-break space. */
+.line.blank-line {
+  min-height: calc(var(--console-size-body) * var(--console-leading-body));
+}
+
+/* Hidden run of 100 "M" used once at boot to measure the real character cell. */
+.cell-probe {
+  position: absolute;
+  visibility: hidden;
+  white-space: pre;
+  pointer-events: none;
 }
 
 .line.type-sys { color: var(--console-text-dim); }
@@ -171,11 +204,30 @@ button, input {
 }
 
 /* Result status prefixes: ok / warn / error, rendered as a coloured pseudo-element
-   so the DOM and the copied text stay unchanged. Each prefix is padded to the same
-   six-column width so the payloads line up, as in the reference. */
-.line.status-ok::before { content: 'ok    '; color: var(--console-success); font-weight: 700; }
-.line.status-warn::before { content: 'warn  '; color: var(--console-warn); font-weight: 700; }
-.line.status-error::before { content: 'error '; color: var(--console-error); font-weight: 700; }
+   so the DOM and the copied text stay unchanged. A status line starts at column 1: the
+   prefix hangs left in a fixed six-character column (hanging indent), so the text after
+   it always starts at column 7, on wrapped rows too. */
+.line.status-ok,
+.line.status-warn,
+.line.status-error {
+  padding-left: var(--console-prefix);
+  text-indent: calc(-1 * var(--console-prefix));
+  max-inline-size: min(100%, calc(var(--console-prose) + var(--console-prefix)));
+}
+
+.line.status-ok::before,
+.line.status-warn::before,
+.line.status-error::before {
+  display: inline-block;
+  width: var(--console-prefix);
+  text-indent: 0;
+  white-space: pre;
+  font-weight: 700;
+}
+
+.line.status-ok::before { content: 'ok    '; color: var(--console-success); }
+.line.status-warn::before { content: 'warn  '; color: var(--console-warn); }
+.line.status-error::before { content: 'error '; color: var(--console-error); }
 
 /* Meta line is settings, not a verdict; the quality line is the verdict. */
 .line.meta-line { color: var(--console-text-dim); }
@@ -231,6 +283,7 @@ button, input {
   display: flex;
   align-items: baseline;
   min-width: 0;
+  padding-left: var(--console-margin);
 }
 
 .prompt {
