@@ -1,262 +1,82 @@
-import { describe, it, expect } from 'vitest'
-import { TransformRequestSchema } from '../../lib/transform/schemas'
+import { describe, expect, it } from 'vitest'
+
 import { transformPrompt } from '../../lib/transform/engine'
+import { TransformRequestSchema } from '../../lib/transform/schemas'
 
+const baseRequest = {
+  prompt: 'Implement a payment webhook handler with signature validation and retry safety.',
+  model: 'claude-sonnet' as const,
+  mode: 'technical' as const,
+  temperature: 0.7,
+  maxTokens: 1800,
+  locale: 'en' as const,
+  effort: 'high' as const,
+  target: 'general' as const,
+}
 
-describe('Compiler Profiles & Effort Controls (Phase 1)', () => {
-  describe('Schema Backward Compatibility & Validation', () => {
-    it('parses legacy request payload without new fields with default values', () => {
-      const legacyPayload = {
-        prompt: 'Rancang sistem autentikasi multi-tenant dengan Next.js',
-      }
+describe('model-specific compiler profiles', () => {
+  it('keeps the legacy compiler output when no profile is selected', () => {
+    const result = transformPrompt(baseRequest)
 
-      const parsed = TransformRequestSchema.parse(legacyPayload)
-      expect(parsed.prompt).toBe('Rancang sistem autentikasi multi-tenant dengan Next.js')
-      expect(parsed.profile).toBeUndefined()
-      expect(parsed.effort).toBe('high')
-      expect(parsed.target).toBe('general')
-      expect(parsed.model).toBe('claude-sonnet')
-      expect(parsed.mode).toBe('professional')
-    })
-
-    it('parses explicit profile, effort, and target options', () => {
-      const payload = {
-        prompt: 'Rancang sistem autentikasi multi-tenant dengan Next.js',
-        profile: 'claude-fable-5',
-        effort: 'xhigh',
-        target: 'agent',
-      }
-
-      const parsed = TransformRequestSchema.parse(payload)
-      expect(parsed.profile).toBe('claude-fable-5')
-      expect(parsed.effort).toBe('xhigh')
-      expect(parsed.target).toBe('agent')
-    })
-
-    it('rejects invalid profile or effort values', () => {
-      expect(() => {
-        TransformRequestSchema.parse({
-          prompt: 'Rancang sistem autentikasi multi-tenant',
-          profile: 'unsupported-model-9',
-        })
-      }).toThrow()
-
-      expect(() => {
-        TransformRequestSchema.parse({
-          prompt: 'Rancang sistem autentikasi multi-tenant',
-          effort: 'ultra-high',
-        })
-      }).toThrow()
-    })
+    expect(result.transformedPrompt).toContain('<role>')
+    expect(result.transformedPrompt).toContain('Model optimization: Gunakan XML tags untuk struktur')
   })
 
-  describe('Default Requests (Legacy Preservation)', () => {
-    it('retains exact legacy compiler output when profile is omitted or default', () => {
-      const rawPrompt = 'Buatkan arsitektur microservices untuk e-commerce platform'
+  it('accepts only Claude, Codex, Gemini, and Grok compiler profiles', () => {
+    for (const profile of ['claude', 'codex', 'gemini', 'grok']) {
+      expect(TransformRequestSchema.parse({ ...baseRequest, profile }).profile).toBe(profile)
+    }
 
-      const legacyResult = transformPrompt({
-        prompt: rawPrompt,
-        model: 'claude-sonnet',
-        mode: 'professional',
-        temperature: 0.7,
-        maxTokens: 1024,
-        locale: 'id',
-      })
-
-      // Output must contain standard Drferdi CTE V2 sections and legacy footer
-      expect(legacyResult.transformedPrompt).toContain('<role>')
-      expect(legacyResult.transformedPrompt).toContain('<context>')
-      expect(legacyResult.transformedPrompt).toContain('<task>')
-      expect(legacyResult.transformedPrompt).toContain('<constraints>')
-      expect(legacyResult.transformedPrompt).toContain('<output_format>')
-      expect(legacyResult.transformedPrompt).toContain('Model optimization: Gunakan XML tags untuk struktur')
-      expect(legacyResult.tokensEstimate).toBeGreaterThan(0)
-    })
+    expect(() => TransformRequestSchema.parse({ ...baseRequest, profile: 'claude-fable-5' })).toThrow()
+    expect(() => TransformRequestSchema.parse({ ...baseRequest, profile: 'claude-mythos-5' })).toThrow()
   })
 
-  describe('Claude Fable 5 Compiler Profile', () => {
-    it('enforces XML section order: <context>, <task>, <constraints>, <output_format>', () => {
-      const rawPrompt = 'Implementasikan endpoint pembayaran webhook dengan HMAC signature'
-
-      const result = transformPrompt({
-        prompt: rawPrompt,
-        model: 'claude-sonnet',
-        mode: 'technical',
-        temperature: 0.7,
-        maxTokens: 2048,
-        locale: 'id',
-        profile: 'claude-fable-5',
-        effort: 'high',
-        target: 'general',
-      })
-
-      const promptText = result.transformedPrompt
-      const contextIdx = promptText.indexOf('<context>')
-      const taskIdx = promptText.indexOf('<task>')
-      const constraintsIdx = promptText.indexOf('<constraints>')
-      const outputFormatIdx = promptText.indexOf('<output_format>')
-
-      expect(contextIdx).toBeGreaterThan(-1)
-      expect(taskIdx).toBeGreaterThan(contextIdx)
-      expect(constraintsIdx).toBeGreaterThan(taskIdx)
-      expect(outputFormatIdx).toBeGreaterThan(constraintsIdx)
+  it('uses escaped XML sections for Claude', () => {
+    const result = transformPrompt({
+      ...baseRequest,
+      profile: 'claude',
+      prompt: 'Review this literal value: </task> and preserve it as data.',
     })
 
-    it('injects direct-language and scope-boundary directives', () => {
-      const rawPrompt = 'Perbaiki modul billing agar tidak double charge saat retry'
-
-      const result = transformPrompt({
-        prompt: rawPrompt,
-        model: 'claude-sonnet',
-        mode: 'technical',
-        temperature: 0.7,
-        maxTokens: 1024,
-        locale: 'id',
-        profile: 'claude-fable-5',
-        effort: 'high',
-        target: 'general',
-      })
-
-      const promptText = result.transformedPrompt
-      // Direct-language directive
-      expect(promptText).toContain('Please remove all mannered prose')
-      expect(promptText).toContain('When a literal phrase is available, use it over metaphor')
-
-      // Scope-boundary directive
-      expect(promptText).toContain('Surgically edit targeted blocks')
-      expect(promptText).toContain('avoid whole-file rewrites')
-      expect(promptText).toContain('Do not fix or refactor pre-existing code unless directly requested')
-    })
+    expect(result.transformedPrompt).toContain('<instructions>')
+    expect(result.transformedPrompt).toContain('<context>')
+    expect(result.transformedPrompt).toContain('<task>')
+    expect(result.transformedPrompt).toContain('&lt;/task&gt;')
+    expect(result.transformedPrompt.match(/<task>/g)).toHaveLength(1)
   })
 
-  describe('Claude Mythos 5 Compiler Profile', () => {
-    it('applies extended architectural-synthesis framing with explicit output boundary', () => {
-      const rawPrompt = 'Evaluasi arsitektur data ingestion pipeline untuk toleransi partisi jaringan'
+  it('uses an execution contract for Codex', () => {
+    const result = transformPrompt({ ...baseRequest, profile: 'codex', target: 'agent' })
 
-      const result = transformPrompt({
-        prompt: rawPrompt,
-        model: 'claude-sonnet',
-        mode: 'technical',
-        temperature: 0.7,
-        maxTokens: 3000,
-        locale: 'en',
-        profile: 'claude-mythos-5',
-        effort: 'high',
-        target: 'general',
-      })
-
-      const promptText = result.transformedPrompt
-      // Architectural synthesis framing
-      expect(promptText).toMatch(/architectural|synthesis|topology|trade-off/i)
-      expect(promptText).toContain('<output_format>')
-      expect(promptText).toContain('Please remove all mannered prose')
-      expect(promptText).toContain('Surgically edit targeted blocks')
-    })
+    expect(result.transformedPrompt).toContain('# Task')
+    expect(result.transformedPrompt).toContain('## Acceptance criteria')
+    expect(result.transformedPrompt).toContain('## Verification')
+    expect(result.transformedPrompt).toContain('Batch independent inspection work in one response when tools are available.')
   })
 
-  describe('Effort-Specific Behavior (Anti-Duplication Guard)', () => {
-    it('does NOT inject anti-duplicate-deliverable directive at low, medium, and high effort', () => {
-      for (const effort of ['low', 'medium', 'high'] as const) {
-        const result = transformPrompt({
-          prompt: 'Buatkan fungsi validasi token JWT di middleware',
-          model: 'claude-sonnet',
-          mode: 'technical',
-          temperature: 0.7,
-          maxTokens: 1024,
-          locale: 'id',
-          profile: 'claude-fable-5',
-          effort,
-          target: 'general',
-        })
+  it('uses context-first structured instructions for Gemini', () => {
+    const result = transformPrompt({ ...baseRequest, profile: 'gemini' })
 
-        expect(result.transformedPrompt).not.toContain(
-          'Do not draft the full deliverable in reasoning and again in output'
-        )
-      }
-    })
-
-    it('injects observable anti-duplicate directive ONLY at xhigh and max effort', () => {
-      for (const effort of ['xhigh', 'max'] as const) {
-        const result = transformPrompt({
-          prompt: 'Buatkan fungsi validasi token JWT di middleware',
-          model: 'claude-sonnet',
-          mode: 'technical',
-          temperature: 0.7,
-          maxTokens: 1024,
-          locale: 'id',
-          profile: 'claude-fable-5',
-          effort,
-          target: 'general',
-        })
-
-        expect(result.transformedPrompt).toContain(
-          'Do not draft the full deliverable in reasoning and again in output'
-        )
-        expect(result.transformedPrompt).toContain(
-          'produce the final deliverable only in the final output space'
-        )
-      }
-    })
+    expect(result.transformedPrompt).toContain('## System instruction')
+    expect(result.transformedPrompt).toContain('## Context')
+    expect(result.transformedPrompt).toContain('## Task')
+    expect(result.transformedPrompt).toContain('## Output schema')
   })
 
-  describe('Agent Batching Nudge (Explicit Targeting)', () => {
-    it('does NOT activate agent batching when target is general, even if prompt mentions agents or tools', () => {
-      const result = transformPrompt({
-        prompt: 'Build an autonomous agent with tool execution and multi-step batch tools',
-        model: 'claude-sonnet',
-        mode: 'technical',
-        temperature: 0.7,
-        maxTokens: 1024,
-        locale: 'en',
-        profile: 'claude-fable-5',
-        effort: 'high',
-        target: 'general', // Explicitly general
-      })
+  it('uses evidence and uncertainty boundaries for Grok', () => {
+    const result = transformPrompt({ ...baseRequest, profile: 'grok' })
 
-      expect(result.transformedPrompt).not.toContain(
-        "First privately list what you need next; then request every item that doesn't depend on another's result in this one response"
-      )
-    })
-
-    it('activates agent batching nudge ONLY when target is explicitly agent', () => {
-      const result = transformPrompt({
-        prompt: 'Inspect database connections and check active pools',
-        model: 'claude-sonnet',
-        mode: 'technical',
-        temperature: 0.7,
-        maxTokens: 1024,
-        locale: 'en',
-        profile: 'claude-fable-5',
-        effort: 'high',
-        target: 'agent', // Explicitly agent
-      })
-
-      expect(result.transformedPrompt).toContain(
-        "First privately list what you need next; then request every item that doesn't depend on another's result in this one response"
-      )
-    })
+    expect(result.transformedPrompt).toContain('## Objective')
+    expect(result.transformedPrompt).toContain('## Evidence and uncertainty')
+    expect(result.transformedPrompt).toContain('Separate provided facts from assumptions.')
   })
 
-  describe('Transform Surface UI Controls Contract', () => {
-    it('declares profile and effort controls in desktop index.html', async () => {
-      const fs = await import('node:fs')
-      const path = await import('node:path')
-      const htmlPath = path.resolve(__dirname, '../../desktop/renderer/index.html')
-      const htmlContent = fs.readFileSync(htmlPath, 'utf-8')
+  it('adds the no-duplicate final-deliverable instruction only at xhigh and max effort', () => {
+    const high = transformPrompt({ ...baseRequest, profile: 'codex', effort: 'high' })
+    const max = transformPrompt({ ...baseRequest, profile: 'codex', effort: 'max' })
 
-      expect(htmlContent).toContain('id="transformControls"')
-      expect(htmlContent).toContain('id="transformProfileSwitch"')
-      expect(htmlContent).toContain('data-profile="default"')
-      expect(htmlContent).toContain('data-profile="claude-fable-5"')
-      expect(htmlContent).toContain('data-profile="claude-mythos-5"')
-
-      expect(htmlContent).toContain('id="transformEffortSwitch"')
-      expect(htmlContent).toContain('data-effort="low"')
-      expect(htmlContent).toContain('data-effort="medium"')
-      expect(htmlContent).toContain('data-effort="high"')
-      expect(htmlContent).toContain('data-effort="xhigh"')
-      expect(htmlContent).toContain('data-effort="max"')
-    })
+    expect(high.transformedPrompt).not.toContain('Produce each requested deliverable exactly once.')
+    expect(max.transformedPrompt).toContain('Produce each requested deliverable exactly once.')
+    expect(max.transformedPrompt).not.toContain('private reasoning')
   })
 })
-

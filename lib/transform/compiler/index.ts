@@ -1,15 +1,21 @@
 import type { CompilerProfile } from '../schemas'
 import type { CompilerOptions, CompilerProfileHandler } from './types'
-import { fableCompiler } from './fable'
-import { mythosCompiler } from './mythos'
+import { claudeCompiler } from './claude'
+import { codexCompiler } from './codex'
+import { geminiCompiler } from './gemini'
+import { grokCompiler } from './grok'
 
 export * from './types'
-export * from './fable'
-export * from './mythos'
+export * from './claude'
+export * from './codex'
+export * from './gemini'
+export * from './grok'
 
 const COMPILER_PROFILES: Record<CompilerProfile, CompilerProfileHandler> = {
-  'claude-fable-5': fableCompiler,
-  'claude-mythos-5': mythosCompiler,
+  claude: claudeCompiler,
+  codex: codexCompiler,
+  gemini: geminiCompiler,
+  grok: grokCompiler,
 }
 
 export function hasCompilerProfile(profile?: string): profile is CompilerProfile {

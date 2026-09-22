@@ -283,6 +283,8 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 .status-panel-header strong {
@@ -292,6 +294,10 @@ html, body {
 }
 
 .status-label {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: right;
   font-size: 10px;
   padding: 2px 8px;
   border-radius: 12px;
@@ -302,6 +308,8 @@ html, body {
 }
 
 .status-copy {
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-size: 11px;
   color: var(--text-secondary);
   line-height: 1.4;
@@ -352,18 +360,22 @@ html, body {
 /* TRANSFORM CONTROLS (PROFILE & EFFORT) */
 .transform-controls-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  min-width: 0;
   margin-top: 6px;
   padding-top: 6px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .transform-control-group {
-  display: flex;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
   align-items: center;
   gap: 6px;
+  min-width: 0;
+  width: 100%;
 }
 
 .transform-control-label {
@@ -374,13 +386,18 @@ html, body {
 
 .transform-switch {
   display: flex;
+  flex-wrap: wrap;
   gap: 3px;
+  min-width: 0;
+  max-width: 100%;
   background: rgba(0, 0, 0, 0.3);
   padding: 2px;
   border-radius: 6px;
 }
 
 .transform-btn {
+  flex: 1 1 auto;
+  min-width: 0;
   padding: 3px 7px;
   font-size: 10px;
   border-radius: 4px;
@@ -409,6 +426,8 @@ html, body {
 .console-box {
   flex: 1;
   min-height: 0;
+  min-width: 0;
+  max-inline-size: 100%;
   background: var(--bg-deep);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
@@ -419,6 +438,8 @@ html, body {
   color: #9CDCFE;
   box-shadow: inset 2px 2px 5px var(--neu-dark), inset -2px -2px 4px var(--neu-light);
   overflow-y: auto;
+  overflow-x: auto;
+  overflow-wrap: anywhere;
   white-space: pre-wrap;
   word-break: break-word;
   margin-bottom: 12px;
@@ -646,6 +667,9 @@ html, body {
 /* ═══ CONSOLE OUTPUT LINES ═══ */
 .line {
   position: relative;
+  min-width: 0;
+  max-inline-size: 100%;
+  overflow-wrap: anywhere;
   margin-bottom: 4px;
   white-space: pre-wrap;
   word-break: break-word;
@@ -1016,12 +1040,16 @@ html, body {
   color: var(--accent);
 }
 
-.mini-status-copy { font-size: 10px; line-height: 1.4; color: var(--text-secondary); }
+.mini-status-copy { min-width: 0; overflow-wrap: anywhere; font-size: 10px; line-height: 1.4; color: var(--text-secondary); }
 
 .mini-console {
   min-height: 120px;
   max-height: 180px;
   overflow-y: auto;
+  overflow-x: auto;
+  min-width: 0;
+  max-inline-size: 100%;
+  overflow-wrap: anywhere;
   padding: 10px;
   background: var(--bg-deep);
   border: 1px solid rgba(255, 255, 255, 0.08);

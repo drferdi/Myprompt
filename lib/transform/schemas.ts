@@ -19,8 +19,10 @@ export const ModelId = z.enum([
 export const TransformMode = z.enum(['professional', 'creative', 'technical', 'academic', 'casual'])
 
 export const CompilerProfile = z.enum([
-  'claude-fable-5',
-  'claude-mythos-5',
+  'claude',
+  'codex',
+  'gemini',
+  'grok',
 ])
 
 export const EffortLevel = z.enum(['low', 'medium', 'high', 'xhigh', 'max'])

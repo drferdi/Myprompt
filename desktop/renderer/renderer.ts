@@ -338,7 +338,7 @@ const transformEffortButtons = Array.from(
 )
 
 let currentMode: DesktopPrimaryModeId = 'transform'
-let currentCompilerProfile: 'default' | 'claude-fable-5' | 'claude-mythos-5' = 'default'
+let currentCompilerProfile: 'default' | 'claude' | 'codex' | 'gemini' | 'grok' = 'default'
 let currentEffortLevel: 'low' | 'medium' | 'high' | 'xhigh' | 'max' = 'high'
 let currentOptimizerLane: DesktopOptimizeLane = 'INTERACTIVE'
 let currentProvider: DesktopLLMProvider | null = null
@@ -1059,7 +1059,13 @@ function buildPromptInvocation(
           model: 'claude-sonnet',
           mode: 'professional',
           temperature: 0.7,
-          maxTokens: 1024,
+          maxTokens: {
+            low: 700,
+            medium: 1200,
+            high: 1800,
+            xhigh: 2600,
+            max: 3200,
+          }[currentEffortLevel],
           locale: 'id',
           profile: currentCompilerProfile === 'default' ? undefined : currentCompilerProfile,
           effort: currentEffortLevel,
@@ -1978,7 +1984,7 @@ async function executeOptimizeStream(
       }
 
       statusLine.textContent = `[STATE] ${payload.message}`
-      if (payload.message === 'waiting') {
+      if (payload.stage === 'waiting') {
         startScramble()
       }
       container.scrollTop = container.scrollHeight
@@ -2061,7 +2067,15 @@ async function executeOptimizeStream(
       clearScramble()
       clearOptimizeTransientFailureArtifacts(requestId)
       cleanup()
-      reject(new Error(payload.message))
+      const failure = payload.failure
+      const safeFailureMessage =
+        isObjectRecord(failure) &&
+        typeof failure.code === 'string' &&
+        typeof failure.publicMessage === 'string'
+          ? `[${failure.code}] ${failure.publicMessage}`
+          : payload.message
+
+      reject(new Error(safeFailureMessage))
     }
 
     onStream('optimize:status', handleStatus)
@@ -2675,7 +2689,7 @@ for (const button of optimizerLaneButtons) {
 }
 
 function updateCompilerProfile(
-  nextProfile: 'default' | 'claude-fable-5' | 'claude-mythos-5'
+  nextProfile: 'default' | 'claude' | 'codex' | 'gemini' | 'grok'
 ) {
   currentCompilerProfile = nextProfile
   for (const button of transformProfileButtons) {
@@ -2702,8 +2716,10 @@ for (const button of transformProfileButtons) {
   button.addEventListener('click', () => {
     const p = (button.dataset.profile || 'default') as
       | 'default'
-      | 'claude-fable-5'
-      | 'claude-mythos-5'
+      | 'claude'
+      | 'codex'
+      | 'gemini'
+      | 'grok'
     updateCompilerProfile(p)
   })
 }

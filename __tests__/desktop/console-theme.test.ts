@@ -12,6 +12,13 @@ const rendererHtml = readFileSync(
 )
 
 describe('Sentra console visual contract', () => {
+  it('contains long output without expanding the desktop layout', () => {
+    expect(rendererCss).toMatch(/\.console-box[\s\S]*?overflow-wrap:\s*anywhere/)
+    expect(rendererCss).toMatch(/\.mini-console[\s\S]*?overflow-wrap:\s*anywhere/)
+    expect(rendererCss).toMatch(/\.line[\s\S]*?max-inline-size:\s*100%/)
+    expect(rendererCss).toMatch(/\.status-copy[\s\S]*?overflow-wrap:\s*anywhere/)
+  })
+
   it('uses the approved Sentra DesignOption material tokens', () => {
     expect(rendererCss).toContain('--bg-deep: #0D0F14;')
     expect(rendererCss).toContain('--card-bg: #161922;')

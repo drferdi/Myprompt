@@ -30,6 +30,12 @@ import { transformPrompt } from '../../lib/transform/engine'
 import { TransformRequestSchema } from '../../lib/transform/schemas'
 import { EvaluateRequestSchema, OptimizeRequestSchema } from '../../types'
 
+import {
+  classifyOptimizerFailure,
+  modelAccessFailure,
+  quotaExceededFailure,
+} from './optimizer-failure'
+
 import { listDesktopBenchmarks, runDesktopBenchmark, saveDesktopBenchmark } from './benchmark'
 import { createDesktopPrompt, listDesktopPrompts, listDesktopTemplates } from './library'
 import { handleProviderCommand } from './provider-keys'
@@ -243,28 +249,6 @@ function buildDesktopCommandAccessError(command: string, error: unknown) {
   return null
 }
 
-function buildDesktopStreamErrorMessage(command: string, error: unknown) {
-  const accessError = buildDesktopCommandAccessError(command, error)
-
-  if (accessError) {
-    return accessError.message
-  }
-
-  if (error instanceof Error) {
-    const normalized = error.message.trim()
-
-    if (
-      normalized &&
-      !normalized.toLowerCase().includes('api key') &&
-      !normalized.toLowerCase().includes('sk-')
-    ) {
-      return normalized
-    }
-  }
-
-  return 'Optimizer gagal dijalankan. Periksa konfigurasi provider desktop lalu coba lagi.'
-}
-
 async function streamOptimizeCommand(
   event: IpcMainInvokeEvent,
   payload: unknown,
@@ -275,6 +259,7 @@ async function streamOptimizeCommand(
     Object.entries(normalizeDesktopPayload(payload)).filter(([key]) => key !== 'requestId')
   ) as DesktopOptimizeCommandPayload
   const optimizerLane = resolveOptimizeLane(optimizePayload)
+  let failureStage: 'prepare' | 'stream' = 'prepare'
 
   try {
     event.sender.send('optimize:status', {
@@ -296,7 +281,8 @@ async function streamOptimizeCommand(
       if (!quota.allowed) {
         event.sender.send('optimize:error', {
           requestId,
-          message: 'Batas optimisasi harian tercapai',
+          message: quotaExceededFailure.publicMessage,
+          failure: quotaExceededFailure,
         })
         return
       }
@@ -305,7 +291,8 @@ async function streamOptimizeCommand(
       if (!checkModelAccess(tier, modelId)) {
         event.sender.send('optimize:error', {
           requestId,
-          message: 'Model ini tidak tersedia di tier Anda',
+          message: modelAccessFailure.publicMessage,
+          failure: modelAccessFailure,
         })
         return
       }
@@ -323,6 +310,7 @@ async function streamOptimizeCommand(
       message: buildOptimizeStatusMessage(optimizerLane, 'waiting'),
     })
 
+    failureStage = 'stream'
     let didSendStreamingStatus = false
     const response = await optimizePromptStreaming(request, (delta) => {
       if (!didSendStreamingStatus && delta.trim().length > 0) {
@@ -338,9 +326,11 @@ async function streamOptimizeCommand(
 
     event.sender.send('optimize:done', { requestId, response })
   } catch (error) {
+    const failure = classifyOptimizerFailure(error, failureStage)
     event.sender.send('optimize:error', {
       requestId,
-      message: buildDesktopStreamErrorMessage('optimize:run', error),
+      message: failure.publicMessage,
+      failure,
     })
   }
 }
