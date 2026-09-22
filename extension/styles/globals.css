@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    background: #0D0F14;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: #F2F4F7;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    width: 420px;
+    min-height: 200px;
+    background: #0D0F14;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  #root {
+    width: 100%;
+    min-height: 200px;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  /* Smooth focus transitions */
+  textarea:focus, button:focus-visible {
+    outline: none;
+  }
+
+  /* Selection color */
+  ::selection {
+    background: rgba(124, 58, 237, 0.3);
+    color: white;
+  }
+}
+
+@layer utilities {
+  .transition-all {
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
