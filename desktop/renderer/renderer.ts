@@ -1,3 +1,5 @@
+import * as strings from './strings'
+
 type DesktopPrimaryModeId = 'transform' | 'optimize'
 type DesktopOptimizeLane = 'INTERACTIVE' | 'DEEP'
 type DesktopCompilerProfile = 'default' | 'claude' | 'codex' | 'gemini' | 'grok'
@@ -162,99 +164,81 @@ const COMMAND_CATALOG: DesktopCommandCatalogEntry[] = [
   {
     id: 'help.show',
     slash: '/help',
-    summary: 'Show available commands and badges',
+    summary: strings.summaryHelpShow,
     transportCommand: 'help:show',
   },
   {
     id: 'evaluate',
     slash: '/evaluate <text>',
-    summary: 'Evaluate a prompt body with the current provider',
+    summary: strings.summaryEvaluate,
     transportCommand: 'evaluate:run',
   },
   {
     id: 'library.list',
     slash: '/library',
-    summary: 'List saved library prompts',
+    summary: strings.summaryLibraryList,
     transportCommand: 'library:list',
   },
   {
     id: 'library.search',
     slash: '/library search <query>',
-    summary: 'Search saved library prompts',
+    summary: strings.summaryLibrarySearch,
     transportCommand: 'library:search',
   },
   {
     id: 'library.save',
     slash: '/library save',
-    summary: 'Save the current output to Library',
+    summary: strings.summaryLibrarySave,
     transportCommand: 'library:save',
   },
   {
     id: 'draft.save',
     slash: '/draft save',
-    summary: 'Save the current run as a local draft',
+    summary: strings.summaryDraftSave,
     transportCommand: 'draft:save',
   },
   {
     id: 'recent.list',
     slash: '/recent',
-    summary: 'Show recent runs and saved benchmarks',
+    summary: strings.summaryRecentList,
     transportCommand: 'recent:list',
   },
   {
     id: 'benchmark.list',
     slash: '/benchmark list',
-    summary: 'List saved benchmark cases',
+    summary: strings.summaryBenchmarkList,
     transportCommand: 'benchmark:list',
   },
   {
     id: 'benchmark.save',
     slash: '/benchmark save',
-    summary: 'Save the current run as a benchmark case',
+    summary: strings.summaryBenchmarkSave,
     transportCommand: 'benchmark:save',
   },
   {
     id: 'benchmark.run',
     slash: '/benchmark run <id>',
-    summary: 'Run one saved benchmark case',
+    summary: strings.summaryBenchmarkRun,
     transportCommand: 'benchmark:run',
   },
   {
     id: 'provider.list',
     slash: '/provider',
-    summary: 'Show provider key status',
+    summary: strings.summaryProviderList,
     transportCommand: 'provider:list',
   },
   {
     id: 'usage.summary',
     slash: '/usage',
-    summary: 'Show current quota usage and tier',
+    summary: strings.summaryUsageSummary,
     transportCommand: 'usage:summary',
   },
   {
     id: 'subscription.upgrade',
     slash: '/subscription upgrade <tier> <interval>',
-    summary: 'Start a desktop upgrade checkout flow',
+    summary: strings.summarySubscriptionUpgrade,
     transportCommand: 'subscription:upgrade',
   },
-]
-
-/** Bare (non-slash) console words. Everything reachable without a slash lives here. */
-const BARE_COMMAND_CATALOG: Array<{ usage: string; summary: string }> = [
-  { usage: 'brief <teks>', summary: 'Susun Coding Brief dari ide mentah' },
-  { usage: 'super <teks>', summary: 'Susun Super Prompt dari ide mentah' },
-  { usage: 'transform <teks>', summary: 'Bungkus prompt mentah dengan scaffold deterministik' },
-  { usage: 'lane <interactive|deep>', summary: 'Pilih lane optimizer' },
-  { usage: 'profile <default|claude|codex|gemini|grok>', summary: 'Pilih compiler profile' },
-  { usage: 'effort <low|medium|high|xhigh|max>', summary: 'Pilih effort level transform' },
-  { usage: 'log', summary: 'Tampilkan run terbaru dan benchmark tersimpan' },
-  { usage: 'key <PROVIDER> <apiKey>', summary: 'Simpan provider key, atau tampilkan statusnya' },
-  { usage: 'stat', summary: 'Tampilkan telemetri proses desktop sekali' },
-  { usage: 'mode', summary: 'Tampilkan mode, lane, profile, effort, dan output aktif' },
-  { usage: 'copy', summary: 'Salin hasil terakhir ke clipboard' },
-  { usage: 'clear', summary: 'Bersihkan transkrip' },
-  { usage: 'help', summary: 'Tampilkan daftar perintah' },
-  { usage: 'quit', summary: 'Tutup jendela desktop' },
 ]
 
 const COMPILER_PROFILES: DesktopCompilerProfile[] = [
@@ -679,7 +663,7 @@ async function evaluateRecentRecord(record: DesktopRecentRunRecord) {
   setExecutionState(true)
   const started = Date.now()
   appendConsoleLine(display, 'user', '/evaluate saved output')
-  appendConsoleLine(display, 'sys', '[WAIT] Evaluator sedang memproses output tersimpan...')
+  appendConsoleLine(display, 'sys', strings.evaluatorPending)
 
   try {
     const result = await desktopWindow.sentraDesktop?.invoke?.('desktop:command', {
@@ -701,7 +685,7 @@ async function evaluateRecentRecord(record: DesktopRecentRunRecord) {
     appendConsoleLine(
       display,
       'sys',
-      `[DONE] Evaluasi selesai dalam ${Math.round((Date.now() - started) / 1000)}s`
+      strings.evaluationFinishedIn(Math.round((Date.now() - started) / 1000))
     )
   } catch (error) {
     appendConsoleLine(display, 'sys', `[ERROR] ${formatDesktopErrorMessage(error)}`)
@@ -719,7 +703,7 @@ async function runBenchmarkRecord(record: DesktopBenchmarkRecord) {
   setExecutionState(true)
   const started = Date.now()
   appendConsoleLine(display, 'user', `/benchmark run ${record.id}`)
-  appendConsoleLine(display, 'sys', '[WAIT] Benchmark sedang menjalankan acceptance harness...')
+  appendConsoleLine(display, 'sys', strings.benchmarkPending)
 
   try {
     const result = await desktopWindow.sentraDesktop?.invoke?.('desktop:command', {
@@ -734,7 +718,7 @@ async function runBenchmarkRecord(record: DesktopBenchmarkRecord) {
     appendConsoleLine(
       display,
       'sys',
-      `[DONE] Benchmark selesai dalam ${Math.round((Date.now() - started) / 1000)}s`
+      strings.benchmarkFinishedIn(Math.round((Date.now() - started) / 1000))
     )
   } catch (error) {
     appendConsoleLine(display, 'sys', `[ERROR] ${formatDesktopErrorMessage(error)}`)
@@ -832,7 +816,7 @@ function buildCommandInvocation(
 
   if (parsed.command === 'library.save') {
     if (!lastRunRecord) {
-      throw new Error('Tidak ada output terbaru untuk disimpan ke library.')
+      throw new Error(strings.noOutputForLibrary)
     }
 
     return {
@@ -860,7 +844,7 @@ function buildCommandInvocation(
 
   if (parsed.command === 'draft.save') {
     if (!lastRunRecord) {
-      throw new Error('Tidak ada output terbaru untuk disimpan sebagai draft.')
+      throw new Error(strings.noOutputForDraft)
     }
 
     return {
@@ -889,7 +873,7 @@ function buildCommandInvocation(
 
   if (parsed.command === 'benchmark.save') {
     if (!lastRunRecord) {
-      throw new Error('Tidak ada output terbaru untuk disimpan sebagai benchmark.')
+      throw new Error(strings.noOutputForBenchmark)
     }
 
     return {
@@ -913,7 +897,7 @@ function buildCommandInvocation(
     const benchmarkId = parsed.args[0]?.trim()
 
     if (!benchmarkId) {
-      throw new Error('Benchmark run memerlukan benchmark id.')
+      throw new Error(strings.benchmarkRunNeedsId)
     }
     const provider = requireActiveDesktopProvider()
 
@@ -1029,7 +1013,7 @@ function buildCommandInvocation(
     }
   }
 
-  throw new Error(`Unsupported command: ${parsed.command}`)
+  throw new Error(strings.unsupportedCommand(parsed.command))
 }
 
 function extractCopyableText(formattedText: string): string {
@@ -1106,14 +1090,14 @@ function withTransientSaveState(
     }
 
     button.disabled = true
-    button.textContent = 'Saving...'
+    button.textContent = strings.transientSaving
 
     try {
       const note = await run()
-      button.textContent = 'Saved'
+      button.textContent = strings.transientSaved
       appendConsoleLine(display, 'sys', note)
     } catch (error) {
-      button.textContent = 'Failed'
+      button.textContent = strings.transientFailed
       appendConsoleLine(display, 'sys', `[ERROR] ${formatDesktopErrorMessage(error)}`)
     } finally {
       window.setTimeout(() => {
@@ -1127,19 +1111,19 @@ function withTransientSaveState(
 function buildResultActions(copyText: string, runRecord?: DesktopRunRecord): ConsoleAction[] {
   const actions: ConsoleAction[] = [
     {
-      label: '[c] salin',
-      ariaLabel: 'Salin hasil',
+      label: strings.actionCopyLabel,
+      ariaLabel: strings.actionCopyAria,
       handler: (button) => {
         navigator.clipboard
           .writeText(extractCopyableText(copyText))
           .then(() => {
-            button.textContent = '[c] tersalin'
+            button.textContent = strings.actionCopiedLabel
             window.setTimeout(() => {
-              button.textContent = '[c] salin'
+              button.textContent = strings.actionCopyLabel
             }, 1500)
           })
           .catch(() => {
-            button.textContent = '[c] gagal'
+            button.textContent = strings.actionCopyFailedLabel
           })
       },
     },
@@ -1150,9 +1134,9 @@ function buildResultActions(copyText: string, runRecord?: DesktopRunRecord): Con
   }
 
   actions.push({
-    label: '[l] library',
-    ariaLabel: 'Simpan ke library',
-    handler: withTransientSaveState('[l] library', async () => {
+    label: strings.actionLibraryLabel,
+    ariaLabel: strings.actionLibraryAria,
+    handler: withTransientSaveState(strings.actionLibraryLabel, async () => {
       const result = await desktopWindow.sentraDesktop?.invoke?.('desktop:command', {
         command: 'library:save',
         payload: {
@@ -1172,14 +1156,14 @@ function buildResultActions(copyText: string, runRecord?: DesktopRunRecord): Con
           ? result.prompt.id
           : 'saved'
 
-      return `[SAVED] Library item ${promptId} created.`
+      return strings.libraryItemCreatedNotice(promptId)
     }),
   })
 
   actions.push({
-    label: '[d] draft',
-    ariaLabel: 'Simpan sebagai draft',
-    handler: withTransientSaveState('[d] draft', async () => {
+    label: strings.actionDraftLabel,
+    ariaLabel: strings.actionDraftAria,
+    handler: withTransientSaveState(strings.actionDraftLabel, async () => {
       const result = await desktopWindow.sentraDesktop?.invoke?.('desktop:command', {
         command: 'draft:save',
         payload: {
@@ -1194,14 +1178,14 @@ function buildResultActions(copyText: string, runRecord?: DesktopRunRecord): Con
           ? result.draft.id
           : 'draft'
 
-      return `[DRAFT] Saved as ${draftId}.`
+      return strings.draftSavedNotice(draftId)
     }),
   })
 
   actions.push({
-    label: '[b] benchmark',
-    ariaLabel: 'Simpan sebagai benchmark',
-    handler: withTransientSaveState('[b] benchmark', async () => {
+    label: strings.actionBenchmarkLabel,
+    ariaLabel: strings.actionBenchmarkAria,
+    handler: withTransientSaveState(strings.actionBenchmarkLabel, async () => {
       const result = await desktopWindow.sentraDesktop?.invoke?.('desktop:command', {
         command: 'benchmark:save',
         payload: {
@@ -1221,13 +1205,13 @@ function buildResultActions(copyText: string, runRecord?: DesktopRunRecord): Con
           ? result.benchmark.id
           : 'benchmark'
 
-      return `[BENCHMARK] Saved as ${benchmarkId}. Jalankan /benchmark run ${benchmarkId} kapan saja.`
+      return strings.benchmarkSavedNotice(benchmarkId)
     }),
   })
 
   actions.push({
-    label: '[r] susun ulang',
-    ariaLabel: 'Susun ulang',
+    label: strings.actionRerunLabel,
+    ariaLabel: strings.actionRerunAria,
     handler: () => {
       if (!input || isExecuting) {
         return
@@ -1245,20 +1229,20 @@ function buildResultActions(copyText: string, runRecord?: DesktopRunRecord): Con
   })
 
   actions.push({
-    label: '[e] evaluasi',
-    ariaLabel: 'Evaluasi hasil',
+    label: strings.actionEvaluateLabel,
+    ariaLabel: strings.actionEvaluateAria,
     handler: async (button) => {
       if (!desktopWindow.sentraDesktop?.invoke || !display || isExecuting) {
         return
       }
 
       button.disabled = true
-      button.textContent = 'Running...'
+      button.textContent = strings.transientRunning
       setExecutionState(true)
 
       const started = Date.now()
       appendConsoleLine(display, 'user', '/evaluate saved output')
-      appendConsoleLine(display, 'sys', '[WAIT] Evaluator sedang memproses output tersimpan...')
+      appendConsoleLine(display, 'sys', strings.evaluatorPending)
 
       try {
         const result = await desktopWindow.sentraDesktop.invoke('desktop:command', {
@@ -1273,14 +1257,14 @@ function buildResultActions(copyText: string, runRecord?: DesktopRunRecord): Con
         appendConsoleLine(
           display,
           'sys',
-          `[DONE] Evaluasi selesai dalam ${Math.round((Date.now() - started) / 1000)}s`
+          strings.evaluationFinishedIn(Math.round((Date.now() - started) / 1000))
         )
       } catch (error) {
         appendConsoleLine(display, 'sys', `[ERROR] ${formatDesktopErrorMessage(error)}`)
       } finally {
         setExecutionState(false)
         button.disabled = false
-        button.textContent = '[e] evaluasi'
+        button.textContent = strings.actionEvaluateLabel
         input?.focus()
       }
     },
@@ -1455,6 +1439,32 @@ function appendMetaLine(container: HTMLElement, text: string) {
   return line
 }
 
+/** Banner rows carry no status prefix; they are chrome, not verdicts. */
+function appendBannerLine(container: HTMLElement, cls: string, text: string) {
+  const line = document.createElement('div')
+  line.className = `line banner-${cls}`
+  line.textContent = text
+  insertBeforePrompt(container, line)
+  container.scrollTop = container.scrollHeight
+  return line
+}
+
+/** Build-time substituted meta tag; empty until the build step fills it in. */
+const VERSION_PLACEHOLDER = '__SENTRA_VERSION__'
+
+function readAppVersion(): string {
+  const raw = document
+    .querySelector('meta[name="sentra-version"]')
+    ?.getAttribute('content')
+    ?.trim()
+
+  if (!raw || raw === VERSION_PLACEHOLDER) {
+    return ''
+  }
+
+  return raw
+}
+
 function syncOptimizerLaneModelPresentation() {
   const laneState = optimizerLaneStates[currentOptimizerLane]
 
@@ -1469,10 +1479,10 @@ function requireActiveDesktopProvider(): DesktopLLMProvider {
   }
 
   if (providerReadinessStatus === 'resolving') {
-    throw new Error('Provider desktop sedang diverifikasi. Tunggu hingga status provider siap.')
+    throw new Error(strings.providerResolving)
   }
 
-  throw new Error('Tidak ada provider desktop yang siap. Tambahkan provider key lalu jalankan ulang desktop shell.')
+  throw new Error(strings.providerUnavailable)
 }
 
 function setExecutionState(running: boolean) {
@@ -1485,11 +1495,16 @@ function setExecutionState(running: boolean) {
 
 function buildPendingLabel() {
   if (currentMode === 'transform') {
-    return 'Transform sedang memproses prompt...'
+    return strings.transformPendingLabel
   }
 
-  const laneLabel = currentOptimizerLane === 'INTERACTIVE' ? 'Interactive' : 'Deep'
-  return `Optimizer ${laneLabel} berjalan di ${currentProvider ?? 'provider-unavailable'}/${currentModelLabel}...`
+  const laneLabel =
+    currentOptimizerLane === 'INTERACTIVE' ? strings.laneLabelInteractive : strings.laneLabelDeep
+  return strings.optimizerPendingLabel(
+    laneLabel,
+    currentProvider ?? 'provider-unavailable',
+    currentModelLabel
+  )
 }
 
 function isOptimizeInvocation(invocation: DesktopInvocation) {
@@ -1529,7 +1544,7 @@ function ensureOptimizeStatusLine(container: HTMLElement, requestId: string) {
   const line = document.createElement('div')
   line.className = 'line type-sys status-warn'
   line.dataset.requestStatusId = requestId
-  line.textContent = 'Menyiapkan Optimizer...'
+  line.textContent = strings.preparingOptimizer
   insertBeforePrompt(container, line)
   container.scrollTop = container.scrollHeight
   activeOptimizeStatusLines.set(requestId, line)
@@ -1578,7 +1593,7 @@ async function executeOptimizeStream(
   const offStream = desktopWindow.sentraDesktop?.offStream
 
   if (!onStream || !offStream) {
-    throw new Error('Desktop stream bridge not ready yet.')
+    throw new Error(strings.streamBridgeNotReady)
   }
 
   // ── Scramble decode state (scoped per request) ──
@@ -1796,12 +1811,12 @@ async function executeOptimizeStream(
         ) {
           clearOptimizeTransientFailureArtifacts(requestId)
           cleanup()
-          reject(new Error('Desktop stream request mismatch.'))
+          reject(new Error(strings.streamRequestMismatch))
         }
       } catch (error) {
         clearOptimizeTransientFailureArtifacts(requestId)
         cleanup()
-        reject(error instanceof Error ? error : new Error('Desktop stream bridge not ready yet.'))
+        reject(error instanceof Error ? error : new Error(strings.streamBridgeNotReady))
       }
     })()
   })
@@ -1817,16 +1832,15 @@ function resetConsoleView(container: HTMLElement) {
   activeOptimizeLines.clear()
   activeOptimizeStatusLines.clear()
 
-  appendConsoleLine(container, 'sys', '[BOOT] Sentra Prompt siap.')
-  appendConsoleLine(
-    container,
-    'sys',
-    "[INFO] Ketik ide untuk menyusun Coding Brief, atau 'help' untuk daftar perintah."
-  )
+  appendBannerLine(container, 'title', strings.bannerTitle(readAppVersion()))
+  appendBannerLine(container, 'subtitle', strings.bannerSubtitle)
+  appendBannerLine(container, 'rule', strings.bannerRule)
+  appendBannerLine(container, 'hint', strings.bannerHint)
+  appendBannerLine(container, 'blank', strings.bannerBlank)
 }
 
 function formatDesktopErrorMessage(error: unknown) {
-  const message = error instanceof Error ? error.message : 'Desktop command bridge not ready yet.'
+  const message = error instanceof Error ? error.message : strings.bridgeNotReady
 
   const providerMatch = message.match(/No API key provided for (\w+)/)
 
@@ -1840,7 +1854,7 @@ function formatDesktopErrorMessage(error: unknown) {
       QWEN: 'QWEN_API_KEY',
     }
     const envKey = envHintMap[provider] ?? 'provider env key'
-    return `Provider ${provider} diminta, tetapi ${envKey} tidak terdeteksi di runtime desktop. Set ${envKey} lalu jalankan ulang desktop shell.`
+    return strings.providerEnvKeyMissing(provider, envKey)
   }
 
   return message
@@ -1873,15 +1887,15 @@ function formatQualityLine(quality: unknown, sectionCount?: number): string | nu
   }
 
   const attempts = typeof quality.attempts === 'number' ? quality.attempts : 1
-  const attemptsText = `${attempts} percobaan`
+  const attemptsText = strings.attemptsCount(attempts)
 
   if (quality.degraded) {
     const reason = typeof quality.reason === 'string' ? quality.reason : 'unknown'
-    return `perlu diperiksa · ${reason} · ${attemptsText}`
+    return `${strings.qualityNeedsReview} · ${reason} · ${attemptsText}`
   }
 
-  const sectionsText = typeof sectionCount === 'number' ? `${sectionCount} bagian` : null
-  return ['ok', sectionsText, attemptsText].filter(Boolean).join(' · ')
+  const sectionsText = typeof sectionCount === 'number' ? strings.sectionsCount(sectionCount) : null
+  return [strings.qualityOk, sectionsText, attemptsText].filter(Boolean).join(' · ')
 }
 
 function countPromptSections(promptText: string): number {
@@ -1928,7 +1942,7 @@ function isMetaFlagLine(line: string): boolean {
 }
 
 function isQualityLine(line: string): boolean {
-  return /^(ok|perlu diperiksa) · /.test(line)
+  return line.startsWith(`${strings.qualityOk} · `) || line.startsWith(`${strings.qualityNeedsReview} · `)
 }
 
 function isTrailingResultLine(line: string): boolean {
@@ -1958,7 +1972,7 @@ function appendTrailingResultLines(afterLine: HTMLElement, trailing: string[]) {
   for (const text of trailing) {
     const line = document.createElement('div')
     if (isQualityLine(text)) {
-      line.className = `line type-sys quality-line ${text.startsWith('ok') ? 'quality-ok' : 'quality-degraded'}`
+      line.className = `line type-sys quality-line ${text.startsWith(`${strings.qualityOk} · `) ? 'quality-ok' : 'quality-degraded'}`
     } else {
       line.className = 'line type-sys meta-line'
     }
@@ -2155,11 +2169,13 @@ async function loadShellState() {
 
     if (display) {
       for (const badge of state?.badges ?? []) {
-        appendConsoleLine(
-          display,
-          'sys',
-          badge.tone === 'danger' ? `[WARN] ${badge.label}` : badge.label
-        )
+        const badgeText =
+          badge.id === 'provider-missing'
+            ? strings.providerMissingBadge
+            : badge.tone === 'danger'
+              ? `[WARN] ${badge.label}`
+              : badge.label
+        appendConsoleLine(display, 'sys', badgeText)
       }
     }
 
@@ -2168,7 +2184,7 @@ async function loadShellState() {
     providerReadinessStatus = 'missing'
     currentProvider = null
     setExecutionState(isExecuting)
-    const message = error instanceof Error ? error.message : 'Unable to load desktop shell state.'
+    const message = error instanceof Error ? error.message : strings.shellStateUnavailable
     if (display) {
       appendConsoleLine(display, 'sys', `[WARN] ${message}`)
     }
@@ -2200,7 +2216,7 @@ function stripQuotes(value: string) {
 }
 
 function printHelp(container: HTMLElement) {
-  for (const entry of BARE_COMMAND_CATALOG) {
+  for (const entry of strings.bareCommandCatalog) {
     appendConsoleLine(container, 'sys', `${entry.usage}  ${entry.summary}`)
   }
 
@@ -2226,7 +2242,7 @@ function runLaneCommand(container: HTMLElement, rest: string) {
   const value = rest.trim().toLowerCase()
 
   if (value !== 'interactive' && value !== 'deep') {
-    appendConsoleLine(container, 'sys', '[ERROR] lane hanya menerima: interactive, deep.')
+    appendConsoleLine(container, 'sys', strings.laneOptionsError)
     return
   }
 
@@ -2238,11 +2254,7 @@ function runProfileCommand(container: HTMLElement, rest: string) {
   const value = rest.trim().toLowerCase() as DesktopCompilerProfile
 
   if (!COMPILER_PROFILES.includes(value)) {
-    appendConsoleLine(
-      container,
-      'sys',
-      `[ERROR] profile hanya menerima: ${COMPILER_PROFILES.join(', ')}.`
-    )
+    appendConsoleLine(container, 'sys', strings.profileOptionsError(COMPILER_PROFILES.join(', ')))
     return
   }
 
@@ -2254,7 +2266,7 @@ function runEffortCommand(container: HTMLElement, rest: string) {
   const value = rest.trim().toLowerCase() as DesktopEffortLevel
 
   if (!EFFORT_LEVELS.includes(value)) {
-    appendConsoleLine(container, 'sys', `[ERROR] effort hanya menerima: ${EFFORT_LEVELS.join(', ')}.`)
+    appendConsoleLine(container, 'sys', strings.effortOptionsError(EFFORT_LEVELS.join(', ')))
     return
   }
 
@@ -2264,17 +2276,17 @@ function runEffortCommand(container: HTMLElement, rest: string) {
 
 function runCopyCommand(container: HTMLElement) {
   if (!lastCopyText) {
-    appendConsoleLine(container, 'sys', '[ERROR] Belum ada hasil untuk disalin.')
+    appendConsoleLine(container, 'sys', strings.nothingToCopy)
     return
   }
 
   void navigator.clipboard
     .writeText(extractCopyableText(lastCopyText))
     .then(() => {
-      appendConsoleLine(container, 'sys', '[DONE] tersalin')
+      appendConsoleLine(container, 'sys', strings.copiedNotice)
     })
     .catch(() => {
-      appendConsoleLine(container, 'sys', '[ERROR] Clipboard menolak permintaan salin.')
+      appendConsoleLine(container, 'sys', strings.clipboardRejected)
     })
 }
 
@@ -2308,7 +2320,7 @@ async function runStatCommand(container: HTMLElement) {
     const stats = await desktopWindow.sentraDesktop?.invoke?.('system:stats')
 
     if (!isSystemStats(stats)) {
-      appendConsoleLine(container, 'sys', '[ERROR] Telemetri proses tidak tersedia.')
+      appendConsoleLine(container, 'sys', strings.telemetryUnavailable)
       return
     }
 
@@ -2342,12 +2354,12 @@ async function runLogCommand(container: HTMLElement) {
       appendConsoleLine(
         container,
         'sys',
-        `COMPARE READY · transform + optimize  ${group[0]?.rawInput.slice(0, 120) ?? ''}`
+        strings.compareReadyLine(group[0]?.rawInput.slice(0, 120) ?? '')
       )
     }
 
     if (recentRuns.length === 0 && benchmarks.length === 0) {
-      appendConsoleLine(container, 'sys', '[DONE] tidak ada run terbaru.')
+      appendConsoleLine(container, 'sys', strings.noRecentRuns)
       return
     }
 
@@ -2359,15 +2371,15 @@ async function runLogCommand(container: HTMLElement) {
       )
       appendActionLine(container, [
         {
-          label: '[r] susun ulang',
-          ariaLabel: 'Susun ulang',
+          label: strings.actionRerunLabel,
+          ariaLabel: strings.actionRerunAria,
           handler: async () => {
             await rerunRecentRecord(record)
           },
         },
         {
-          label: '[e] evaluasi',
-          ariaLabel: 'Evaluasi hasil',
+          label: strings.actionEvaluateLabel,
+          ariaLabel: strings.actionEvaluateAria,
           handler: async () => {
             await evaluateRecentRecord(record)
           },
@@ -2383,8 +2395,8 @@ async function runLogCommand(container: HTMLElement) {
       )
       appendActionLine(container, [
         {
-          label: '[b] jalankan',
-          ariaLabel: 'Jalankan benchmark',
+          label: strings.actionRunBenchmarkLabel,
+          ariaLabel: strings.actionRunBenchmarkAria,
           handler: async () => {
             await runBenchmarkRecord(record)
           },
@@ -2416,7 +2428,7 @@ async function runInvocation(container: HTMLElement, invocation: DesktopInvocati
     appendConsoleLine(
       container,
       'sys',
-      `[DONE] Selesai dalam ${Math.round((Date.now() - started) / 1000)}s`
+      strings.finishedIn(Math.round((Date.now() - started) / 1000))
     )
   } catch (error) {
     pendingLine.remove()
@@ -2434,7 +2446,7 @@ async function runPromptCommand(
   rawValue: string
 ) {
   if (!rawValue) {
-    appendConsoleLine(container, 'sys', '[ERROR] Perintah ini memerlukan teks ide.')
+    appendConsoleLine(container, 'sys', strings.missingIdeaText)
     return
   }
 
@@ -2471,7 +2483,7 @@ async function runPromptCommand(
       appendConsoleLine(
         container,
         'sys',
-        `[WAIT] Masih berjalan... ${Math.round((Date.now() - started) / 1000)}s`
+        strings.stillRunning(Math.round((Date.now() - started) / 1000))
       )
     )
   }, 10000)
@@ -2519,7 +2531,7 @@ async function runPromptCommand(
     appendConsoleLine(
       container,
       'sys',
-      `[DONE] Selesai dalam ${Math.round((Date.now() - started) / 1000)}s`
+      strings.finishedIn(Math.round((Date.now() - started) / 1000))
     )
   } catch (error) {
     clearPendingLines()
@@ -2578,7 +2590,7 @@ async function runSlashInput(container: HTMLElement, value: string) {
     appendConsoleLine(
       container,
       'sys',
-      `[DONE] Selesai dalam ${Math.round((Date.now() - started) / 1000)}s`
+      strings.finishedIn(Math.round((Date.now() - started) / 1000))
     )
   } catch (error) {
     pendingLine.remove()

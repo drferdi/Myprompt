@@ -181,6 +181,15 @@ button, input {
   opacity: 0.85;
 }
 
+/* ═══ BOOT BANNER ═══ */
+/* Printed once at boot, never through the status-prefix path: title in strong text,
+   subtitle and rule dimmed, the instruction line in body text, then one blank line. */
+.line.banner-title { color: var(--console-text-strong); }
+.line.banner-subtitle { color: var(--console-text-dim); }
+.line.banner-rule { color: var(--console-text-dim); }
+.line.banner-hint { color: var(--console-text); }
+.line.banner-blank { min-height: calc(var(--console-size-body) * var(--console-leading-body)); }
+
 /* ═══ ACTIONABLE LINES ═══ */
 /* Real buttons that look like plain text: no chrome, underline on hover,
    keyboard focusable, accessible name in aria-label. */

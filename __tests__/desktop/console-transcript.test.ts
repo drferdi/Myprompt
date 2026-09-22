@@ -5,10 +5,16 @@ import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const testDir = path.dirname(fileURLToPath(import.meta.url))
+const packageVersion = (
+  JSON.parse(readFileSync(path.resolve(testDir, '../../package.json'), 'utf8')) as {
+    version: string
+  }
+).version
+// desktop:build substitutes the placeholder with the package.json version; mirror that here.
 const rendererHtml = readFileSync(
   path.resolve(testDir, '../../desktop/renderer/index.html'),
   'utf8'
-)
+).replace('__SENTRA_VERSION__', packageVersion)
 
 function type(command: string) {
   const field = document.getElementById('cmdInput') as HTMLInputElement
@@ -182,11 +188,11 @@ describe('console transcript command language', () => {
   it('clears the transcript but keeps the prompt line', async () => {
     type('transform x')
     await expectDesktopCommand('transform:run')
-    await vi.waitFor(() => expect(findLine('Selesai dalam')).toBeTruthy())
+    await vi.waitFor(() => expect(findLine('Finished in')).toBeTruthy())
 
     type('clear')
 
-    await vi.waitFor(() => expect(findLine('Selesai dalam')).toBeUndefined())
+    await vi.waitFor(() => expect(findLine('Finished in')).toBeUndefined())
     expect(document.querySelectorAll('#display .line.type-user')).toHaveLength(0)
     const transcript = document.getElementById('display') as HTMLElement
     expect(transcript.lastElementChild?.id).toBe('promptLine')
@@ -271,7 +277,7 @@ describe('console transcript command language', () => {
     const copyButton = await vi.waitFor(() => {
       const button = Array.from(
         document.querySelectorAll<HTMLButtonElement>('#display .tx-action')
-      ).find((element) => element.textContent === '[c] salin')
+      ).find((element) => element.textContent === '[c] copy')
       expect(button).toBeTruthy()
       return button as HTMLButtonElement
     })
@@ -283,5 +289,78 @@ describe('console transcript command language', () => {
     copyButton.click()
 
     expect(writeText).toHaveBeenCalledWith('x')
+  })
+
+  it('prints the boot banner without status prefixes', () => {
+    const banner = transcriptLines().slice(0, 5)
+
+    expect(banner.map((line) => line.className)).toEqual([
+      'line banner-title',
+      'line banner-subtitle',
+      'line banner-rule',
+      'line banner-hint',
+      'line banner-blank',
+    ])
+    expect(banner.map((line) => line.textContent)).toEqual([
+      `Sentra Prompt Console ${packageVersion}`,
+      'Sentra Artificial Intelligence \u00b7 prompt engineering workspace',
+      '\u2500'.repeat(59),
+      "Type your idea to build a Coding Brief, or 'help' for the command list.",
+      '\u00a0',
+    ])
+    for (const line of banner) {
+      expect(line.className).not.toMatch(/status-/)
+    }
+  })
+
+  it('never prints Indonesian text on a system line', async () => {
+    const indonesian = /\b(siap|ketik|tidak|tambahkan|lalu|jalankan|ulang|susun|salin)\b/i
+    const idle = () =>
+      vi.waitFor(() =>
+        expect((document.getElementById('cmdInput') as HTMLInputElement).disabled).toBe(false)
+      )
+
+    invoke.mockImplementation(async (_channel: string, payload?: unknown) => {
+      const command = (payload as { command?: string } | undefined)?.command
+      if (command === 'transform:run') return { transformedPrompt: 'x' }
+      if (command === 'recent:list') return { runs: [] }
+      if (command === 'benchmark:list') return { benchmarks: [] }
+      if (command === 'provider:list') return { providers: [] }
+      throw new Error('bridge down')
+    })
+
+    for (const command of [
+      'help',
+      'mode',
+      'lane nowhere',
+      'lane deep',
+      'profile nowhere',
+      'profile codex',
+      'effort nowhere',
+      'effort low',
+      'copy',
+      'brief',
+      'stat',
+      'log',
+      'key',
+      'transform x',
+      'copy',
+    ]) {
+      type(command)
+      await idle()
+    }
+    await vi.waitFor(() => expect(findLine('Finished in')).toBeTruthy())
+
+    const systemText = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        '#display .line.type-sys, #display .line.meta-line, #display .line[class*="banner-"], #display .tx-action'
+      )
+    ).flatMap((element) => [element.textContent ?? '', element.getAttribute('aria-label') ?? ''])
+
+    expect(systemText.length).toBeGreaterThan(20)
+    for (const text of systemText) {
+      expect(text).not.toMatch(indonesian)
+    }
+    expect(document.querySelector('#display .line.status-error')).toBeTruthy()
   })
 })

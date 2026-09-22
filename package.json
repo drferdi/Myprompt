@@ -12,7 +12,7 @@
     "build": "pnpm run desktop:build",
     "dev": "pnpm run desktop:dev",
     "start": "pnpm run desktop:dev",
-    "desktop:build": "powershell -NoProfile -Command \"Remove-Item -Recurse -Force dist-electron -ErrorAction SilentlyContinue; New-Item -ItemType Directory -Force dist-electron/desktop/renderer | Out-Null\" && pnpm run db:generate && pnpm exec tsc -p tsconfig.desktop.json && powershell -NoProfile -Command \"Copy-Item desktop/renderer/index.html dist-electron/desktop/renderer/index.html -Force; Copy-Item desktop/renderer/index.css dist-electron/desktop/renderer/index.css -Force\"",
+    "desktop:build": "powershell -NoProfile -Command \"Remove-Item -Recurse -Force dist-electron -ErrorAction SilentlyContinue; New-Item -ItemType Directory -Force dist-electron/desktop/renderer | Out-Null\" && pnpm run db:generate && pnpm exec tsc -p tsconfig.desktop.json && powershell -NoProfile -Command \"$v = (Get-Content package.json -Raw | ConvertFrom-Json).version; $src = Join-Path (Get-Location) 'desktop/renderer/index.html'; $dst = Join-Path (Get-Location) 'dist-electron/desktop/renderer/index.html'; [IO.File]::WriteAllText($dst, [IO.File]::ReadAllText($src).Replace('__SENTRA_VERSION__', $v)); Copy-Item desktop/renderer/index.css dist-electron/desktop/renderer/index.css -Force\"",
     "desktop:benchmark": "tsx scripts/optimizer-acceptance.ts --json",
     "desktop:dev": "pnpm run desktop:build && electron ./dist-electron/desktop/bootstrap.js",
     "desktop:smoke": "pnpm run desktop:build && powershell -NoProfile -Command \"$env:SENTRA_DESKTOP_SMOKE='1'; & .\\node_modules\\.bin\\electron.cmd .\\dist-electron\\desktop\\bootstrap.js\"",

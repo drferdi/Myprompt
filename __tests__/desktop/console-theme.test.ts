@@ -57,15 +57,31 @@ describe('Sentra console visual contract', () => {
       'tx-action',
       'tx-actions',
       'scramble-line',
+      'banner-title',
+      'banner-subtitle',
+      'banner-rule',
+      'banner-hint',
+      'banner-blank',
     ]) {
       expect(rendererCss).toMatch(new RegExp(`\\.${cls}[\\s,:{)]`))
     }
   })
 
   it('keeps the compiled renderer bundle loadable as a classic script', () => {
-    // renderer.js is emitted as CommonJS; without this shim the `exports` preamble throws
-    // and every listener in the shell silently fails to register.
-    expect(rendererHtml).toMatch(/<script>\s*var exports = \{\};\s*<\/script>/)
+    // strings.js and renderer.js are emitted as CommonJS; without this shim the `exports`
+    // preamble and renderer.js's require('./strings') throw and every listener in the shell
+    // silently fails to register. strings.js must load first so the shared exports object
+    // is populated before renderer.js requires it.
+    expect(rendererHtml).toMatch(
+      /<script>\s*var exports = \{\}; function require\(id\) \{ if \(id === '\.\/strings'\) return exports; throw new Error\('Unknown module: ' \+ id\) \}\s*<\/script>/
+    )
+    expect(rendererHtml).toMatch(/<script src="\.\/strings\.js">[\s\S]*<script src="\.\/renderer\.js">/)
     expect(rendererHtml).toMatch(/<script src="\.\/renderer\.js">/)
+  })
+
+  it('carries the build-time version placeholder the banner reads', () => {
+    // desktop:build replaces the placeholder with package.json's version while copying
+    // index.html into dist-electron; the renderer reads the meta tag at boot.
+    expect(rendererHtml).toContain('<meta name="sentra-version" content="__SENTRA_VERSION__">')
   })
 })

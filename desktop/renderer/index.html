@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Sentra Prompt</title>
+  <meta name="sentra-version" content="__SENTRA_VERSION__">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./index.css">
@@ -14,8 +15,8 @@
 
     <div class="title-bar" id="titleBar">
       <div class="traffic-lights">
-        <button class="traffic-light close" id="closeBtn" type="button" aria-label="Tutup jendela"></button>
-        <button class="traffic-light minimize" id="minimizeBtn" type="button" aria-label="Kecilkan jendela"></button>
+        <button class="traffic-light close" id="closeBtn" type="button" aria-label="Close window"></button>
+        <button class="traffic-light minimize" id="minimizeBtn" type="button" aria-label="Minimize window"></button>
         <span class="traffic-light zoom" aria-hidden="true"></span>
       </div>
       <div class="title" id="appTitle">sentra ~/myprompt</div>
@@ -23,13 +24,16 @@
 
     <!-- The transcript is the whole body. Output lines are inserted before the prompt
          line, which is the transcript's last line and the only input. -->
-    <pre class="transcript" id="display" role="log" aria-live="polite"><div class="prompt-line" id="promptLine"><label class="prompt" for="cmdInput">sentra ~/myprompt $ </label><input type="text" id="cmdInput" class="prompt-input" autofocus autocomplete="off" spellcheck="false" aria-label="Perintah atau ide"></div></pre>
+    <pre class="transcript" id="display" role="log" aria-live="polite"><div class="prompt-line" id="promptLine"><label class="prompt" for="cmdInput">sentra ~/myprompt $ </label><input type="text" id="cmdInput" class="prompt-input" autofocus autocomplete="off" spellcheck="false" aria-label="Command or idea"></div></pre>
 
   </div>
 
-  <!-- renderer.js is emitted as CommonJS (tsconfig.desktop.json) but loaded as a classic
-       script under contextIsolation, where `exports` does not exist. Without this shim the
-       CJS preamble throws before any listener is registered. -->
-  <script>var exports = {};</script>
+  <!-- strings.js and renderer.js are emitted as CommonJS (tsconfig.desktop.json) but loaded
+       as classic scripts under contextIsolation, where `exports` and `require` do not exist.
+       Both files write into the one shared `exports` object; the shim lets renderer.js
+       resolve its single import ('./strings') to that object. Without it the CJS preamble
+       throws before any listener is registered. -->
+  <script>var exports = {}; function require(id) { if (id === './strings') return exports; throw new Error('Unknown module: ' + id) }</script>
+  <script src="./strings.js"></script>
   <script src="./renderer.js"></script></body>
 </html>
