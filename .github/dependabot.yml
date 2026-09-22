@@ -8,18 +8,9 @@ updates:
       day: "monday"
       time: "03:00"
       timezone: "Asia/Jakarta"
-    open-pull-requests-limit: 5
-    groups:
-      routine-dependencies:
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
-    ignore:
-      - dependency-name: "*"
-        update-types:
-          - "version-update:semver-major"
+    # Routine npm version updates are intentionally disabled.
+    # Dependabot security updates remain handled separately.
+    open-pull-requests-limit: 0
 
   - package-ecosystem: "npm"
     directory: "/extension"
@@ -28,21 +19,9 @@ updates:
       day: "monday"
       time: "03:15"
       timezone: "Asia/Jakarta"
-    open-pull-requests-limit: 5
-    groups:
-      routine-extension-dependencies:
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
-    ignore:
-      - dependency-name: "*"
-        update-types:
-          - "version-update:semver-major"
-      - dependency-name: "wxt"
-        versions:
-          - ">=0.20.0"
+    # Routine npm version updates are intentionally disabled.
+    # Dependabot security updates remain handled separately.
+    open-pull-requests-limit: 0
 
   - package-ecosystem: "github-actions"
     directory: "/"
