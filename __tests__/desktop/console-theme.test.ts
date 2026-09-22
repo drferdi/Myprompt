@@ -13,10 +13,8 @@ const rendererHtml = readFileSync(
 
 describe('Sentra console visual contract', () => {
   it('contains long output without expanding the desktop layout', () => {
-    expect(rendererCss).toMatch(/\.console-box[\s\S]*?overflow-wrap:\s*anywhere/)
-    expect(rendererCss).toMatch(/\.mini-console[\s\S]*?overflow-wrap:\s*anywhere/)
+    expect(rendererCss).toMatch(/\.transcript[\s\S]*?overflow-wrap:\s*anywhere/)
     expect(rendererCss).toMatch(/\.line[\s\S]*?max-inline-size:\s*100%/)
-    expect(rendererCss).toMatch(/\.status-copy[\s\S]*?overflow-wrap:\s*anywhere/)
   })
 
   it('uses the approved console palette tokens', () => {
@@ -28,60 +26,37 @@ describe('Sentra console visual contract', () => {
     expect(rendererCss).toContain('--console-accent: #56b6c2;')
   })
 
-  it('renders a card enclosure with a recessed console display', () => {
-    expect(rendererCss).toMatch(/\.console-body\s*\{[\s\S]*?background:\s*var\(--console-bg-window\)/)
-    expect(rendererCss).toMatch(/\.console-box\s*\{[\s\S]*?background:\s*var\(--console-bg-app\)/)
-    expect(rendererCss).toMatch(/\.console-box\s*\{[\s\S]*?box-shadow:\s*inset/)
-    expect(rendererCss).toMatch(/\.card-header\s*\{[\s\S]*?cursor:\s*grab/)
-    // The rack hardware from the previous theme must stay collapsed.
-    expect(rendererCss).toMatch(
-      /\.front-panel,\s*\.top-vent-section,[\s\S]*?display:\s*none\s*!important/
-    )
+  it('renders one window with a title bar and a transcript', () => {
+    expect(rendererCss).toMatch(/\.window\s*\{[\s\S]*?background:\s*var\(--console-bg-window\)/)
+    expect(rendererCss).toMatch(/\.window\s*\{[\s\S]*?border-radius:\s*10px/)
+    expect(rendererCss).toMatch(/\.transcript\s*\{[\s\S]*?background:\s*var\(--console-bg-app\)/)
+    expect(rendererCss).toMatch(/\.title-bar\s*\{[\s\S]*?cursor:\s*grab/)
   })
 
   it('preserves the existing workflow controls and drag exclusions', () => {
-    for (const id of [
-      'transformModeBtn',
-      'optimizeModeBtn',
-      'cmdInput',
-      'clearBtn',
-      'runBtn',
-      'copyLastBtn',
-      'miniToggleBtn',
-      'powerBtn',
-    ]) {
+    for (const id of ['cmdInput', 'closeBtn', 'minimizeBtn', 'display', 'titleBar']) {
       expect(rendererHtml).toContain(`id="${id}"`)
     }
 
-    expect(rendererCss).toMatch(
-      /\.window-controls, \.mode-bar,[\s\S]*-webkit-app-region:\s*no-drag/
-    )
+    expect(rendererCss).toMatch(/\.title-bar\s*\{[\s\S]*?-webkit-app-region:\s*no-drag/)
   })
 
   it('styles every class the renderer injects at runtime', () => {
     // Regression guard: renderer.ts builds this markup dynamically, so a CSS rewrite that
     // drops these selectors ships an unstyled console without breaking any other test.
     for (const cls of [
-      'shell-badges',
-      'shell-badge',
-      'tone-danger',
       'line',
       'type-sys',
+      'type-user',
       'type-agent',
-      'line-has-copy',
-      'copy-line-btn',
-      'output-action-row',
-      'output-action-btn',
-      'suggestion-panel',
-      'suggestion-chip',
-      'suggestion-copy',
-      'slash-palette',
-      'catalog-item',
-      'overlay-panel',
-      'overlay-panel-header',
-      'overlay-panel-body',
-      'panel-close-btn',
-      'workbench-empty',
+      'status-ok',
+      'status-warn',
+      'status-error',
+      'meta-line',
+      'quality-line',
+      'tx-action',
+      'tx-actions',
+      'scramble-line',
     ]) {
       expect(rendererCss).toMatch(new RegExp(`\\.${cls}[\\s,:{)]`))
     }

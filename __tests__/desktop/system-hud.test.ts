@@ -19,7 +19,23 @@ const STATS = {
   uptimeSeconds: 3671, // 01:01:11
 }
 
-describe('system HUD', () => {
+function typeCommand(command: string) {
+  const field = document.getElementById('cmdInput') as HTMLInputElement
+  field.value = command
+  field.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+}
+
+async function waitForStatLine() {
+  return vi.waitFor(() => {
+    const line = Array.from(document.querySelectorAll<HTMLElement>('.line')).find((element) =>
+      element.textContent?.includes('heap=')
+    )
+    expect(line).toBeTruthy()
+    return line as HTMLElement
+  })
+}
+
+describe('system telemetry', () => {
   let invoke: ReturnType<typeof vi.fn>
 
   beforeEach(async () => {
@@ -47,8 +63,6 @@ describe('system HUD', () => {
     })
 
     await import('../../desktop/renderer/renderer')
-    // Let the initial poll resolve.
-    await vi.waitFor(() => expect(document.getElementById('hudUptime')?.textContent).not.toBe('—'))
   })
 
   afterEach(() => {
@@ -57,22 +71,33 @@ describe('system HUD', () => {
     document.body.replaceChildren()
   })
 
-  it('renders real process telemetry instead of the hardcoded placeholders', () => {
-    expect(invoke).toHaveBeenCalledWith('system:stats')
-    expect(document.getElementById('hudTemp')?.textContent).toBe('42.5 MB')
-    expect(document.getElementById('hudLoad')?.textContent).toBe('12.3%')
-    expect(document.getElementById('hudMem')?.textContent).toBe('10.4 / 32 GB')
-    expect(document.getElementById('hudUptime')?.textContent).toBe('01:01:11')
+  it('prints process telemetry on demand instead of polling', async () => {
+    expect(invoke).not.toHaveBeenCalledWith('system:stats')
+
+    typeCommand('stat')
+    const line = await waitForStatLine()
+
+    expect(line.textContent).toContain('heap=42.5 MB')
+    expect(line.textContent).toContain('cpu=12.3%')
+    expect(line.textContent).toContain('mem=10.4 / 32 GB')
+    expect(line.textContent).toContain('uptime=01:01:11')
   })
 
-  it('drives the HUD bars from the same reading', () => {
-    expect(document.getElementById('hudTempBar')?.style.width).toBe('50%')
-    expect(document.getElementById('hudLoadBar')?.style.width).toBe('12%')
+  it('invokes system:stats exactly once per stat command', async () => {
+    typeCommand('stat')
+    await waitForStatLine()
+
+    const statsCalls = () => invoke.mock.calls.filter(([channel]) => channel === 'system:stats')
+    expect(statsCalls()).toHaveLength(1)
+
+    typeCommand('stat')
+    await vi.waitFor(() => expect(statsCalls()).toHaveLength(2))
   })
 
-  it('mirrors the reading into the mini widget HUD', () => {
-    expect(document.getElementById('mHudTemp')?.textContent).toBe('42.5 MB')
-    expect(document.getElementById('mHudLoad')?.textContent).toBe('12.3%')
-    expect(document.getElementById('mHudMem')?.textContent).toBe('10.4/32')
+  it('marks the stat line as ok', async () => {
+    typeCommand('stat')
+    const line = await waitForStatLine()
+
+    expect(line.classList.contains('status-ok')).toBe(true)
   })
 })

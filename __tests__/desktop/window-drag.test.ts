@@ -94,10 +94,10 @@ describe('native window dragging', () => {
   })
 
   it('moves the native window when dragging a full-mode status panel', async () => {
-    const statusPanel = document.querySelector<HTMLElement>('.status-panel')
-    expect(statusPanel).not.toBeNull()
+    const titleBar = document.querySelector<HTMLElement>('.title-bar')
+    expect(titleBar).not.toBeNull()
 
-    statusPanel?.dispatchEvent(mouseEvent('mousedown', 100, 200, 1))
+    titleBar?.dispatchEvent(mouseEvent('mousedown', 100, 200, 1))
     await settleDragStart()
     document.dispatchEvent(mouseEvent('mousemove', 120, 230, 1))
 
@@ -108,10 +108,10 @@ describe('native window dragging', () => {
   })
 
   it('moves the native window when dragging the card header', async () => {
-    const cardHeader = document.querySelector<HTMLElement>('.card-header')
-    expect(cardHeader).not.toBeNull()
+    const titleBar = document.querySelector<HTMLElement>('#titleBar')
+    expect(titleBar).not.toBeNull()
 
-    cardHeader?.dispatchEvent(mouseEvent('mousedown', 300, 400, 1))
+    titleBar?.dispatchEvent(mouseEvent('mousedown', 300, 400, 1))
     await settleDragStart()
     document.dispatchEvent(mouseEvent('mousemove', 320, 440, 1))
     document.dispatchEvent(mouseEvent('mouseup', 320, 440))
@@ -121,23 +121,18 @@ describe('native window dragging', () => {
   })
 
   it('minimizes the native window from the header minimize button', () => {
-    const consoleRig = document.querySelector<HTMLElement>('#consoleRig')
-    const miniWidget = document.querySelector<HTMLElement>('#miniWidget')
-
-    document.querySelector<HTMLButtonElement>('#miniToggleBtn')?.click()
+    document.querySelector<HTMLButtonElement>('#minimizeBtn')?.click()
 
     expect(bridge.minimize).toHaveBeenCalledOnce()
-    // The shell must stay in full mode: minimize is an OS-level action, not a widget swap.
-    expect(consoleRig?.hidden).toBe(false)
-    expect(miniWidget?.hidden).toBe(true)
+    // Minimize is an OS-level action, never a widget swap.
     expect(bridge.invoke).not.toHaveBeenCalledWith('desktop:toggle-mini', expect.anything())
   })
 
   it('does not initiate a drag from an interactive descendant', async () => {
-    const clearButton = document.querySelector<HTMLButtonElement>('#clearBtn')
-    expect(clearButton).not.toBeNull()
+    const commandInput = document.querySelector<HTMLInputElement>('#cmdInput')
+    expect(commandInput).not.toBeNull()
 
-    clearButton?.dispatchEvent(mouseEvent('mousedown', 100, 200, 1))
+    commandInput?.dispatchEvent(mouseEvent('mousedown', 100, 200, 1))
     await settleDragStart()
     document.dispatchEvent(mouseEvent('mousemove', 120, 230, 1))
     document.dispatchEvent(mouseEvent('mouseup', 120, 230))
@@ -146,18 +141,18 @@ describe('native window dragging', () => {
     expect(bridge.setWindowPos).not.toHaveBeenCalled()
   })
 
-  it('closes the desktop window from the rack power button', () => {
-    const powerButton = document.querySelector<HTMLButtonElement>('#powerBtn')
-    expect(powerButton).not.toBeNull()
+  it('closes the desktop window from the red traffic light', () => {
+    const closeButton = document.querySelector<HTMLButtonElement>('#closeBtn')
+    expect(closeButton).not.toBeNull()
 
-    powerButton?.click()
+    closeButton?.click()
 
     expect(bridge.close).toHaveBeenCalledOnce()
   })
 
   it('cancels an active drag when the window blurs', async () => {
-    const statusPanel = document.querySelector<HTMLElement>('.status-panel')
-    statusPanel?.dispatchEvent(mouseEvent('mousedown', 100, 200, 1))
+    const titleBar = document.querySelector<HTMLElement>('.title-bar')
+    titleBar?.dispatchEvent(mouseEvent('mousedown', 100, 200, 1))
     await settleDragStart()
     window.dispatchEvent(new Event('blur'))
     document.dispatchEvent(mouseEvent('mousemove', 120, 230, 1))
@@ -174,8 +169,8 @@ describe('native window dragging', () => {
           resolvePosition = resolve
         })
     )
-    const statusPanel = document.querySelector<HTMLElement>('.status-panel')
-    statusPanel?.dispatchEvent(mouseEvent('mousedown', 100, 200, 1))
+    const titleBar = document.querySelector<HTMLElement>('.title-bar')
+    titleBar?.dispatchEvent(mouseEvent('mousedown', 100, 200, 1))
     window.dispatchEvent(new Event('blur'))
     resolvePosition?.([100, 200])
     await settleDragStart()
@@ -186,8 +181,8 @@ describe('native window dragging', () => {
   })
 
   it('cancels a drag when a mousemove has no primary button', async () => {
-    const statusPanel = document.querySelector<HTMLElement>('.status-panel')
-    statusPanel?.dispatchEvent(mouseEvent('mousedown', 100, 200, 1))
+    const titleBar = document.querySelector<HTMLElement>('.title-bar')
+    titleBar?.dispatchEvent(mouseEvent('mousedown', 100, 200, 1))
     await settleDragStart()
     document.dispatchEvent(mouseEvent('mousemove', 120, 230))
     document.dispatchEvent(mouseEvent('mousemove', 140, 260, 1))
