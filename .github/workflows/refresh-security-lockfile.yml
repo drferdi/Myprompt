@@ -1,20 +1,26 @@
-name: Security audit probe
+name: Refresh security lockfiles
 
 on:
   push:
     branches:
       - chore/dependency-security-hardening
     paths:
+      - pnpm-workspace.yaml
+      - extension/pnpm-workspace.yaml
+      - extension/package.json
       - .github/workflows/refresh-security-lockfile.yml
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  audit:
+  refresh-lockfiles:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: chore/dependency-security-hardening
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -25,23 +31,21 @@ jobs:
           version: 11.21.0
           run_install: false
 
-      - name: Audit root and extension
-        shell: bash
+      - name: Regenerate root lockfile
+        run: pnpm install --lockfile-only --no-frozen-lockfile
+
+      - name: Regenerate extension lockfile
+        working-directory: extension
+        run: pnpm install --lockfile-only --no-frozen-lockfile
+
+      - name: Commit lockfiles
         run: |
-          set +e
-          echo "::group::Root audit"
-          pnpm audit --audit-level high
-          ROOT_STATUS=$?
-          echo "::endgroup::"
-
-          echo "::group::Extension audit"
-          (cd extension && pnpm audit --audit-level high)
-          EXT_STATUS=$?
-          echo "::endgroup::"
-
-          echo "root_audit_status=$ROOT_STATUS"
-          echo "extension_audit_status=$EXT_STATUS"
-
-          if [ "$ROOT_STATUS" -ne 0 ] || [ "$EXT_STATUS" -ne 0 ]; then
-            exit 1
+          if git diff --quiet -- pnpm-lock.yaml extension/pnpm-lock.yaml; then
+            echo "Lockfiles already current."
+            exit 0
           fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml extension/pnpm-lock.yaml
+          git commit -m "chore(deps): refresh security lockfiles"
+          git push
