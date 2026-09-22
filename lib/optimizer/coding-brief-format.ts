@@ -63,8 +63,8 @@ export function normaliseCodingBrief(raw: string): string {
 export function parseCodingBriefSections(markdown: string): ParsedCodingBrief {
   const text = normaliseCodingBrief(markdown)
 
-  // `[ 	]+` (not `\s+`) so a bare `##` line never swallows the next line as its heading.
-  const headingRe = /^##[ 	]+(.+)$/gm
+  // `[ \t]+` (not `\s+`) so a bare `##` line never swallows the next line as its heading.
+  const headingRe = /^##[ \t]+(.+)$/gm
   const found: { heading: string; matchStart: number; contentStart: number }[] = []
   let match: RegExpExecArray | null
   while ((match = headingRe.exec(text)) !== null) {
