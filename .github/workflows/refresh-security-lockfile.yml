@@ -1,0 +1,44 @@
+name: Refresh security lockfile
+
+on:
+  push:
+    branches:
+      - chore/dependency-security-hardening
+    paths:
+      - package.json
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chore/dependency-security-hardening
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 11.21.0
+          run_install: false
+
+      - name: Regenerate lockfile
+        run: pnpm install --lockfile-only --no-frozen-lockfile
+
+      - name: Commit lockfile
+        run: |
+          if git diff --quiet -- pnpm-lock.yaml; then
+            echo "Lockfile already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml
+          git commit -m "chore(deps): refresh pnpm lockfile"
+          git push
