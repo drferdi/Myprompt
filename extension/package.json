@@ -11,6 +11,7 @@
     "zip": "wxt zip",
     "zip:firefox": "wxt zip --browser firefox",
     "typecheck": "tsc --noEmit",
+    "audit:security": "pnpm audit",
     "postinstall": "wxt prepare"
   },
   "dependencies": {
