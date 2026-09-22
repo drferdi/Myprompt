@@ -14,7 +14,7 @@ overrides:
   'shell-quote@<1.10.0': 1.10.0
   'vitest@>=3.0.0 <3.2.6': 3.2.6
   'sharp@<0.35.4': 0.35.4
-  'postcss@<=8.5.17': 8.5.18
+  'postcss@<=8.5.22': 8.5.28
   xlsx: npm:@e965/xlsx@0.20.3
 allowBuilds:
   '@prisma/client': true
