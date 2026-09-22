@@ -8,7 +8,18 @@ updates:
       day: "monday"
       time: "03:00"
       timezone: "Asia/Jakarta"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
+    groups:
+      routine-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: "npm"
     directory: "/extension"
@@ -17,7 +28,21 @@ updates:
       day: "monday"
       time: "03:15"
       timezone: "Asia/Jakarta"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
+    groups:
+      routine-extension-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "wxt"
+        versions:
+          - ">=0.20.0"
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -26,4 +51,8 @@ updates:
       day: "monday"
       time: "03:30"
       timezone: "Asia/Jakarta"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"
