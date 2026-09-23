@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sentra Prompt Console — startup, 120x30</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap">
+<style>
+  /* ============================================================
+     Startup-state reference. Same palette and measurements as
+     reference-console-sentra.html; this one shows the EMPTY state,
+     which had no reference before.
+     Window is sized to 120 columns x 30 rows at 13px / 1.45.
+     ============================================================ */
+  :root {
+    --term-bg:        #282c34;  /* window body             */
+    --term-chrome:    #21252b;  /* title bar               */
+    --term-page:      #ffffff;  /* area outside the window */
+    --term-text:      #abb2bf;  /* default output          */
+    --term-bright:    #ffffff;  /* emphasised output       */
+    --term-dim:       #7f8792;  /* title, secondary chrome */
+    --term-green:     #98c379;  /* prompt, ok              */
+    --term-cyan:      #56b6c2;  /* labels                  */
+    --term-radius:    10px;
+    --term-pad-x:     14px;
+    --term-pad-y:     10px;
+    --term-font-size: 13px;
+    --term-line:      1.45;
+  }
+
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--term-page);
+    font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    box-sizing: border-box;
+  }
+
+  .window {
+    width: min(964px, 100%);
+    height: min(616px, 100%);
+    display: flex;
+    flex-direction: column;
+    background: var(--term-bg);
+    border-radius: var(--term-radius);
+    overflow: hidden;
+    box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.45);
+  }
+
+  .title-bar {
+    height: 30px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 0 12px;
+    background: var(--term-chrome);
+  }
+  .dots { display: flex; gap: 8px; align-items: center; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot-close { background: #ff5f57; }
+  .dot-min   { background: #febc2e; }
+  .dot-zoom  { background: #28c840; }
+  .title { font-size: 13px; line-height: 1.2; color: var(--term-dim); }
+
+  .transcript {
+    flex: 1 1 auto;
+    min-height: 0;
+    margin: 0;
+    padding: var(--term-pad-y) var(--term-pad-x);
+    font-family: inherit;
+    font-size: var(--term-font-size);
+    line-height: var(--term-line);
+    letter-spacing: 0;
+    color: var(--term-text);
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  .ok     { color: var(--term-green); font-weight: 700; }
+  .dim    { color: var(--term-dim); }
+  .label  { color: var(--term-cyan); }
+  .cmd    { color: var(--term-green); }
+  .bright { color: var(--term-bright); }
+
+  .caret {
+    display: inline-block;
+    width: 7px;
+    height: 15px;
+    background: var(--term-text);
+    vertical-align: text-bottom;
+  }
+</style>
+</head>
+<body>
+  <div class="window">
+    <div class="title-bar">
+      <div class="dots">
+        <span class="dot dot-close"></span>
+        <span class="dot dot-min"></span>
+        <span class="dot dot-zoom"></span>
+      </div>
+      <div class="title">sentra prompt console</div>
+      <div></div>
+    </div>
+
+<pre class="transcript">  <span class="bright">Sentra Prompt Console</span>  <span class="dim">0.1.0</span>
+  <span class="dim">Sentra Artificial Intelligence · prompt engineering workspace</span>
+  <span class="dim">────────────────────────────────────────────────────────────────────────</span>
+
+  <span class="label">agent</span>      claude-code                <span class="label">lane</span>      interactive
+  <span class="label">provider</span>   anthropic                  <span class="label">profile</span>   default
+  <span class="label">model</span>      claude-sonnet-4-6          <span class="label">effort</span>    high
+
+  <span class="dim">Type an idea and press Enter. It becomes a Coding Brief.</span>
+
+  <span class="cmd">brief</span> <span class="dim">"the optimizer returns truncated prompts as successful results"</span>
+  <span class="cmd">super</span> <span class="dim">"write the launch note for the September release"</span>
+
+  <span class="cmd">log</span>   <span class="dim">recent briefs</span>          <span class="cmd">key</span>    <span class="dim">provider keys</span>
+  <span class="cmd">help</span>  <span class="dim">all commands</span>           <span class="cmd">stat</span>   <span class="dim">system snapshot</span>
+
+<span class="ok">ok</span>    5 briefs today · 3 complete · 1 needs check
+<span class="ok">ok</span>    ready
+
+<span class="cmd">sentra ~/myprompt $</span> <span class="caret"></span></pre>
+  </div>
+</body>
+</html>

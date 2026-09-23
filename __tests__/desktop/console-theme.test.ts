@@ -76,8 +76,15 @@ describe('Sentra console visual contract', () => {
       'banner-rule',
       'banner-hint',
       'banner-blank',
+      'banner-session',
+      'banner-example',
+      'banner-command',
       'blank-line',
       'cell-probe',
+      'seg-bright',
+      'seg-dim',
+      'seg-label',
+      'seg-cmd',
     ]) {
       expect(rendererCss).toMatch(new RegExp(`\\.${cls}[\\s,:{)]`))
     }

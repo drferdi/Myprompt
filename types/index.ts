@@ -324,6 +324,15 @@ export const DesktopRecentRunInputSchema = z.object({
   sourceMode: DesktopWorkspaceSourceModeSchema,
   rawInput: z.string().trim().min(1),
   outputText: z.string().trim().min(1),
+  // Optional, additive: lets the console count today's briefs by outcome. Older
+  // records without these fields still parse and are simply not counted.
+  outputKind: z.enum(['SUPER_PROMPT', 'CODING_BRIEF']).optional(),
+  quality: z
+    .object({
+      complete: z.boolean(),
+      degraded: z.boolean(),
+    })
+    .optional(),
 })
 export type DesktopRecentRunInput = z.infer<typeof DesktopRecentRunInputSchema>
 

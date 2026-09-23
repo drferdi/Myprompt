@@ -300,7 +300,7 @@ describe('console transcript command language', () => {
   })
 
   it('lays label/value pairs out in fixed columns, the second pair at column 40', async () => {
-    // Content starts at column 3 (two-space margin), so column 40 is text index 37.
+    // Content starts at screen column 2 (two-space margin), so column 40 is text index 38.
     type('mode')
     const modeLine = await vi.waitFor(() => {
       const line = findLine('mode=optimize')
@@ -308,10 +308,10 @@ describe('console transcript command language', () => {
       return line as HTMLElement
     })
     const [firstRow, secondRow] = (modeLine.textContent ?? '').split('\n')
-    expect(firstRow.indexOf('lane=')).toBe(37)
-    expect(firstRow.indexOf('profile=')).toBe(74)
+    expect(firstRow.indexOf('lane=')).toBe(38)
+    expect(firstRow.indexOf('profile=')).toBe(76)
     expect(secondRow.indexOf('effort=')).toBe(0)
-    expect(secondRow.indexOf('output=')).toBe(37)
+    expect(secondRow.indexOf('output=')).toBe(38)
 
     type('help')
     const helpLine = await vi.waitFor(() => {
@@ -319,7 +319,7 @@ describe('console transcript command language', () => {
       expect(line).toBeTruthy()
       return line as HTMLElement
     })
-    expect((helpLine.textContent ?? '').indexOf('Build a Coding Brief')).toBe(37)
+    expect((helpLine.textContent ?? '').indexOf('Build a Coding Brief')).toBe(38)
   })
 
   it('renders result actions as accessible plain-text buttons', async () => {
@@ -345,25 +345,90 @@ describe('console transcript command language', () => {
   })
 
   it('prints the boot banner without status prefixes', () => {
-    const banner = transcriptLines().slice(0, 5)
+    const banner = transcriptLines().slice(0, 4)
 
     expect(banner.map((line) => line.className)).toEqual([
       'line banner-title',
       'line banner-subtitle',
       'line banner-rule',
-      'line banner-hint',
       'line banner-blank',
     ])
     expect(banner.map((line) => line.textContent)).toEqual([
-      `Sentra Prompt Console ${packageVersion}`,
+      `Sentra Prompt Console  ${packageVersion}`,
       'Sentra Artificial Intelligence \u00b7 prompt engineering workspace',
       '\u2500'.repeat(72),
-      "Type your idea to build a Coding Brief, or 'help' for the command list.",
       '\u00a0',
     ])
+    // The version is a dim run after the bright title, as in the startup reference.
+    expect(banner[0].querySelector('.seg-dim')?.textContent).toBe(packageVersion)
     for (const line of banner) {
       expect(line.className).not.toMatch(/status-/)
     }
+  })
+
+  it('prints the startup block from real state: session, instruction, examples, hints, ok lines', () => {
+    const classes = transcriptLines().map((line) => line.className)
+    // reference-console-startup.html, top to bottom (banner-blank rows separate blocks).
+    expect(classes.slice(4)).toEqual([
+      'line banner-session',
+      'line banner-session',
+      'line banner-session',
+      'line blank-line',
+      'line banner-hint',
+      'line blank-line',
+      'line banner-example',
+      'line banner-example',
+      'line blank-line',
+      'line banner-command',
+      'line banner-command',
+      'line blank-line',
+      'line type-sys status-ok',
+      'line type-sys status-ok',
+      'line blank-line',
+    ])
+
+    const session = transcriptLines()
+      .filter((line) => line.classList.contains('banner-session'))
+      .map((line) => line.textContent ?? '')
+    // Left column: provider only (the mocked state has no model); right column: lane,
+    // profile, effort. No agent row: the shell has no such setting, so nothing is printed.
+    expect(session[0].startsWith('provider   openai')).toBe(true)
+    expect(session[0].indexOf('lane      interactive')).toBe(38)
+    expect(session[1].indexOf('profile   default')).toBe(38)
+    expect(session[2].indexOf('effort    high')).toBe(38)
+    expect(session.join('\n')).not.toMatch(/agent|model|—|unknown|n\/a/)
+    for (const line of transcriptLines().filter((line) => line.classList.contains('banner-session'))) {
+      expect(Array.from(line.querySelectorAll('.seg-label')).length).toBeGreaterThan(0)
+    }
+
+    expect(findLine('Type an idea and press Enter. It becomes a Coding Brief.')).toBeTruthy()
+    const examples = transcriptLines().filter((line) => line.classList.contains('banner-example'))
+    expect(examples[0].querySelector('.seg-cmd')?.textContent).toBe('brief')
+    expect(examples[1].querySelector('.seg-cmd')?.textContent).toBe('super')
+
+    const hints = transcriptLines()
+      .filter((line) => line.classList.contains('banner-command'))
+      .map((line) => line.textContent ?? '')
+    expect(hints[0].startsWith('log')).toBe(true)
+    expect(hints[0].indexOf('key')).toBe(29)
+    expect(hints[1].startsWith('help')).toBe(true)
+    expect(hints[1].indexOf('stat')).toBe(29)
+
+    const okLines = transcriptLines().filter((line) => line.classList.contains('status-ok'))
+    expect(okLines.map((line) => line.textContent)).toEqual(['0 briefs today', 'ready'])
+  })
+
+  it('reprints the startup block from current state after clear', async () => {
+    type('lane deep')
+    await vi.waitFor(() => expect(findLine('lane=deep')).toBeTruthy())
+    type('clear')
+    await vi.waitFor(() => expect(findLine('lane=deep')).toBeUndefined())
+
+    const session = transcriptLines()
+      .filter((line) => line.classList.contains('banner-session'))
+      .map((line) => line.textContent ?? '')
+    expect(session[0].indexOf('lane      deep')).toBe(38)
+    expect(findLine('ready')).toBeTruthy()
   })
 
   it('prints the banner before the first status line, unprefixed and in English', async () => {
@@ -379,7 +444,10 @@ describe('console transcript command language', () => {
       .map((line, index) => (/\bbanner-/.test(line.className) ? index : -1))
       .filter((index) => index >= 0)
 
-    expect(bannerIndices).toEqual([0, 1, 2, 3, 4])
+    // Banner rows are contiguous from the top and all sit before the first status line.
+    expect(bannerIndices[0]).toBe(0)
+    expect(bannerIndices.length).toBeGreaterThanOrEqual(4)
+    expect(bannerIndices.every((index) => index < firstStatusIndex)).toBe(true)
     expect(firstStatusIndex).toBeGreaterThan(4)
     for (const index of bannerIndices) {
       expect(lines[index].className).not.toMatch(/\bstatus-/)
@@ -436,5 +504,131 @@ describe('console transcript command language', () => {
       expect(text).not.toMatch(indonesian)
     }
     expect(document.querySelector('#display .line.status-error')).toBeTruthy()
+  })
+})
+
+describe('console startup block state variants', () => {
+  async function boot(options: {
+    shellState: Record<string, unknown>
+    recentRuns?: unknown[] | Error
+  }) {
+    vi.resetModules()
+    document.open()
+    document.write(rendererHtml)
+    document.close()
+
+    vi.stubGlobal('sentraDesktop', {
+      getShellState: vi.fn().mockResolvedValue(options.shellState),
+      invoke: vi.fn().mockResolvedValue({}),
+      auth: { getSession: vi.fn().mockResolvedValue(null) },
+      workspace: {
+        listDrafts: vi.fn().mockResolvedValue([]),
+        saveDraft: vi.fn().mockResolvedValue({}),
+        listRecentRuns:
+          options.recentRuns instanceof Error
+            ? vi.fn().mockRejectedValue(options.recentRuns)
+            : vi.fn().mockResolvedValue(options.recentRuns ?? []),
+        listBenchmarks: vi.fn().mockResolvedValue([]),
+      },
+      onStream: vi.fn(),
+      offStream: vi.fn(),
+      close: vi.fn(),
+      minimize: vi.fn(),
+      getWindowPos: vi.fn().mockResolvedValue([0, 0]),
+      setWindowPos: vi.fn(),
+    })
+
+    await import('../../desktop/renderer/renderer')
+    await vi.waitFor(() =>
+      expect(document.querySelector('#display .line.banner-command')).toBeTruthy()
+    )
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+    document.body.replaceChildren()
+  })
+
+  const sessionRows = () =>
+    transcriptLines()
+      .filter((line) => line.classList.contains('banner-session'))
+      .map((line) => line.textContent ?? '')
+
+  it('prints the model row when the shell resolved a model', async () => {
+    await boot({
+      shellState: {
+        providerReadiness: { status: 'ready', availableProviders: ['OPENAI'], activeProvider: 'OPENAI' },
+        preferredProvider: 'OPENAI',
+        preferredModel: 'openai/gpt-5.6-luna',
+      },
+    })
+
+    const rows = sessionRows()
+    expect(rows[0].startsWith('provider   openai')).toBe(true)
+    expect(rows[1].startsWith('model      openai/gpt-5.6-luna')).toBe(true)
+    expect(rows[1].indexOf('profile   default')).toBe(38)
+  })
+
+  it('omits provider and model rows and warns when no provider is loaded', async () => {
+    await boot({
+      shellState: {
+        providerReadiness: { status: 'missing', availableProviders: [], activeProvider: null },
+        preferredModel: 'grok-3-fast',
+      },
+    })
+
+    const rows = sessionRows()
+    expect(rows).toHaveLength(3)
+    expect(rows.join('\n')).not.toMatch(/provider|model|agent/)
+    expect(rows[0].indexOf('lane      interactive')).toBe(38)
+    expect(document.querySelector('#display .line.status-warn')?.textContent).toContain(
+      'Provider missing'
+    )
+    expect(findLine('ready')).toBeUndefined()
+  })
+
+  it('counts today\u2019s briefs by outcome from stored runs only', async () => {
+    const today = new Date().toISOString()
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    const run = (overrides: Record<string, unknown>) => ({
+      id: Math.random().toString(16).slice(2),
+      sourceMode: 'optimize',
+      rawInput: 'x',
+      outputText: '## GOAL\nx',
+      createdAt: today,
+      outputKind: 'CODING_BRIEF',
+      quality: { complete: true, degraded: false },
+      ...overrides,
+    })
+    await boot({
+      shellState: {
+        providerReadiness: { status: 'ready', availableProviders: ['OPENAI'], activeProvider: 'OPENAI' },
+        preferredProvider: 'OPENAI',
+      },
+      recentRuns: [
+        run({}),
+        run({ quality: { complete: false, degraded: true } }),
+        run({ createdAt: yesterday }),
+        run({ outputKind: 'SUPER_PROMPT' }),
+        run({ quality: undefined }),
+        run({ sourceMode: 'transform' }),
+      ],
+    })
+
+    expect(findLine('2 briefs today \u00b7 1 complete \u00b7 1 needs check')).toBeTruthy()
+  })
+
+  it('omits the counts row when the workspace store cannot be read', async () => {
+    await boot({
+      shellState: {
+        providerReadiness: { status: 'ready', availableProviders: ['OPENAI'], activeProvider: 'OPENAI' },
+        preferredProvider: 'OPENAI',
+      },
+      recentRuns: new Error('store locked'),
+    })
+
+    expect(findLine('ready')).toBeTruthy()
+    expect(findLine('briefs today')).toBeUndefined()
   })
 })

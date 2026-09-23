@@ -246,8 +246,17 @@ button, input {
 .line.banner-title { color: var(--console-text-strong); }
 .line.banner-subtitle { color: var(--console-text-dim); }
 .line.banner-rule { color: var(--console-text-dim); }
-.line.banner-hint { color: var(--console-text); }
+.line.banner-hint { color: var(--console-text-dim); }
 .line.banner-blank { min-height: calc(var(--console-size-body) * var(--console-leading-body)); }
+/* Startup block rows (reference-console-startup.html): session labels cyan, commands
+   green, descriptions dim; the rows are label tables, so they use the full width. */
+.line.banner-session,
+.line.banner-example,
+.line.banner-command { color: var(--console-text); }
+.seg-bright { color: var(--console-text-strong); }
+.seg-dim { color: var(--console-text-dim); }
+.seg-label { color: var(--console-accent); }
+.seg-cmd { color: var(--console-prompt); }
 
 /* ═══ ACTIONABLE LINES ═══ */
 /* Real buttons that look like plain text: no chrome, underline on hover,

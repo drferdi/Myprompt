@@ -55,6 +55,14 @@ interface DesktopRecentRunRecord {
   outputText: string
   sourceMode: 'transform' | 'optimize' | 'evaluate'
   createdAt?: string
+  outputKind?: DesktopOutputKind
+  quality?: { complete: boolean; degraded: boolean }
+}
+
+interface BriefCounts {
+  total: number
+  complete: number
+  needsCheck: number
 }
 
 interface DesktopBenchmarkRecord {
@@ -275,6 +283,9 @@ let providerReadinessStatus: 'resolving' | 'ready' | 'missing' = 'resolving'
 
 let isExecuting = false
 let lastRunRecord: DesktopRunRecord | null = null
+// Startup block state: printed once the shell state is known, and again on `clear`.
+let shellStateLoaded = false
+let briefCounts: BriefCounts | null = null
 let lastCopyText = ''
 const activeOptimizeLines = new Map<string, HTMLElement>()
 const activeOptimizeStatusLines = new Map<string, HTMLElement>()
@@ -583,6 +594,30 @@ function normalizeRecentRuns(payload: unknown): DesktopRecentRunRecord[] {
   )
 }
 
+/**
+ * Today's Coding Briefs by outcome, from the stored runs. Only records that carry an
+ * output kind and a quality verdict are counted, so the numbers are never inferred.
+ */
+function countTodaysBriefs(recentRuns: DesktopRecentRunRecord[], now = new Date()): BriefCounts {
+  const today = now.toDateString()
+  const counts: BriefCounts = { total: 0, complete: 0, needsCheck: 0 }
+
+  for (const record of recentRuns) {
+    if (record.sourceMode !== 'optimize' || record.outputKind !== 'CODING_BRIEF') continue
+    if (!record.quality || typeof record.createdAt !== 'string') continue
+    const createdAt = new Date(record.createdAt)
+    if (Number.isNaN(createdAt.getTime()) || createdAt.toDateString() !== today) continue
+    counts.total += 1
+    if (record.quality.degraded) {
+      counts.needsCheck += 1
+    } else if (record.quality.complete) {
+      counts.complete += 1
+    }
+  }
+
+  return counts
+}
+
 function normalizeBenchmarkRecords(payload: unknown): DesktopBenchmarkRecord[] {
   if (!isObjectRecord(payload) || !Array.isArray(payload.benchmarks)) {
     return []
@@ -626,7 +661,23 @@ async function appendRecentRunToWorkspace(record: DesktopRecentRunRecord) {
     sourceMode: record.sourceMode,
     rawInput: record.rawInput,
     outputText: record.outputText,
+    ...(record.outputKind && { outputKind: record.outputKind }),
+    ...(record.quality && { quality: record.quality }),
   })
+}
+
+/** The stored fields the startup counts need, read from an optimize response's metadata. */
+function readRunOutcome(response: unknown): Pick<DesktopRecentRunRecord, 'outputKind' | 'quality'> {
+  const metadata = isObjectRecord(response) && isObjectRecord(response.metadata) ? response.metadata : null
+  const quality = metadata && isObjectRecord(metadata.quality) ? metadata.quality : null
+  return {
+    ...(metadata?.outputKind === 'SUPER_PROMPT' || metadata?.outputKind === 'CODING_BRIEF'
+      ? { outputKind: metadata.outputKind }
+      : {}),
+    ...(quality && typeof quality.complete === 'boolean' && typeof quality.degraded === 'boolean'
+      ? { quality: { complete: quality.complete, degraded: quality.degraded } }
+      : {}),
+  }
 }
 
 /** Re-issue a stored run as the console command that would have produced it. */
@@ -1483,6 +1534,166 @@ function appendBannerLine(container: HTMLElement, cls: string, text: string) {
   return line
 }
 
+type SegmentTone = 'bright' | 'dim' | 'label' | 'cmd'
+
+interface BannerSegment {
+  text: string
+  tone?: SegmentTone
+}
+
+/** A banner row made of coloured runs (title + dim version, cyan labels, green commands). */
+function appendBannerSegments(container: HTMLElement, cls: string, segments: BannerSegment[]) {
+  const line = document.createElement('div')
+  line.className = `line banner-${cls}`
+  for (const segment of segments) {
+    if (!segment.tone) {
+      line.appendChild(document.createTextNode(segment.text))
+      continue
+    }
+    const span = document.createElement('span')
+    span.className = `seg-${segment.tone}`
+    span.textContent = segment.text
+    line.appendChild(span)
+  }
+  insertBeforePrompt(container, line)
+  container.scrollTop = container.scrollHeight
+  return line
+}
+
+interface TwoColumnPair {
+  label: string
+  value: string
+  labelTone: SegmentTone
+  valueTone?: SegmentTone
+}
+
+/**
+ * Two columns of label/value pairs, as in the startup reference: labels padded to the
+ * longest label in their column plus three spaces, the right column starting at a fixed
+ * screen column. Rows are zipped; a column that runs out leaves its half empty.
+ */
+function buildTwoColumnRows(
+  left: TwoColumnPair[],
+  right: TwoColumnPair[],
+  rightColumn: number
+): BannerSegment[][] {
+  const labelWidth = (pairs: TwoColumnPair[]) =>
+    Math.max(0, ...pairs.map((pair) => pair.label.length)) + 3
+  const leftWidth = labelWidth(left)
+  const rightWidth = labelWidth(right)
+  const rows: BannerSegment[][] = []
+
+  for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
+    const segments: BannerSegment[] = []
+    let column = LABEL_COLUMNS[0]
+    const leftPair = left[index]
+    const rightPair = right[index]
+
+    if (leftPair) {
+      segments.push({ text: leftPair.label, tone: leftPair.labelTone })
+      segments.push({ text: ' '.repeat(leftWidth - leftPair.label.length) })
+      segments.push({ text: leftPair.value, tone: leftPair.valueTone })
+      column += leftWidth + leftPair.value.length
+    }
+    if (rightPair) {
+      segments.push({ text: ' '.repeat(Math.max(2, rightColumn - column)) })
+      segments.push({ text: rightPair.label, tone: rightPair.labelTone })
+      segments.push({ text: ' '.repeat(rightWidth - rightPair.label.length) })
+      segments.push({ text: rightPair.value, tone: rightPair.valueTone })
+    }
+    rows.push(segments)
+  }
+
+  return rows
+}
+
+/** Right column of the session block: screen column 40, as in the startup reference. */
+const SESSION_RIGHT_COLUMN = 40
+/** Right column of the command hint block: screen column 31, as in the startup reference. */
+const HINT_RIGHT_COLUMN = 31
+
+/**
+ * The session block rows, from real state only. A field the shell does not have (no
+ * provider loaded, model still unresolved) is left out; nothing is ever a placeholder.
+ * There is no agent setting in the shell, so the reference's `agent` row is not printed.
+ */
+function buildSessionPairs(): { left: TwoColumnPair[]; right: TwoColumnPair[] } {
+  const left: TwoColumnPair[] = []
+  const right: TwoColumnPair[] = []
+
+  if (currentProvider) {
+    left.push({ label: strings.sessionLabelProvider, value: currentProvider.toLowerCase(), labelTone: 'label' })
+  }
+  const modelKnown =
+    currentModelLabel.trim().length > 0 &&
+    currentModelLabel !== 'provider-resolving' &&
+    !/(^|\/)(model|env)-required$/.test(currentModelLabel)
+  if (currentProvider && modelKnown) {
+    left.push({ label: strings.sessionLabelModel, value: currentModelLabel, labelTone: 'label' })
+  }
+  right.push({ label: strings.sessionLabelLane, value: currentOptimizerLane.toLowerCase(), labelTone: 'label' })
+  right.push({ label: strings.sessionLabelProfile, value: currentCompilerProfile, labelTone: 'label' })
+  right.push({ label: strings.sessionLabelEffort, value: currentEffortLevel, labelTone: 'label' })
+
+  return { left, right }
+}
+
+/**
+ * Everything below the rule on the startup screen (reference-console-startup.html):
+ * session block, instruction, two example commands, command hints, then the `ok` lines.
+ * Printed once the shell state is known, and again after `clear`.
+ */
+function printStartupBlock(container: HTMLElement) {
+  const { left, right } = buildSessionPairs()
+  for (const row of buildTwoColumnRows(left, right, SESSION_RIGHT_COLUMN)) {
+    appendBannerSegments(container, 'session', row)
+  }
+  appendBlankLine(container)
+
+  appendBannerLine(container, 'hint', strings.startupInstruction)
+  appendBlankLine(container)
+
+  for (const example of strings.startupExamples) {
+    appendBannerSegments(container, 'example', [
+      { text: example.command, tone: 'cmd' },
+      { text: ' ' },
+      { text: example.argument, tone: 'dim' },
+    ])
+  }
+  appendBlankLine(container)
+
+  const toHintPair = (hint: [string, string]): TwoColumnPair => ({
+    label: hint[0],
+    value: hint[1],
+    labelTone: 'cmd',
+    valueTone: 'dim',
+  })
+  const hintRows = buildTwoColumnRows(
+    strings.startupCommandHints.map((row) => toHintPair(row[0])),
+    strings.startupCommandHints.map((row) => toHintPair(row[1])),
+    HINT_RIGHT_COLUMN
+  )
+  for (const row of hintRows) {
+    appendBannerSegments(container, 'command', row)
+  }
+  appendBlankLine(container)
+
+  if (briefCounts) {
+    appendConsoleLine(
+      container,
+      'sys',
+      strings.briefCountsLine(briefCounts.total, briefCounts.complete, briefCounts.needsCheck)
+    )
+  }
+  if (providerReadinessStatus === 'ready') {
+    appendConsoleLine(container, 'sys', strings.readyLine)
+  } else if (providerReadinessStatus === 'missing') {
+    appendConsoleLine(container, 'sys', strings.providerMissingBadge)
+  }
+  appendBlankLine(container)
+}
+
+
 /** Build-time substituted meta tag; empty until the build step fills it in. */
 const VERSION_PLACEHOLDER = '__SENTRA_VERSION__'
 
@@ -1795,6 +2006,7 @@ async function executeOptimizeStream(
           sourceMode: runRecord.sourceMode,
           rawInput: runRecord.rawInput,
           outputText: runRecord.outputText,
+          ...readRunOutcome(payload.response),
         })
       }
       removeOptimizeStreamArtifacts(requestId, {
@@ -1912,11 +2124,18 @@ function resetConsoleView(container: HTMLElement) {
   activeOptimizeLines.clear()
   activeOptimizeStatusLines.clear()
 
-  appendBannerLine(container, 'title', strings.bannerTitle(readAppVersion()))
+  const version = readAppVersion()
+  appendBannerSegments(container, 'title', [
+    { text: strings.bannerTitle, tone: 'bright' },
+    ...(version ? [{ text: '  ' }, { text: version, tone: 'dim' as const }] : []),
+  ])
   appendBannerLine(container, 'subtitle', strings.bannerSubtitle)
   appendBannerLine(container, 'rule', strings.bannerRule)
-  appendBannerLine(container, 'hint', strings.bannerHint)
   appendBannerLine(container, 'blank', strings.bannerBlank)
+
+  if (shellStateLoaded) {
+    printStartupBlock(container)
+  }
 }
 
 function formatDesktopErrorMessage(error: unknown) {
@@ -1959,15 +2178,19 @@ function tryParseStructuredDesktopResult(value: string): unknown {
 }
 
 /**
- * Screen columns where label/value pairs sit, counted from the window edge: content starts
- * at column 3 (two-space margin), the second pair at column 40, the third at 77. A line
- * holds three pairs; more pairs continue on the next row at the same columns.
+ * Screen columns (0-based, from the window edge) where label/value pairs sit: content
+ * starts at column 2 (two-space margin), the second pair at column 40, the third at 78,
+ * as in reference-console-startup.html. A line holds three pairs; more pairs continue on
+ * the next row at the same columns.
  */
-const LABEL_COLUMNS = [3, 40, 77]
+const LABEL_COLUMNS = [2, 40, 78]
+
+/** Text after a six-character status prefix starts at screen column 6. */
+const STATUS_TEXT_COLUMN = 6
 
 /**
  * Lay `label=value` pairs out in fixed-width columns. `firstColumn` is the screen column
- * where the text starts: 3 for content, 7 for text after a status prefix. A pair too long
+ * where the text starts: 2 for content, 6 for text after a status prefix. A pair too long
  * for its column pushes the next one right by at least two spaces instead of overlapping.
  */
 function formatLabelColumns(pairs: string[], firstColumn = LABEL_COLUMNS[0]): string {
@@ -2296,27 +2519,39 @@ async function loadShellState() {
       syncOptimizerLaneModelPresentation()
     }
 
+    // Raw badge labels from the main process (for example the FTDR score) are never
+    // printed; the startup block prints the provider-missing warning from readiness.
+    briefCounts = await loadBriefCounts()
+    shellStateLoaded = true
     if (display) {
-      // Only badges with a system-facing string in strings.ts reach the transcript.
-      // Raw badge labels from the main process (for example the FTDR score) are
-      // not printed: the transcript never shows text that has no English string.
-      for (const badge of state?.badges ?? []) {
-        if (badge.id === 'provider-missing') {
-          appendConsoleLine(display, 'sys', strings.providerMissingBadge)
-          appendBlankLine(display)
-        }
-      }
+      printStartupBlock(display)
     }
 
     setExecutionState(isExecuting)
   } catch (error) {
     providerReadinessStatus = 'missing'
     currentProvider = null
+    shellStateLoaded = true
     setExecutionState(isExecuting)
     const message = error instanceof Error ? error.message : strings.shellStateUnavailable
     if (display) {
+      printStartupBlock(display)
       appendConsoleLine(display, 'sys', `[WARN] ${message}`)
+      appendBlankLine(display)
     }
+  }
+}
+
+/** Today's brief counts from the workspace store; null (row omitted) when unreadable. */
+async function loadBriefCounts(): Promise<BriefCounts | null> {
+  try {
+    const recentRuns = await desktopWindow.sentraDesktop?.workspace?.listRecentRuns?.()
+    if (!Array.isArray(recentRuns)) {
+      return null
+    }
+    return countTodaysBriefs(normalizeRecentRuns({ recentRuns }))
+  } catch {
+    return null
   }
 }
 
@@ -2463,7 +2698,7 @@ async function runStatCommand(container: HTMLElement) {
           `mem=${stats.usedMemGb.toFixed(1)} / ${Math.round(stats.totalMemGb)} GB`,
           `uptime=${formatUptime(stats.uptimeSeconds)}`,
         ],
-        7
+        STATUS_TEXT_COLUMN
       )}`
     )
   } catch (error) {

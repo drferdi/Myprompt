@@ -11,19 +11,55 @@
 
 // ── Boot banner ──────────────────────────────────────────────────────────────
 
-export function bannerTitle(version: string): string {
-  return version ? `Sentra Prompt Console ${version}` : 'Sentra Prompt Console'
-}
+export const bannerTitle = 'Sentra Prompt Console'
 
 export const bannerSubtitle = 'Sentra Artificial Intelligence · prompt engineering workspace'
 
 /** Decorative rules are 72 characters (the prose width), never the window width. */
 export const bannerRule = '─'.repeat(72)
 
-export const bannerHint = "Type your idea to build a Coding Brief, or 'help' for the command list."
-
 /** A non-breaking space so the blank banner row keeps its line box. */
 export const bannerBlank = ' '
+
+// ── Startup block (reference-console-startup.html) ───────────────────────────
+// Every value printed next to these labels comes from real shell state; a row whose
+// value is unavailable is omitted, never filled with a placeholder.
+
+export const sessionLabelAgent = 'agent'
+export const sessionLabelProvider = 'provider'
+export const sessionLabelModel = 'model'
+export const sessionLabelLane = 'lane'
+export const sessionLabelProfile = 'profile'
+export const sessionLabelEffort = 'effort'
+
+export const startupInstruction = 'Type an idea and press Enter. It becomes a Coding Brief.'
+
+export const startupExamples: Array<{ command: string; argument: string }> = [
+  { command: 'brief', argument: '"the optimizer returns truncated prompts as successful results"' },
+  { command: 'super', argument: '"write the launch note for the September release"' },
+]
+
+/** Two rows of two command hints each: [command, description]. */
+export const startupCommandHints: Array<Array<[string, string]>> = [
+  [
+    ['log', 'recent briefs'],
+    ['key', 'provider keys'],
+  ],
+  [
+    ['help', 'all commands'],
+    ['stat', 'system snapshot'],
+  ],
+]
+
+export function briefCountsLine(total: number, complete: number, needsCheck: number): string {
+  const briefs = `${total} ${total === 1 ? 'brief' : 'briefs'} today`
+  if (total === 0) {
+    return `[DONE] ${briefs}`
+  }
+  return `[DONE] ${briefs} · ${complete} complete · ${needsCheck} needs check`
+}
+
+export const readyLine = '[DONE] ready'
 
 // ── Bare (non-slash) command catalog ─────────────────────────────────────────
 
