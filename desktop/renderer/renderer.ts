@@ -1191,82 +1191,6 @@ function buildResultActions(copyText: string, runRecord?: DesktopRunRecord): Con
   }
 
   actions.push({
-    label: strings.actionLibraryLabel,
-    ariaLabel: strings.actionLibraryAria,
-    handler: withTransientSaveState(strings.actionLibraryLabel, async () => {
-      const result = await desktopWindow.sentraDesktop?.invoke?.('desktop:command', {
-        command: 'library:save',
-        payload: {
-          rawInput: runRecord.rawInput,
-          optimizedText: runRecord.outputText,
-          taskType: runRecord.taskType,
-          tone: runRecord.tone,
-          format: runRecord.format,
-          targetLlm: runRecord.targetLlm,
-          tags: [runRecord.sourceMode],
-        },
-      })
-      const promptId =
-        isObjectRecord(result) &&
-        isObjectRecord(result.prompt) &&
-        typeof result.prompt.id === 'string'
-          ? result.prompt.id
-          : 'saved'
-
-      return strings.libraryItemCreatedNotice(promptId)
-    }),
-  })
-
-  actions.push({
-    label: strings.actionDraftLabel,
-    ariaLabel: strings.actionDraftAria,
-    handler: withTransientSaveState(strings.actionDraftLabel, async () => {
-      const result = await desktopWindow.sentraDesktop?.invoke?.('desktop:command', {
-        command: 'draft:save',
-        payload: {
-          id: `draft-${runRecord.id}`,
-          rawInput: runRecord.rawInput,
-          optimizedText: runRecord.outputText,
-          sourceMode: runRecord.sourceMode,
-        },
-      })
-      const draftId =
-        isObjectRecord(result) && isObjectRecord(result.draft) && typeof result.draft.id === 'string'
-          ? result.draft.id
-          : 'draft'
-
-      return strings.draftSavedNotice(draftId)
-    }),
-  })
-
-  actions.push({
-    label: strings.actionBenchmarkLabel,
-    ariaLabel: strings.actionBenchmarkAria,
-    handler: withTransientSaveState(strings.actionBenchmarkLabel, async () => {
-      const result = await desktopWindow.sentraDesktop?.invoke?.('desktop:command', {
-        command: 'benchmark:save',
-        payload: {
-          id: `bench-${runRecord.id}`,
-          title: runRecord.rawInput.slice(0, 72),
-          prompt: runRecord.rawInput,
-          taskType: runRecord.taskType,
-          tone: runRecord.tone,
-          format: runRecord.format,
-          optimizerLane: runRecord.optimizerLane ?? 'INTERACTIVE',
-        },
-      })
-      const benchmarkId =
-        isObjectRecord(result) &&
-        isObjectRecord(result.benchmark) &&
-        typeof result.benchmark.id === 'string'
-          ? result.benchmark.id
-          : 'benchmark'
-
-      return strings.benchmarkSavedNotice(benchmarkId)
-    }),
-  })
-
-  actions.push({
     label: strings.actionRerunLabel,
     ariaLabel: strings.actionRerunAria,
     handler: () => {
@@ -1327,6 +1251,32 @@ function buildResultActions(copyText: string, runRecord?: DesktopRunRecord): Con
     },
   })
 
+  actions.push({
+    label: strings.actionLibraryLabel,
+    ariaLabel: strings.actionLibraryAria,
+    handler: withTransientSaveState(strings.actionLibraryLabel, async () => {
+      const result = await desktopWindow.sentraDesktop?.invoke?.('desktop:command', {
+        command: 'library:save',
+        payload: {
+          rawInput: runRecord.rawInput,
+          optimizedText: runRecord.outputText,
+          taskType: runRecord.taskType,
+          tone: runRecord.tone,
+          format: runRecord.format,
+          targetLlm: runRecord.targetLlm,
+          tags: [runRecord.sourceMode],
+        },
+      })
+      const promptId =
+        isObjectRecord(result) &&
+        isObjectRecord(result.prompt) &&
+        typeof result.prompt.id === 'string'
+          ? result.prompt.id
+          : 'saved'
+
+      return strings.libraryItemCreatedNotice(promptId)
+    }),
+  })
   return actions
 }
 
@@ -1915,7 +1865,8 @@ async function executeOptimizeStream(
   invocation: DesktopInvocation,
   requestId: string,
   container: HTMLElement,
-  rawInput: string
+  rawInput: string,
+  headerMetaLine: HTMLElement | null = null
 ) {
   const streamLine = ensureOptimizeStreamLine(container, requestId)
   const statusLine = ensureOptimizeStatusLine(container, requestId)
@@ -2075,7 +2026,18 @@ async function executeOptimizeStream(
       const formattedText = formatDesktopResult(payload.response)
       const { body, trailing } = splitTrailingResultLines(formattedText)
       renderBodyRuns(streamLine, body)
-      const anchor = appendTrailingResultLines(streamLine, trailing)
+      // The run has one meta block, printed with the echo (reference-console-sentra.html):
+      // the settings rows written at the start are completed in place with provider,
+      // model and latency, so only the verdict follows the body.
+      const metaRows = trailing.filter(isMetaFlagLine)
+      const verdictRows = trailing.filter((row) => !isMetaFlagLine(row))
+      if (headerMetaLine && metaRows.length > 0) {
+        headerMetaLine.textContent = metaRows.join('\n')
+      }
+      const anchor = appendTrailingResultLines(
+        streamLine,
+        headerMetaLine ? verdictRows : trailing
+      )
       lastCopyText = formattedText
       const runRecord = buildRunRecord('optimize', rawInput, payload.response, requestId)
       if (runRecord) {
@@ -2387,11 +2349,15 @@ function isQualityLine(line: string): boolean {
   )
 }
 
-/** Status class of a quality line: ok (green), thin (warn prefix), or degraded (red). */
+/**
+ * Status class of a quality line, as reference-console-sentra.html prints the verdict:
+ * `ok    complete · …`, `warn  thin brief …`, `error needs review · …`. The prefix comes
+ * from the status style, so the DOM text stays the verdict alone.
+ */
 function qualityLineClass(text: string): string {
-  if (text.startsWith(`${strings.qualityOk} · `)) return 'quality-ok'
+  if (text.startsWith(`${strings.qualityOk} · `)) return 'status-ok'
   if (text === strings.qualityThin) return 'status-warn'
-  return 'quality-degraded'
+  return 'status-error'
 }
 
 function isTrailingResultLine(line: string): boolean {
@@ -2543,11 +2509,7 @@ function formatDesktopResult(result: unknown): string {
   if (superPrompt && typeof superPrompt.fullPrompt === 'string') {
     const promptBody = buildOptimizePromptText(superPrompt)
 
-    const lines = [
-      '# Optimized Prompt',
-      '',
-      promptBody || '[No visible prompt content returned by provider.]',
-    ]
+    const lines = [promptBody || '[No visible prompt content returned by provider.]']
     const metaFlags = metadata ? formatMetaFlags(metadata, currentOptimizerLane) : ''
     const qualityLine = metadata
       ? formatQualityLine(metadata.quality, countPromptSections(promptBody))
@@ -2777,7 +2739,36 @@ async function runKeyCommand(container: HTMLElement, rest: string) {
           },
         }
 
-  await runInvocation(container, invocation)
+  // Reference: `ok    provider=openai saved`; a listing prints each provider's key
+  // source in label columns. The result payload is never echoed as JSON.
+  setExecutionState(true)
+  try {
+    const result = await desktopWindow.sentraDesktop?.invoke?.(
+      invocation.channel,
+      invocation.payload
+    )
+    if (provider && apiKey) {
+      appendConsoleLine(container, 'sys', strings.providerKeySaved(provider))
+    } else {
+      const providers =
+        isObjectRecord(result) && Array.isArray(result.providers)
+          ? result.providers.filter(isObjectRecord)
+          : []
+      const flags = providers
+        .filter((entry) => typeof entry.provider === 'string' && typeof entry.source === 'string')
+        .map((entry) => `${String(entry.provider).toLowerCase()}=${String(entry.source).toLowerCase()}`)
+      appendConsoleLine(
+        container,
+        'sys',
+        flags.length > 0 ? `[DONE] ${formatLabelColumns(flags)}` : strings.providerKeysNone
+      )
+    }
+  } catch (error) {
+    appendConsoleLine(container, 'sys', `[ERROR] ${formatDesktopErrorMessage(error)}`)
+  } finally {
+    setExecutionState(false)
+    input?.focus()
+  }
 }
 
 async function runStatCommand(container: HTMLElement) {
@@ -2881,38 +2872,6 @@ async function runLogCommand(container: HTMLElement) {
   }
 }
 
-/** Fire-and-report a non-streaming invocation, printing the formatted result. */
-async function runInvocation(container: HTMLElement, invocation: DesktopInvocation) {
-  setExecutionState(true)
-  const started = Date.now()
-  const pendingLine = appendConsoleLine(container, 'sys', `[WAIT] ${buildPendingLabel()}`)
-
-  try {
-    const result = (await desktopWindow.sentraDesktop?.invoke?.(
-      invocation.channel,
-      invocation.payload
-    )) ?? {
-      status: 'pending',
-      channel: invocation.channel,
-    }
-
-    pendingLine.remove()
-    appendBlankLine(container)
-    appendConsoleLine(container, 'agent', formatDesktopResult(result))
-    appendConsoleLine(
-      container,
-      'sys',
-      strings.finishedIn(Math.round((Date.now() - started) / 1000))
-    )
-  } catch (error) {
-    pendingLine.remove()
-    appendConsoleLine(container, 'sys', `[ERROR] ${formatDesktopErrorMessage(error)}`)
-  } finally {
-    setExecutionState(false)
-    input?.focus()
-  }
-}
-
 async function runPromptCommand(
   container: HTMLElement,
   mode: DesktopPrimaryModeId,
@@ -2927,9 +2886,10 @@ async function runPromptCommand(
   currentMode = mode
   currentOutputKind = outputKind
 
+  let headerMetaLine: HTMLElement | null = null
   if (mode === 'optimize') {
     const suggestion = suggestOptimizerConfig(rawValue)
-    appendMetaLine(
+    headerMetaLine = appendMetaLine(
       container,
       formatLabelColumns(
         [
@@ -2970,7 +2930,7 @@ async function runPromptCommand(
       const invocation = buildOptimizeInvocation(rawValue, outputKind, requestId)
 
       if (isOptimizeInvocation(invocation)) {
-        await executeOptimizeStream(invocation, requestId, container, rawValue)
+        await executeOptimizeStream(invocation, requestId, container, rawValue, headerMetaLine)
       }
     } else {
       const invocation = buildTransformInvocation(rawValue)
@@ -3004,11 +2964,15 @@ async function runPromptCommand(
     }
 
     clearPendingLines()
-    appendConsoleLine(
-      container,
-      'sys',
-      strings.finishedIn(Math.round((Date.now() - started) / 1000))
-    )
+    // An optimize run closes with its quality verdict (ok / warn / error); the latency
+    // is already in the meta block. A transform run has no verdict, so it keeps this line.
+    if (mode !== 'optimize') {
+      appendConsoleLine(
+        container,
+        'sys',
+        strings.finishedIn(Math.round((Date.now() - started) / 1000))
+      )
+    }
   } catch (error) {
     clearPendingLines()
     appendConsoleLine(container, 'sys', `[ERROR] ${formatDesktopErrorMessage(error)}`)

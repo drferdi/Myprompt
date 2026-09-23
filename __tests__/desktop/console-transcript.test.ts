@@ -264,8 +264,8 @@ describe('console transcript command language', () => {
     const qualityLine = document.querySelector<HTMLElement>('#display .line.quality-line')
     expect(qualityLine?.textContent).toBe('thin brief — add where to work and how to check it')
     expect(qualityLine?.classList.contains('status-warn')).toBe(true)
-    expect(qualityLine?.classList.contains('quality-ok')).toBe(false)
-    expect(qualityLine?.classList.contains('quality-degraded')).toBe(false)
+    expect(qualityLine?.classList.contains('status-ok')).toBe(false)
+    expect(qualityLine?.classList.contains('status-error')).toBe(false)
   })
 
   it('closes a streamed optimize run with the result and its action line', async () => {
@@ -288,20 +288,49 @@ describe('console transcript command language', () => {
 
     handleDone?.({
       requestId: sentRequestId,
-      response: { superPrompt: { fullPrompt: '## ROLE\nx' }, metadata: {} },
+      response: {
+        superPrompt: { fullPrompt: '## ROLE\nx' },
+        metadata: {
+          taskType: 'CODING',
+          provider: 'OPENAI',
+          model: 'openai/gpt-5.6-luna',
+          latencyMs: 2700,
+          outputKind: 'CODING_BRIEF',
+          quality: { complete: true, degraded: false, attempts: 1 },
+        },
+      },
     })
 
     const streamLine = document.querySelector<HTMLElement>(
       `#display .line[data-request-id="${sentRequestId}"]`
     )
     expect(streamLine?.textContent).toContain('## ROLE')
-    // Result block order: body, one blank line, trailing meta line, then the action line.
+    expect(streamLine?.textContent).not.toContain('# Optimized Prompt')
+    // One meta block per run: the header rows printed with the echo are completed in
+    // place with provider, model and latency; no second meta block follows the body.
+    const metaLines = Array.from(document.querySelectorAll<HTMLElement>('#display .line.meta-line'))
+    expect(metaLines).toHaveLength(1)
+    expect(metaLines[0].compareDocumentPosition(streamLine as Node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(metaLines[0].textContent).toContain('provider=openai')
+    expect(metaLines[0].textContent).toContain('model=openai/gpt-5.6-luna')
+    expect(metaLines[0].textContent).toContain('2.7s')
+    // Result block order: body, one blank line, the verdict in the status column, then
+    // the action line in reference order; no "Finished in" line closes an optimize run.
     const blank = streamLine?.nextElementSibling
     expect(blank?.classList.contains('blank-line')).toBe(true)
-    expect(blank?.nextElementSibling?.classList.contains('meta-line')).toBe(true)
-    expect(blank?.nextElementSibling?.nextElementSibling?.classList.contains('tx-actions')).toBe(
-      true
-    )
+    const verdict = blank?.nextElementSibling as HTMLElement
+    expect(verdict.classList.contains('quality-line')).toBe(true)
+    expect(verdict.classList.contains('status-ok')).toBe(true)
+    expect(verdict.textContent).toBe('complete · 1 section · 1 attempt')
+    const actions = verdict.nextElementSibling as HTMLElement
+    expect(actions.classList.contains('tx-actions')).toBe(true)
+    expect(Array.from(actions.querySelectorAll('button')).map((button) => button.textContent)).toEqual([
+      '[c] copy',
+      '[r] rerun',
+      '[e] evaluate',
+      '[l] library',
+    ])
+    expect(findLine('Finished in')).toBeUndefined()
     expect(document.querySelector('#display .line[data-request-status-id]')).toBeNull()
   })
 
@@ -532,8 +561,11 @@ describe('console transcript command language', () => {
         expect((document.getElementById('cmdInput') as HTMLInputElement).disabled).toBe(false)
       )
 
-    invoke.mockImplementation(async (_channel: string, payload?: unknown) => {
+    invoke.mockImplementation(async (channel: string, payload?: unknown) => {
       const command = (payload as { command?: string } | undefined)?.command
+      // The transform run must finish normally: its own "Finished in" line is the one
+      // this test waits for (the key command no longer prints one).
+      if (channel === 'workspace:recent:append') return { ok: true }
       if (command === 'transform:run') return { transformedPrompt: 'x' }
       if (command === 'recent:list') return { runs: [] }
       if (command === 'benchmark:list') return { benchmarks: [] }

@@ -246,8 +246,12 @@ export function compareReadyLine(rawInput: string): string {
 
 // ── Quality line fragments ───────────────────────────────────────────────────
 
-/** Verdict words that open a quality line; the renderer keys its parser on these. */
-export const qualityOk = 'ok'
+/**
+ * Verdict words that open a quality line; the renderer keys its parser on these. The
+ * ok / warn / error prefix comes from the status style (reference-console-sentra.html:
+ * `ok    complete · 5 sections · 1 attempt`), so it is not part of the text.
+ */
+export const qualityOk = 'complete'
 export const qualityNeedsReview = 'needs review'
 /**
  * A thin brief (V11, docs/CODING_BRIEF_STANDARD.md §9.3): valid, but CONTEXT and DONE WHEN
@@ -257,9 +261,17 @@ export const qualityNeedsReview = 'needs review'
 export const qualityThin = 'thin brief — add where to work and how to check it'
 
 export function sectionsCount(count: number): string {
-  return `${count} sections`
+  return `${count} ${count === 1 ? 'section' : 'sections'}`
 }
 
 export function attemptsCount(count: number): string {
-  return `${count} attempts`
+  return `${count} ${count === 1 ? 'attempt' : 'attempts'}`
 }
+
+// ── Provider keys ─────────────────────────────────────────────────────────────
+
+export function providerKeySaved(provider: string): string {
+  return `[DONE] provider=${provider.toLowerCase()} saved`
+}
+
+export const providerKeysNone = '[DONE] no provider keys'

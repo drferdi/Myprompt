@@ -197,7 +197,8 @@ button, input {
 }
 
 .line.type-sys { color: var(--console-text-dim); }
-.line.type-user { color: var(--console-prompt); }
+/* The echoed command is body text; only the prompt in front of it is green. */
+.line.type-user { color: var(--console-text); }
 .line.type-agent { color: var(--console-text); }
 
 /* Echo of the typed command keeps the prompt in front of it. */
@@ -232,11 +233,10 @@ button, input {
 .line.status-warn::before { content: 'warn  '; color: var(--console-warn); }
 .line.status-error::before { content: 'error '; color: var(--console-error); }
 
-/* Meta line is settings, not a verdict; the quality line is the verdict. */
+/* Meta line is settings, not a verdict; the quality line is the verdict, printed in
+   the status column (ok / warn / error prefix) with the text in body colour. */
 .line.meta-line { color: var(--console-text-dim); }
-.line.quality-line { font-weight: 700; }
-.line.quality-ok { color: var(--console-success); }
-.line.quality-degraded { color: var(--console-error); }
+.line.quality-line { color: var(--console-text); }
 
 .line.scramble-line {
   color: var(--console-accent);
@@ -269,15 +269,17 @@ button, input {
 /* ═══ ACTIONABLE LINES ═══ */
 /* Real buttons that look like plain text: no chrome, underline on hover,
    keyboard focusable, accessible name in aria-label. */
+/* The action row sits in the status text column, dim, under the verdict. */
 .tx-actions {
   display: block;
+  padding-left: var(--console-prefix);
 }
 
 .tx-action {
   all: unset;
   display: inline;
   cursor: pointer;
-  color: var(--console-path);
+  color: var(--console-text-dim);
   font: inherit;
   margin-right: 12px;
   white-space: nowrap;
