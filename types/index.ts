@@ -168,9 +168,11 @@ export const CodingBriefSchema = z.object({
   goal: z.string(),
   context: z.string(),
   scope: z.string(),
-  stack: z.string().optional(),
-  outOfScope: z.string().optional(),
+  stack: z.string(),
+  outOfScope: z.string(),
   doneWhen: z.string(),
+  // v3.0: present whenever an element was proposed rather than stated (V14).
+  assumptions: z.string().optional(),
   report: z.string(),
 })
 export type CodingBrief = z.infer<typeof CodingBriefSchema>
@@ -180,7 +182,7 @@ export const OptimizeQualitySchema = z.object({
   degraded: z.boolean(),
   reason: z.enum(['parse_failed', 'invalid_brief']).optional(),
   // Coding Brief V11: valid, but CONTEXT and DONE WHEN both defer to the user. Never
-  // presented as complete (C7).
+  // presented as complete (§8.3).
   thin: z.boolean().optional(),
   attempts: z.number().int().min(1),
 })

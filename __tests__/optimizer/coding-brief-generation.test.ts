@@ -25,7 +25,7 @@ const codingRequest: OptimizeRequest = {
   optimizerLane: 'INTERACTIVE',
 }
 
-// v2.0 headings. CONTEXT names a path so the brief is complete, not thin (V11).
+// v3.0 headings. CONTEXT names a path so the brief is complete, not thin (V11).
 const VALID_BRIEF = [
   '## GOAL',
   'Show a clear warning when a generated prompt is incomplete.',
@@ -37,11 +37,17 @@ const VALID_BRIEF = [
   'An incomplete result is printed with no warning.',
   'Expected: an incomplete result shows a warning; a complete result shows none.',
   '',
+  '## STACK',
+  'Explore first: the stack the repository already uses.',
+  '',
+  '## OUT OF SCOPE',
+  'lib/transform/**',
+  '',
   '## DONE WHEN',
   'Propose a check first: an incomplete result visibly shows a warning; a complete result shows none.',
 ].join('\n')
 
-/** docs/CODING_BRIEF_STANDARD.md §9.3: valid, but both fallbacks fired. */
+/** docs/CODING_BRIEF_STANDARD.md §8.3: valid, but both fallbacks fired. */
 const THIN_BRIEF = [
   '## GOAL',
   'Make the application faster.',
@@ -52,6 +58,12 @@ const THIN_BRIEF = [
   '## SCOPE',
   '[TODO: which screens or operations feel slow?]',
   '',
+  '## STACK',
+  'Explore first: the stack the repository already uses.',
+  '',
+  '## OUT OF SCOPE',
+  'lib/transform/**',
+  '',
   '## DONE WHEN',
   'Propose a check first: the slow operation completes noticeably faster.',
 ].join('\n')
@@ -61,24 +73,35 @@ const STACK_REQUEST: OptimizeRequest = {
   rawIdea: 'buatkan website dokter umum pakai React dan Next.js',
 }
 
-const GREENFIELD_BRIEF_WITHOUT_STACK = [
-  '## GOAL',
-  'Build a general practitioner clinic website.',
-  '',
-  '## CONTEXT',
-  'New project: [TODO: target directory]',
-  '',
-  '## SCOPE',
-  'Home, services, doctor profile, opening hours, location, contact.',
-  '',
-  '## DONE WHEN',
-  '`pnpm dev` runs and every page listed in SCOPE renders without console errors.',
-].join('\n')
+const greenfieldBrief = (stack: string) =>
+  [
+    '## GOAL',
+    'Build a general practitioner clinic website.',
+    '',
+    '## CONTEXT',
+    'New project: ./clinic-website',
+    '',
+    '## SCOPE',
+    'Home, services, doctor profile, opening hours, location, contact.',
+    '',
+    '## STACK',
+    stack,
+    '',
+    '## OUT OF SCOPE',
+    'No patient data storage, no authentication, no medical records.',
+    '',
+    '## DONE WHEN',
+    '`pnpm dev` runs and every page listed in SCOPE renders without console errors.',
+    '',
+    '## ASSUMPTIONS',
+    '- Directory ./clinic-website.',
+    '- TypeScript as the ordinary language for a Next.js site.',
+    'Change any line above and run again.',
+  ].join('\n')
 
-const GREENFIELD_BRIEF = GREENFIELD_BRIEF_WITHOUT_STACK.replace(
-  '\n## DONE WHEN',
-  '\n## STACK\nReact with Next.js (App Router), TypeScript.\n\n## DONE WHEN'
-)
+const GREENFIELD_BRIEF_WITHOUT_NAMED_STACK = greenfieldBrief('TypeScript.')
+
+const GREENFIELD_BRIEF = greenfieldBrief('React with Next.js (App Router), TypeScript.')
 
 const WRONG_REPORT_TEXT = '- Trust the agent and skip the evidence.'
 
@@ -94,6 +117,12 @@ const VAGUE_BRIEF = [
   '## SCOPE',
   'An incomplete result is printed with no warning.',
   'Expected: an incomplete result shows a warning; a complete result shows none.',
+  '',
+  '## STACK',
+  'Explore first: the stack the repository already uses.',
+  '',
+  '## OUT OF SCOPE',
+  'lib/transform/**',
   '',
   '## DONE WHEN',
   'Login works well.',
@@ -312,7 +341,7 @@ describe('coding brief generation', () => {
   describe('V10 named technologies on the CODING_BRIEF route', () => {
     it('repairs a brief that drops the stack the raw request named, quoting V10', async () => {
       const provider = makeFakeProvider({
-        generateResults: [GREENFIELD_BRIEF_WITHOUT_STACK, GREENFIELD_BRIEF],
+        generateResults: [GREENFIELD_BRIEF_WITHOUT_NAMED_STACK, GREENFIELD_BRIEF],
       })
       vi.mocked(getProvider).mockReturnValue(provider as never)
 
@@ -353,8 +382,8 @@ describe('coding brief generation', () => {
       for (const old of ['## WHERE', '## SCENARIO', '## FOLLOW PATTERN', '## REPORT']) {
         expect(systemPrompt).not.toContain(old)
       }
-      expect(systemPrompt).toContain('New project: [TODO: target directory]')
-      expect(systemPrompt).toContain('React with Next.js (App Router), TypeScript.')
+      expect(systemPrompt).toContain('New project: ./clinic-website')
+      expect(systemPrompt).toContain('Next.js (App Router), React, TypeScript, Tailwind CSS.')
       expect(systemPrompt).toContain('@lib/optimizer/engine.ts')
       expect(systemPrompt).toContain('TypeScript, Vitest. Follow the length-recovery logic in `optimizePrompt`.')
     })

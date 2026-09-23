@@ -44,12 +44,12 @@ export const PromptQualitySchema = SuperPromptSchema
 /** Canonical type for structured prompt quality (SSOT). */
 export type PromptQuality = SuperPrompt
 
-// ── Coding Brief (docs/CODING_BRIEF_STANDARD.md v2.0) ─────────────────────
+// ── Coding Brief (docs/CODING_BRIEF_STANDARD.md v3.0) ─────────────────────
 //
 // This module is the runtime source of truth for the Coding Brief contract:
 // the canonical REPORT text (§7), the parsed shape (§4), and the deterministic
-// validator implementing V1–V11 (§5). v1.0 headings (WHERE, SCENARIO, FOLLOW
-// PATTERN) are accepted for one release and reported as deprecated.
+// validator implementing V1–V14 (§5). v1.0 headings (WHERE, SCENARIO, FOLLOW
+// PATTERN) are still accepted and reported as deprecated.
 
 /**
  * Canonical `## REPORT` body from §7, without the heading line. Defined in the
@@ -57,13 +57,13 @@ export type PromptQuality = SuperPrompt
  */
 export { CODING_BRIEF_REPORT_TEXT }
 
-/** Parsed Coding Brief (§4). Optional sections are absent, never empty strings. */
+/** Parsed Coding Brief (§4). ASSUMPTIONS is absent when omitted, never an empty string. */
 export { CodingBriefSchema, type CodingBrief }
 
 export interface CodingBriefValidation {
   valid: boolean
   issues: string[]
-  /** V11: valid, but CONTEXT and DONE WHEN both defer to the user (§9.3). */
+  /** V11: valid, but CONTEXT and DONE WHEN both defer to the user (§8.3). */
   thin: boolean
   /** v1.0 headings found and mapped, as `WHERE (use CONTEXT)`. Accepted, never an issue. */
   deprecated: string[]
@@ -71,22 +71,61 @@ export interface CodingBriefValidation {
 }
 
 export interface CodingBriefValidationOptions {
-  /** The user's raw request; enables V10 (named technologies must appear in STACK). */
+  /**
+   * The user's raw request; enables V10 (named technologies must appear in STACK) and
+   * V14 (proposals the request did not state must be listed under ASSUMPTIONS).
+   */
   rawRequest?: string
 }
 
-const REQUIRED_HEADINGS: CodingBriefHeading[] = ['GOAL', 'CONTEXT', 'SCOPE', 'DONE WHEN', 'REPORT']
+const REQUIRED_HEADINGS: CodingBriefHeading[] = [
+  'GOAL',
+  'CONTEXT',
+  'SCOPE',
+  'STACK',
+  'OUT OF SCOPE',
+  'DONE WHEN',
+  'REPORT',
+]
 
-/** CONTEXT and DONE WHEN openers that defer to the user (§6 C4, C5). */
+/** The required elements the Optimizer writes (V13); REPORT is fixed text. */
+const CONTENT_HEADINGS: CodingBriefHeading[] = REQUIRED_HEADINGS.filter(
+  (heading) => heading !== 'REPORT'
+)
+
+/** Placeholder markers: the CONTEXT and DONE WHEN openers and the greenfield opener (§4). */
 const EXPLORE_FIRST = 'Explore first:'
 const NEW_PROJECT = 'New project:'
 const PROPOSE_CHECK_FIRST = 'Propose a check first:'
 /**
- * A `[TODO: …]` line in SCOPE is the engine admitting it lacks information (§9.1, §9.3).
- * V5 does not fire on such a SCOPE: failing it would teach the model to invent a second
- * item instead of asking.
+ * A `[TODO: …]` line in SCOPE is the engine admitting it lacks information. V5 does not
+ * fire on such a SCOPE: failing it would teach the model to invent a second item. In a
+ * greenfield brief the placeholder itself is the defect, and V13 reports it.
  */
 const TODO_PLACEHOLDER = '[TODO:'
+
+/**
+ * Placeholder text that restates the instruction instead of the content (§5 V12).
+ * Matched on word boundaries, so "the checkout page" is not "the check".
+ */
+const PARAPHRASE_PHRASES = ['the intended outcome', 'the check', 'to be determined']
+
+/** The text each placeholder carries: after a line opener, or inside `[TODO: …]`. */
+function placeholderTexts(text: string): string[] {
+  const found: string[] = []
+  for (const rawLine of text.split('\n')) {
+    const line = rawLine.trim()
+    for (const opener of [EXPLORE_FIRST, PROPOSE_CHECK_FIRST, NEW_PROJECT]) {
+      if (line.startsWith(opener)) {
+        found.push(line.slice(opener.length))
+      }
+    }
+  }
+  for (const match of text.matchAll(/\[TODO:([^\]]*)\]/g)) {
+    found.push(match[1])
+  }
+  return found
+}
 
 function hasTodoLine(body: string): boolean {
   return body.split('\n').some((line) => line.trim().startsWith(TODO_PLACEHOLDER))
@@ -115,12 +154,12 @@ function containsWord(haystack: string, word: string): boolean {
 }
 
 /**
- * Validate a Coding Brief against docs/CODING_BRIEF_STANDARD.md §5 (V1–V11).
+ * Validate a Coding Brief against docs/CODING_BRIEF_STANDARD.md §5 (V1–V14).
  *
  * Each issue is formatted `V<n>: <message>`. V1 is emitted at most once and lists
  * every structural problem it found. Content rules (V3–V8) are evaluated only for
  * sections that are present and non-empty, so an empty section reports V2 alone.
- * V10 runs only when `options.rawRequest` is given. V11 (`thin`) is a warning, not
+ * V10 and V14 run only when `options.rawRequest` is given. V11 (`thin`) is a warning, not
  * an issue: the brief stays valid.
  */
 export function validateCodingBrief(
@@ -213,9 +252,16 @@ export function validateCodingBrief(
     }
   }
 
-  // V4 — CONTEXT names a location, opens a new project, or defers with `Explore first:`.
+  // V4 — CONTEXT names a location, opens a new project with a proposed directory, or
+  // defers with `Explore first:`.
   const contextDefers = context.startsWith(EXPLORE_FIRST)
-  if (context !== '') {
+  const greenfield = context.startsWith(NEW_PROJECT)
+  const proposedDirectory = greenfield
+    ? context.slice(NEW_PROJECT.length).split('\n')[0].trim()
+    : ''
+  if (greenfield && proposedDirectory === '') {
+    issues.push(`V4: "${NEW_PROJECT}" must be followed by a proposed directory`)
+  } else if (context !== '') {
     const hasPath = context.split(/\s+/).some(isPathLikeToken)
     if (!hasPath && !context.startsWith(NEW_PROJECT) && !contextDefers) {
       issues.push(
@@ -274,22 +320,68 @@ export function validateCodingBrief(
     }
   }
 
+  // V12 — a placeholder states content, never a paraphrase of the instruction.
+  const placeholders = placeholderTexts(text)
+  const paraphrases = PARAPHRASE_PHRASES.filter((phrase) =>
+    placeholders.some((placeholder) => containsWord(placeholder, phrase))
+  )
+  if (paraphrases.length > 0) {
+    issues.push(
+      `V12: placeholder paraphrases the instruction instead of stating it: ${paraphrases
+        .map((phrase) => `"${phrase}"`)
+        .join(', ')}`
+    )
+  }
+
+  // V13 — a greenfield brief proposes instead of leaving `[TODO:` in a required element.
+  if (greenfield) {
+    const unresolved = CONTENT_HEADINGS.filter((heading) =>
+      (bodies.get(heading) ?? '').includes(TODO_PLACEHOLDER)
+    )
+    if (unresolved.length > 0) {
+      issues.push(
+        `V13: unresolved ${TODO_PLACEHOLDER} in a greenfield brief: ${unresolved.join(', ')}`
+      )
+    }
+  }
+
+  // V14 — whatever the raw request did not state is listed under ASSUMPTIONS. Heuristic:
+  // it sees a greenfield directory and STACK technologies, not every proposal; pending
+  // Phase 4 calibration like V4–V7.
+  const assumptions = bodies.get('ASSUMPTIONS')
+  if (options.rawRequest !== undefined && assumptions === undefined) {
+    const rawRequest = options.rawRequest
+    const proposals: string[] = []
+    if (greenfield && proposedDirectory !== '' && !rawRequest.includes(proposedDirectory)) {
+      proposals.push(`directory ${proposedDirectory}`)
+    }
+    const requested = findNamedTechnologies(rawRequest)
+    proposals.push(
+      ...findNamedTechnologies(stack ?? '').filter((name) => !requested.includes(name))
+    )
+    if (proposals.length > 0) {
+      issues.push(
+        `V14: ASSUMPTIONS is missing although the brief proposes: ${proposals.join(', ')}`
+      )
+    }
+  }
+
   if (issues.length > 0) {
     return { valid: false, issues, thin: false, deprecated }
   }
 
-  // V11 — both fallbacks fired: valid, but the user owes two answers (§6 C7).
+  // V11 — brownfield thin: both openers defer, because only the repository can close the gap (§8.3).
   const thin = contextDefers && doneWhenDefers
 
-  const outOfScope = bodies.get('OUT OF SCOPE')
-
+  // V1 has passed, so every required section is present.
   const brief = CodingBriefSchema.parse({
     goal,
     context,
     scope,
-    ...(stack !== undefined && { stack }),
-    ...(outOfScope !== undefined && { outOfScope }),
+    stack: stack ?? '',
+    outOfScope: bodies.get('OUT OF SCOPE') ?? '',
     doneWhen,
+    ...(assumptions !== undefined && { assumptions }),
     report: report ?? '',
   })
 

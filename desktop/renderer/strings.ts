@@ -254,7 +254,7 @@ export function compareReadyLine(rawInput: string): string {
 export const qualityOk = 'complete'
 export const qualityNeedsReview = 'needs review'
 /**
- * A thin brief (V11, docs/CODING_BRIEF_STANDARD.md §9.3): valid, but CONTEXT and DONE WHEN
+ * A thin brief (V11, docs/CODING_BRIEF_STANDARD.md §8.3): valid, but CONTEXT and DONE WHEN
  * both defer to the user. Printed as a warn line, never as ok; the `warn` prefix comes from
  * the status-warn style, so it is not part of this text.
  */

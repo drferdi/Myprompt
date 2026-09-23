@@ -5,7 +5,7 @@
 // `@/lib/prompt-quality/*` — `contract.ts` imports this module, and the reverse
 // edge would close a cycle through `super-prompt-format.ts`.
 
-/** The seven headings of §4, in the order the standard fixes (v2.0). */
+/** The eight headings of §4, in the order the standard fixes (v3.0). */
 export const CODING_BRIEF_HEADINGS = [
   'GOAL',
   'CONTEXT',
@@ -13,6 +13,7 @@ export const CODING_BRIEF_HEADINGS = [
   'STACK',
   'OUT OF SCOPE',
   'DONE WHEN',
+  'ASSUMPTIONS',
   'REPORT',
 ] as const
 
@@ -50,7 +51,7 @@ export interface ParsedCodingBrief {
   text: string
   /** Known sections in document order (duplicates preserved, so V1 can see them). */
   sections: CodingBriefSection[]
-  /** `## ...` headings that are neither one of the seven nor a v1.0 alias (V1). */
+  /** `## ...` headings that are neither one of the eight nor a v1.0 alias (V1). */
   unknownHeadings: string[]
   /** v1.0 headings found and mapped, as `WHERE (use CONTEXT)`. */
   deprecatedHeadings: string[]
@@ -81,7 +82,7 @@ export function normaliseCodingBrief(raw: string): string {
 
 /**
  * Split a Coding Brief into its sections. Any `##` heading is detected (not only
- * the known seven) so the validator can report unknown headings under V1.
+ * the known eight) so the validator can report unknown headings under V1.
  */
 interface HeadingMatch {
   heading: string

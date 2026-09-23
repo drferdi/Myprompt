@@ -608,7 +608,7 @@ function countTodaysBriefs(recentRuns: DesktopRecentRunRecord[], now = new Date(
     const createdAt = new Date(record.createdAt)
     if (Number.isNaN(createdAt.getTime()) || createdAt.toDateString() !== today) continue
     counts.total += 1
-    // A thin brief is valid but never complete (§6 C7): the user still owes two answers.
+    // A thin brief is valid but never complete (§8.3): the user still owes two answers.
     if (record.quality.degraded || record.quality.thin) {
       counts.needsCheck += 1
     } else if (record.quality.complete) {

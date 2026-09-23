@@ -170,7 +170,7 @@ async function runCodingBriefRoute(
 
   // Two distinct failure reasons: 'parse_failed' when the (final) model output carries
   // no brief section at all; 'invalid_brief' when it parsed but still fails V1–V10.
-  // A thin brief (V11) is valid but never complete (C7).
+  // A thin brief (V11) is valid but never complete (§8.3).
   const quality: OptimizeQuality = validation.valid
     ? validation.thin
       ? { complete: false, degraded: false, thin: true, attempts }

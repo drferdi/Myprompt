@@ -13,32 +13,40 @@ import {
 const REPORT_SECTION = `## REPORT
 ${CODING_BRIEF_REPORT_TEXT}`
 
-/** docs/CODING_BRIEF_STANDARD.md §9.1 — greenfield, the case v1.0 could not express. */
-const RAW_REQUEST_9_1 = 'buatkan website dokter umum pakai React dan Next.js'
+/** docs/CODING_BRIEF_STANDARD.md §8.1 — greenfield, every element proposed and listed. */
+const RAW_REQUEST_8_1 = 'buatkan website dokter umum, desain biru langit'
 
-const EXAMPLE_9_1 = `## GOAL
-Build a general practitioner clinic website.
+const EXAMPLE_8_1 = `## GOAL
+Build a general practitioner clinic website with a sky-blue visual theme.
 
 ## CONTEXT
-New project: [TODO: target directory]
+New project: ./clinic-website
 
 ## SCOPE
-Home, services, doctor profile, opening hours, location, contact.
-[TODO: appointment booking, or contact details only?]
+Home with clinic introduction, doctor profile, services, opening hours, location with map
+link, and a contact page with a form that sends to an email address.
 
 ## STACK
-React with Next.js (App Router), TypeScript.
+Next.js (App Router), React, TypeScript, Tailwind CSS.
 
 ## OUT OF SCOPE
-No patient data storage, no authentication, no medical records.
+No patient records, no authentication, no online appointment booking, no payments.
 
 ## DONE WHEN
-\`pnpm dev\` runs and every page listed in SCOPE renders without console errors.
+\`pnpm dev\` runs and every page listed in SCOPE opens in the browser with the sky-blue theme
+applied and no console errors.
+
+## ASSUMPTIONS
+- Directory ./clinic-website; change it if the project lives elsewhere.
+- Next.js and Tailwind chosen as the ordinary stack for this kind of site.
+- Contact by form and email, no booking system.
+- Indonesian-language content, single clinic, single doctor profile.
+Change any line above and run again.
 
 ${REPORT_SECTION}`
 
-/** docs/CODING_BRIEF_STANDARD.md §9.2 — brownfield, a fix in existing code. */
-const EXAMPLE_9_2 = `## GOAL
+/** docs/CODING_BRIEF_STANDARD.md §8.2 — brownfield, existing code, nothing invented. */
+const EXAMPLE_8_2 = `## GOAL
 Stop the optimizer from returning truncated prompts as successful results.
 
 ## CONTEXT
@@ -56,12 +64,16 @@ TypeScript, Vitest. Follow the length-recovery logic in \`optimizePrompt\`.
 lib/transform/**, desktop/preload.ts
 
 ## DONE WHEN
-\`pnpm run test\` passes, including a new test that feeds the truncated fixture and expects a truncation flag.
+\`pnpm run test\` passes, including a new test that feeds the truncated fixture and expects a
+truncation flag.
 
 ${REPORT_SECTION}`
 
-/** docs/CODING_BRIEF_STANDARD.md §9.3 — thin: valid but warned (V11). */
-const EXAMPLE_9_3 = `## GOAL
+/**
+ * docs/CODING_BRIEF_STANDARD.md §8.3 — brownfield thin: valid but warned (V11). The standard
+ * describes it in prose only; this fixture is built from that prose.
+ */
+const EXAMPLE_8_3 = `## GOAL
 Make the application faster.
 
 ## CONTEXT
@@ -70,28 +82,45 @@ Explore first: the application, area not yet specified.
 ## SCOPE
 [TODO: which screens or operations feel slow?]
 
+## STACK
+Explore first: the stack the repository already uses.
+
+## OUT OF SCOPE
+No new dependencies, no feature changes.
+
 ## DONE WHEN
 Propose a check first: the slow operation completes noticeably faster.
 
 ${REPORT_SECTION}`
 
-/** docs/CODING_BRIEF_STANDARD.md §9.4 — invalid. */
-const EXAMPLE_9_4 = `## GOAL
-Fix the login bug. Also make the app faster for all users.
+/** docs/CODING_BRIEF_STANDARD.md §8.4 — invalid, what v2.0 used to produce (three sections shown). */
+const EXAMPLE_8_4 = `## CONTEXT
+New project: [TODO: target directory]
 
-## CONTEXT
-The login part.
+## SCOPE
+Homepage with sky-blue visual design.
+[TODO: What other pages should belong in scope?]
 
 ## DONE WHEN
-Login works well.`
+Propose a check first: the intended outcome for verifying the website design.`
+
+/** A raw request that names two technologies, for the V10 cases. */
+const RAW_REQUEST_V10 = 'buatkan website dokter umum pakai React dan Next.js'
 
 /** A SCOPE with two concrete items, shared by the single-rule fixtures below. */
 const SCOPE_SECTION = `## SCOPE
 The export \`truncationFlag\` is renamed.
 Every caller imports the new name.`
 
-/** docs/CODING_BRIEF_STANDARD.md §9.2 written with the v1.0 headings (deprecated, accepted). */
-const EXAMPLE_9_2_V1_HEADINGS = EXAMPLE_9_2.replace('## CONTEXT', '## WHERE')
+/** STACK and OUT OF SCOPE are required from v3.0; shared by fixtures that isolate another rule. */
+const STACK_AND_OUT_OF_SCOPE = `## STACK
+TypeScript.
+
+## OUT OF SCOPE
+lib/transform/**`
+
+/** docs/CODING_BRIEF_STANDARD.md §8.2 written with the v1.0 headings (deprecated, accepted). */
+const EXAMPLE_8_2_V1_HEADINGS = EXAMPLE_8_2.replace('## CONTEXT', '## WHERE')
   .replace('## SCOPE', '## SCENARIO')
   .replace('## STACK', '## FOLLOW PATTERN')
 
@@ -117,26 +146,30 @@ describe('validateCodingBrief — standard examples', () => {
     )
   })
 
-  it('accepts the §9.1 greenfield example against its raw request and exposes every section', () => {
-    const result = validateCodingBrief(EXAMPLE_9_1, { rawRequest: RAW_REQUEST_9_1 })
+  it('accepts the §8.1 greenfield example against its raw request and exposes every section', () => {
+    const result = validateCodingBrief(EXAMPLE_8_1, { rawRequest: RAW_REQUEST_8_1 })
 
     expect(result.issues).toEqual([])
     expect(result.valid).toBe(true)
     expect(result.thin).toBe(false)
     expect(result.deprecated).toEqual([])
-    expect(result.brief?.goal).toBe('Build a general practitioner clinic website.')
-    expect(result.brief?.context).toBe('New project: [TODO: target directory]')
-    expect(result.brief?.scope).toContain('Home, services, doctor profile')
-    expect(result.brief?.stack).toBe('React with Next.js (App Router), TypeScript.')
+    expect(result.brief?.goal).toBe(
+      'Build a general practitioner clinic website with a sky-blue visual theme.'
+    )
+    expect(result.brief?.context).toBe('New project: ./clinic-website')
+    expect(result.brief?.scope).toContain('Home with clinic introduction, doctor profile')
+    expect(result.brief?.stack).toBe('Next.js (App Router), React, TypeScript, Tailwind CSS.')
     expect(result.brief?.outOfScope).toBe(
-      'No patient data storage, no authentication, no medical records.'
+      'No patient records, no authentication, no online appointment booking, no payments.'
     )
     expect(result.brief?.doneWhen).toContain('`pnpm dev`')
+    expect(result.brief?.assumptions).toContain('- Directory ./clinic-website;')
+    expect(result.brief?.assumptions).toContain('Change any line above and run again.')
     expect(result.brief?.report).toBe(CODING_BRIEF_REPORT_TEXT)
   })
 
-  it('accepts the §9.2 brownfield example and exposes every section', () => {
-    const result = validateCodingBrief(EXAMPLE_9_2)
+  it('accepts the §8.2 brownfield example and exposes every section', () => {
+    const result = validateCodingBrief(EXAMPLE_8_2)
 
     expect(result.issues).toEqual([])
     expect(result.valid).toBe(true)
@@ -152,23 +185,22 @@ describe('validateCodingBrief — standard examples', () => {
     expect(result.brief?.report).toBe(CODING_BRIEF_REPORT_TEXT)
   })
 
-  it('accepts the §9.3 thin example as valid, flags it thin, and omits absent optional sections', () => {
-    const result = validateCodingBrief(EXAMPLE_9_3)
+  it('accepts the §8.3 thin example as valid, flags it thin, and omits ASSUMPTIONS', () => {
+    const result = validateCodingBrief(EXAMPLE_8_3)
 
     expect(result.issues).toEqual([])
     expect(result.valid).toBe(true)
     expect(result.thin).toBe(true)
-    expect(result.brief?.stack).toBeUndefined()
-    expect(result.brief?.outOfScope).toBeUndefined()
+    expect(result.brief?.assumptions).toBeUndefined()
   })
 
-  it('rejects the §9.4 example with exactly V1, V3, V4, V6 and V7', () => {
-    const result = validateCodingBrief(EXAMPLE_9_4)
+  it('rejects the §8.4 example with exactly V1, V12, V13 and V14', () => {
+    const result = validateCodingBrief(EXAMPLE_8_4, { rawRequest: RAW_REQUEST_8_1 })
 
     expect(result.valid).toBe(false)
     expect(result.thin).toBe(false)
     expect(result.brief).toBeUndefined()
-    expect(ruleIds(result.issues)).toEqual(['V1', 'V3', 'V4', 'V6', 'V7'])
+    expect(ruleIds(result.issues)).toEqual(['V1', 'V12', 'V13', 'V14'])
   })
 })
 
@@ -184,7 +216,7 @@ lib/optimizer/engine.ts
 \`pnpm run test\` passes.`)
 
     expect(hasRule(result.issues, 'V1')).toBe(true)
-    expect(result.issues[0]).toContain('missing required heading(s): SCOPE, REPORT')
+    expect(result.issues[0]).toContain('missing required heading(s): SCOPE, STACK, OUT OF SCOPE, REPORT')
   })
 
   it('V1: flags an unknown heading', () => {
@@ -324,6 +356,8 @@ New project: apps/clinic
 
 ${SCOPE_SECTION}
 
+${STACK_AND_OUT_OF_SCOPE}
+
 ## DONE WHEN
 \`pnpm dev\` runs and every page renders.
 
@@ -362,6 +396,8 @@ New project: apps/clinic
 ## SCOPE
 Home page, contact page.
 
+${STACK_AND_OUT_OF_SCOPE}
+
 ## DONE WHEN
 \`pnpm dev\` runs and every page renders.
 
@@ -376,11 +412,13 @@ ${REPORT_SECTION}`)
 Build a login page.
 
 ## CONTEXT
-New project: apps/portal
+apps/portal/
 
 ## SCOPE
 Halaman login.
 [TODO: what else belongs in scope?]
+
+${STACK_AND_OUT_OF_SCOPE}
 
 ## DONE WHEN
 \`pnpm dev\` runs and the login page renders.
@@ -400,6 +438,8 @@ lib/optimizer/engine.ts
 
 ## SCOPE
 [TODO: which screens or operations feel slow?]
+
+${STACK_AND_OUT_OF_SCOPE}
 
 ## DONE WHEN
 \`pnpm run test\` passes.
@@ -488,26 +528,36 @@ ${REPORT_SECTION}`)
 })
 
 describe('validateCodingBrief — V10 named technologies', () => {
-  const briefWithStack = (stack: string | null) => `## GOAL
+  const briefWithStack = (stack: string) => `## GOAL
 Build a general practitioner clinic website.
 
 ## CONTEXT
-New project: [TODO: target directory]
+New project: ./clinic-website
 
 ## SCOPE
 Home, services, doctor profile, opening hours, location, contact.
-${stack === null ? '' : `\n## STACK\n${stack}\n`}
+
+## STACK
+${stack}
+
+## OUT OF SCOPE
+No patient data storage, no authentication, no medical records.
+
 ## DONE WHEN
 \`pnpm dev\` runs and every page listed in SCOPE renders without console errors.
 
+## ASSUMPTIONS
+- Directory ./clinic-website.
+Change any line above and run again.
+
 ${REPORT_SECTION}`
 
-  it('detects React and Next.js in the §9.1 raw request', () => {
-    expect(findNamedTechnologies(RAW_REQUEST_9_1)).toEqual(['React', 'Next.js'])
+  it('detects React and Next.js in the raw request', () => {
+    expect(findNamedTechnologies(RAW_REQUEST_V10)).toEqual(['React', 'Next.js'])
   })
 
-  it('V10: flags a brief with no STACK when the raw request names React and Next.js', () => {
-    const result = validateCodingBrief(briefWithStack(null), { rawRequest: RAW_REQUEST_9_1 })
+  it('V10: flags a STACK that names neither React nor Next.js from the raw request', () => {
+    const result = validateCodingBrief(briefWithStack('TypeScript.'), { rawRequest: RAW_REQUEST_V10 })
 
     expect(result.valid).toBe(false)
     expect(ruleIds(result.issues)).toEqual(['V10'])
@@ -518,7 +568,7 @@ ${REPORT_SECTION}`
 
   it('V10: names only the technology STACK dropped', () => {
     const result = validateCodingBrief(briefWithStack('React, TypeScript.'), {
-      rawRequest: RAW_REQUEST_9_1,
+      rawRequest: RAW_REQUEST_V10,
     })
 
     expect(ruleIds(result.issues)).toEqual(['V10'])
@@ -527,27 +577,27 @@ ${REPORT_SECTION}`
     )
   })
 
-  it('V10: accepts the §9.1 STACK and matches spellings without regard to case', () => {
+  it('V10: accepts a full STACK and matches spellings without regard to case', () => {
     expect(
       validateCodingBrief(briefWithStack('React with Next.js (App Router), TypeScript.'), {
-        rawRequest: RAW_REQUEST_9_1,
+        rawRequest: RAW_REQUEST_V10,
       }).issues
     ).toEqual([])
     expect(
-      validateCodingBrief(briefWithStack('react + nextjs'), { rawRequest: RAW_REQUEST_9_1 })
+      validateCodingBrief(briefWithStack('react + nextjs'), { rawRequest: RAW_REQUEST_V10 })
         .issues
     ).toEqual([])
   })
 
   it('V10: is not evaluated when no raw request is given', () => {
-    const result = validateCodingBrief(briefWithStack(null))
+    const result = validateCodingBrief(briefWithStack('TypeScript.'))
 
     expect(result.issues).toEqual([])
     expect(result.valid).toBe(true)
   })
 
   it('V10: does not fire when the raw request names no known technology', () => {
-    const result = validateCodingBrief(briefWithStack(null), {
+    const result = validateCodingBrief(briefWithStack('TypeScript.'), {
       rawRequest: 'buatkan website dokter umum, go live next week',
     })
 
@@ -568,17 +618,17 @@ ${REPORT_SECTION}`
 
 describe('validateCodingBrief — V11 thin brief', () => {
   it('is thin only when CONTEXT and DONE WHEN both defer', () => {
-    expect(validateCodingBrief(EXAMPLE_9_3).thin).toBe(true)
-    expect(validateCodingBrief(EXAMPLE_9_2).thin).toBe(false)
+    expect(validateCodingBrief(EXAMPLE_8_3).thin).toBe(true)
+    expect(validateCodingBrief(EXAMPLE_8_2).thin).toBe(false)
 
-    const onlyContextDefers = EXAMPLE_9_3.replace(
+    const onlyContextDefers = EXAMPLE_8_3.replace(
       'Propose a check first: the slow operation completes noticeably faster.',
       '`pnpm run bench` reports the slow operation under 200 ms.'
     )
     expect(validateCodingBrief(onlyContextDefers).valid).toBe(true)
     expect(validateCodingBrief(onlyContextDefers).thin).toBe(false)
 
-    const onlyDoneWhenDefers = EXAMPLE_9_3.replace(
+    const onlyDoneWhenDefers = EXAMPLE_8_3.replace(
       'Explore first: the application, area not yet specified.',
       'lib/optimizer/engine.ts'
     )
@@ -587,7 +637,7 @@ describe('validateCodingBrief — V11 thin brief', () => {
   })
 
   it('an invalid brief is never reported thin', () => {
-    const result = validateCodingBrief(EXAMPLE_9_3.replace('## SCOPE\n', '## SCOPE\n\n## STACK\n'))
+    const result = validateCodingBrief(EXAMPLE_8_3.replace('## SCOPE\n', '## SCOPE\n\n## STACK\n'))
 
     expect(result.valid).toBe(false)
     expect(result.thin).toBe(false)
@@ -596,7 +646,7 @@ describe('validateCodingBrief — V11 thin brief', () => {
 
 describe('validateCodingBrief — deprecated v1.0 headings', () => {
   it('accepts WHERE, SCENARIO and FOLLOW PATTERN, maps them, and reports them as deprecated', () => {
-    const result = validateCodingBrief(EXAMPLE_9_2_V1_HEADINGS)
+    const result = validateCodingBrief(EXAMPLE_8_2_V1_HEADINGS)
 
     expect(result.issues).toEqual([])
     expect(result.valid).toBe(true)
@@ -612,7 +662,7 @@ describe('validateCodingBrief — deprecated v1.0 headings', () => {
 
   it('V1: treats WHERE beside CONTEXT as a duplicate heading', () => {
     const result = validateCodingBrief(
-      EXAMPLE_9_2.replace('## CONTEXT\n', '## WHERE\nlib/llm/types.ts\n\n## CONTEXT\n')
+      EXAMPLE_8_2.replace('## CONTEXT\n', '## WHERE\nlib/llm/types.ts\n\n## CONTEXT\n')
     )
 
     expect(hasRule(result.issues, 'V1')).toBe(true)
@@ -620,14 +670,14 @@ describe('validateCodingBrief — deprecated v1.0 headings', () => {
     expect(result.deprecated).toEqual(['WHERE (use CONTEXT)'])
   })
 
-  it('a v2.0 brief reports no deprecated headings', () => {
-    expect(validateCodingBrief(EXAMPLE_9_1).deprecated).toEqual([])
+  it('a v3.0 brief reports no deprecated headings', () => {
+    expect(validateCodingBrief(EXAMPLE_8_1).deprecated).toEqual([])
   })
 })
 
 describe('countScopeItems — the V5 splitter', () => {
   it('counts the standard examples', () => {
-    expect(countScopeItems('Home, services, doctor profile, opening hours, location, contact.\n[TODO: appointment booking, or contact details only?]')).toBe(6)
+    expect(countScopeItems('Home with clinic introduction, doctor profile, services, opening hours, location with map\nlink, and a contact page with a form that sends to an email address.')).toBe(7)
     expect(countScopeItems('A streamed result ending mid-list is accepted as complete.\nExpected: the truncation is detected and either continued or flagged.')).toBe(2)
     expect(countScopeItems('[TODO: which screens or operations feel slow?]')).toBe(0)
   })
@@ -649,6 +699,8 @@ lib/optimizer/foo.ts
 
 ${SCOPE_SECTION}
 
+${STACK_AND_OUT_OF_SCOPE}
+
 ## DONE WHEN
 \`pnpm run test\` passes.
 
@@ -668,6 +720,8 @@ Read first: lib/optimizer/super-prompt-format.ts
 
 ${SCOPE_SECTION}
 
+${STACK_AND_OUT_OF_SCOPE}
+
 ## DONE WHEN
 \`pnpm run test\` passes.
 
@@ -678,14 +732,14 @@ ${REPORT_SECTION}`)
   })
 
   it('accepts CRLF input', () => {
-    const result = validateCodingBrief(EXAMPLE_9_2.replace(/\n/g, '\r\n'))
+    const result = validateCodingBrief(EXAMPLE_8_2.replace(/\n/g, '\r\n'))
 
     expect(result.issues).toEqual([])
     expect(result.valid).toBe(true)
   })
 
   it('accepts a brief wrapped in a markdown fence', () => {
-    const result = validateCodingBrief(`\`\`\`markdown\n${EXAMPLE_9_3}\n\`\`\``)
+    const result = validateCodingBrief(`\`\`\`markdown\n${EXAMPLE_8_3}\n\`\`\``)
 
     expect(result.issues).toEqual([])
     expect(result.valid).toBe(true)
@@ -701,6 +755,8 @@ lib/optimizer/engine.ts
 Notes about the location.
 
 ${SCOPE_SECTION}
+
+${STACK_AND_OUT_OF_SCOPE}
 
 ## DONE WHEN
 \`pnpm run test\` passes.
@@ -720,6 +776,8 @@ Rename the export.
 lib/optimizer/engine.ts
 
 ${SCOPE_SECTION}
+
+${STACK_AND_OUT_OF_SCOPE}
 
 ## DONE WHEN
 The suite in __tests__/optimizer/engine.test.ts passes with the renamed export.

@@ -1,111 +1,110 @@
 # Coding Brief Standard — Sentra Prompt
 
-**Status:** v2.0 — draft. Greenfield and brownfield work share one element set.
-**Authority:** `lib/prompt-quality/contract.ts` (runtime source of truth: `validateCodingBrief`; re-exports `CodingBriefSchema` from `types/index.ts` and `CODING_BRIEF_REPORT_TEXT` from `lib/optimizer/coding-brief-format.ts`)
+**Status:** v3.0 — draft. Fill by default; ask only to refine.
+**Authority:** `lib/prompt-quality/contract.ts` (runtime source of truth: `validateCodingBrief`)
 **Companion:** `docs/PROMPT_QUALITY_STANDARD.md` (Super Prompt format for non-coding tasks)
 **Last updated:** 2026-09-23
 
-> **What changed in v2.0 and why.** v1.0 assumed every coding task happens inside an
-> existing repository: `WHERE` asked which files, `SCENARIO` asked which bug. A request to
-> build something new therefore produced an empty brief — both fallbacks fired at once and
-> the user's stated stack ("React and Next.js") had nowhere to live. A prompt tool must not
-> require a repository. v2.0 replaces `WHERE` with `CONTEXT`, `SCENARIO` with `SCOPE`, and
-> adds `STACK`, so the same seven elements serve new projects and existing code alike.
-> Migration: v1.0 briefs remain readable; the validator accepts the v1.0 headings for one
-> release and reports them as deprecated.
+> **What changed in v3.0 and why.** v1.0 and v2.0 both told the Optimizer to ask rather than
+> invent. Applied to a new project, that rule produced briefs made of holes: `New project:
+> [TODO: target directory]`, `Propose a check first:`, and a user who still had to write the
+> answers themselves. A prompt tool that hands the work back is not a prompt tool.
+>
+> Two findings corrected the design. Anthropic's prompt generator exists to solve the blank
+> page problem: the user describes a task, the tool produces a complete, editable template,
+> and never interrogates the user
+> (https://platform.claude.com/docs/en/docs/prompt-generator). And guides for AI app builders
+> are consistent that whatever the user does not specify gets decided by the tool anyway,
+> usually wrongly and invisibly. A hole does not prevent an assumption; it hides it.
+>
+> So v3.0 narrows the never-invent rule to where it was actually earned — paths, functions,
+> commands and test names **in existing code** — and requires every other element to carry a
+> concrete proposal, with the proposals listed openly under `ASSUMPTIONS`.
 
 ---
 
 ## 1. Purpose
 
-There is no perfect prompt. A coding agent already knows how to write code; what it cannot
-know is the information that exists only in the user's head or repository. A Coding Brief
-does two things:
+A coding agent already knows how to write code. What it cannot know is what exists, what is
+wanted, and what counts as done. A Coding Brief supplies those and makes the result provable.
 
-1. **Supply what the agent cannot infer:** what exists already, what is in and out of
-   scope, which technology to use, and what counts as done.
-2. **Make the result verifiable:** every brief ends in a check the agent can run and
-   evidence it must show, so "looks done" is never the only signal.
+Two jobs, in this order:
 
-This design follows Anthropic's analysis of roughly 400,000 Claude Code sessions
-(*Agentic coding and persistent returns to expertise*, June 2026,
-https://www.anthropic.com/research/claude-code-expertise): session success tracks how
-precisely directions are framed, what the user asks the agent to verify, and who corrects
-whom. Most of the gain comes from moving a user from novice to intermediate. The brief is
-built to carry a user across that first step.
+1. **Remove the blank page.** The user types a rough idea; the brief comes back complete and
+   ready to hand to an agent. Anything the user did not say is filled with a sensible
+   proposal, stated openly so it can be changed in one line.
+2. **Make the result verifiable.** Every brief ends in a check that can be run and evidence
+   that must be shown, so "looks done" is never the only signal.
 
-## 2. When this standard applies
+## 2. The asymmetry that governs everything
+
+| Situation | Rule |
+| --- | --- |
+| **Existing code** (paths, functions, commands, test names, APIs) | **Never invent.** A wrong path sends the agent to edit the wrong file, and the mistake is invisible. Use `Explore first:` and let the agent investigate read-only. |
+| **Everything else** (a new project's directory, page list, stack, scope boundary, how to check) | **Always propose.** A wrong proposal costs the user one edited line. An empty element costs them the whole job. |
+
+Every rule below follows from this table.
+
+## 3. When this standard applies
 
 | Condition | Output |
 | --- | --- |
 | Optimizer request with `taskType = CODING` | Coding Brief (this standard) |
 | Any other `taskType` | Super Prompt (`docs/PROMPT_QUALITY_STANDARD.md`) |
 
-The brief is plain Markdown, usable in any coding agent, and never depends on
-tool-specific commands.
-
-## 3. Two situations, one element set
-
-| Situation | Marker | Typical `CONTEXT` |
-| --- | --- | --- |
-| **Greenfield** — nothing exists yet | `CONTEXT` begins with `New project:` | "New project: nothing exists yet." |
-| **Brownfield** — work inside existing code | `CONTEXT` names paths or an `Explore first:` line | `@lib/optimizer/engine.ts` |
-
-The elements do not change between the two. Only what fills them changes.
+Plain Markdown, usable in any coding agent, never dependent on tool-specific commands.
 
 ## 4. Elements
 
-Seven sections, in this order, with these exact headings.
+Eight sections, in this order, with these exact headings.
 
 | # | Heading | Required | Content rule |
 | --- | --- | --- | --- |
-| 1 | `## GOAL` | Yes | One sentence: what is built or changed. No background, no rationale. |
-| 2 | `## CONTEXT` | Yes | What already exists. Greenfield: `New project:` plus the target directory if known. Brownfield: paths, or `Explore first:` plus the area in the user's own words. |
-| 3 | `## SCOPE` | Yes | What the work covers. Greenfield: the pages, screens, or capabilities to build. Brownfield: the triggering condition, observed versus expected behaviour. |
-| 4 | `## STACK` | Yes when the user named any technology; otherwise optional | Languages, frameworks, libraries, versions, and conventions the user specified, plus an existing file to imitate when there is one. Never invent a stack the user did not name. |
-| 5 | `## OUT OF SCOPE` | Optional, recommended | What must not be built or changed. |
-| 6 | `## DONE WHEN` | Yes | A runnable check with an expected result, or a `Propose a check first:` line (§6). |
-| 7 | `## REPORT` | Yes (fixed text) | The evidence rules in §7, inserted verbatim by the Optimizer. |
+| 1 | `## GOAL` | Yes | One sentence: what is built or changed. |
+| 2 | `## CONTEXT` | Yes | What exists. Greenfield: `New project:` plus a proposed directory. Brownfield: real paths, or `Explore first:` plus the area in the user's words. |
+| 3 | `## SCOPE` | Yes | Greenfield: the pages or capabilities to build, proposed in full. Brownfield: trigger, observed behaviour, expected behaviour. |
+| 4 | `## STACK` | Yes | Languages, frameworks and conventions. Whatever the user named is carried verbatim; the rest is proposed. |
+| 5 | `## OUT OF SCOPE` | Yes | What must not be built or changed. Proposed when the user said nothing. |
+| 6 | `## DONE WHEN` | Yes | A runnable check and its expected result, in the user's own terms. |
+| 7 | `## ASSUMPTIONS` | Yes when any element was proposed rather than stated | One line per proposal, plus a closing line telling the user to change any line and re-run. |
+| 8 | `## REPORT` | Yes (fixed text) | The evidence rules in §7, inserted verbatim by the Optimizer. |
 
-Optional sections with no content are omitted entirely, never left empty.
+There are no optional-and-omitted elements left except `ASSUMPTIONS`, which is omitted only
+when the user supplied everything.
 
 ## 5. Validation rules
 
-Deterministic, run on every brief before it leaves the Optimizer. A brief failing any rule
-is invalid.
+Deterministic; run on every brief before it leaves the Optimizer.
 
 | ID | Rule |
 | --- | --- |
-| V1 | All required headings present, in the §4 order, with no unknown `##` headings. |
+| V1 | All required headings present, in §4 order, no unknown `##` headings. |
 | V2 | No present section is empty. |
 | V3 | `GOAL` is a single sentence of at most 40 words. |
-| V4 | `CONTEXT` contains a path-like token, **or** begins with `New project:`, **or** begins with `Explore first:`. |
-| V5 | `SCOPE` names at least two concrete items (pages, capabilities, or an observed/expected pair). A single vague noun phrase fails. Exempt when any line of `SCOPE` begins with `[TODO:`: the placeholder is the Optimizer admitting it lacks information, and failing it would teach the model to invent a second item. |
-| V6 | `DONE WHEN` contains at least one backticked command or test identifier, **or** begins with `Propose a check first:`. |
-| V7 | `DONE WHEN` is not made only of vague outcome phrases ("works", "works well", "no errors", "looks good", "berjalan dengan baik", "tidak error", "sesuai harapan"). |
-| V8 | `REPORT` matches the canonical text in §7 exactly. |
-| V9 | No line begins with an Optimizer settings label (`Target LLM:`, `Domain:`, `Tone:`). Mentioning a label inside a sentence is allowed. |
-| V10 | Every technology named in the raw request appears in `STACK`. A named stack is never silently dropped. |
-| V11 | A brief in which both `Explore first:` and `Propose a check first:` fire is flagged `thin`: valid, but returned with a warning telling the user which two answers would make it useful. |
+| V4 | `CONTEXT` contains a path-like token, **or** begins with `New project:` followed by a proposed directory, **or** begins with `Explore first:` (brownfield only). |
+| V5 | `SCOPE` names at least two concrete items. |
+| V6 | `DONE WHEN` contains a runnable command or an observable outcome with a concrete noun from `GOAL` or `SCOPE`. |
+| V7 | `DONE WHEN` is not made only of vague outcome phrases ("works", "no errors", "looks good", "berjalan dengan baik", "sesuai harapan"). |
+| V8 | `REPORT` matches §7 exactly. |
+| V9 | No line begins with an Optimizer settings label (`Target LLM:`, `Domain:`, `Tone:`). |
+| V10 | Every technology named in the raw request appears in `STACK`. |
+| V11 | **Brownfield only:** `Explore first:` and an unresolved check together mark the brief `thin` — valid, warned, because the missing facts are ones only the repository can supply. |
+| V12 | Text after a placeholder marker never paraphrases the instruction ("the intended outcome", "the check", "to be determined"). |
+| V13 | **No unresolved `[TODO:` in any required element of a greenfield brief.** The Optimizer proposes instead. A `[TODO:` here is a defect, not honesty. |
+| V14 | `ASSUMPTIONS` is present whenever any element was proposed rather than stated by the user. |
 
-Validator output is `{ valid, issues[], thin, deprecated[] }`; `deprecated` lists any v1.0
-headings that were accepted and mapped. Rules V4, V5, V6 and V7 are heuristics,
-scheduled for calibration with Phase 4 evaluation data.
+Rules V4, V5, V6 and V7 are heuristics, scheduled for calibration with Phase 4 data.
 
-## 6. Missing information and clarification
-
-The Optimizer never invents file paths, function names, commands, test names, or
-technologies. When critical information is missing, it asks.
+## 6. Proposing well
 
 | ID | Rule |
 | --- | --- |
-| C1 | Critical elements are `CONTEXT`, `SCOPE` and `DONE WHEN`. Only these trigger questions. |
-| C2 | At most three questions per brief, in plain, non-technical language. |
-| C3 | Every question offers "I don't know" and "Skip". |
-| C4 | `CONTEXT` unknown: greenfield writes `New project:` with `[TODO: target directory]`; brownfield writes `Explore first:` and the agent investigates read-only, then presents a plan before editing. |
-| C5 | `DONE WHEN` unknown: write `Propose a check first:` and the intended outcome. The agent proposes a runnable check and waits for approval before editing. |
-| C6 | Answers are used verbatim. Specifics are never embellished. |
-| C7 | A `thin` brief (V11) is never presented as complete. The warning names the two missing answers. |
+| P1 | Anything the user stated is carried verbatim and never reworded. |
+| P2 | Anything the user did not state is proposed as the most ordinary choice for that kind of work, not the most sophisticated one. |
+| P3 | Every proposal appears as one line under `ASSUMPTIONS`, phrased so a non-programmer can tell whether it is wrong. |
+| P4 | Proposals never cover existing code. No invented path, function, command, test name or API, ever. |
+| P5 | Questions (Phase 3) refine a brief that is already complete. They are never a precondition for producing one. |
+| P6 | When the request is genuinely ambiguous between two ordinary readings, pick one, build the brief on it, and name the other in `ASSUMPTIONS`. |
 
 ## 7. Evidence rules (canonical REPORT text)
 
@@ -118,56 +117,39 @@ technologies. When critical information is missing, it asks.
 - List every file you changed and anything you left undone.
 ```
 
-## 8. Canonical format
+## 8. Examples
+
+### 8.1 Greenfield — the case v1.0 and v2.0 both failed
+
+Raw request: "buatkan website dokter umum, desain biru langit"
 
 ```markdown
 ## GOAL
-<one sentence>
+Build a general practitioner clinic website with a sky-blue visual theme.
 
 ## CONTEXT
-New project: <target directory> | <paths, one per line> | Explore first: <area>
+New project: ./clinic-website
 
 ## SCOPE
-<pages or capabilities> | <trigger, observed behaviour, expected behaviour>
+Home with clinic introduction, doctor profile, services, opening hours, location with map
+link, and a contact page with a form that sends to an email address.
 
 ## STACK
-<languages, frameworks, versions, conventions the user named>
+Next.js (App Router), React, TypeScript, Tailwind CSS.
 
 ## OUT OF SCOPE
-<what must not be built or changed>
+No patient records, no authentication, no online appointment booking, no payments.
 
 ## DONE WHEN
-<runnable check and expected result> | Propose a check first: <intended outcome>
+`pnpm dev` runs and every page listed in SCOPE opens in the browser with the sky-blue theme
+applied and no console errors.
 
-## REPORT
-<canonical text from §7>
-```
-
-## 9. Examples
-
-### 9.1 Greenfield — the case v1.0 could not express
-
-Raw request: "buatkan website dokter umum pakai React dan Next.js"
-
-```markdown
-## GOAL
-Build a general practitioner clinic website.
-
-## CONTEXT
-New project: [TODO: target directory]
-
-## SCOPE
-Home, services, doctor profile, opening hours, location, contact.
-[TODO: appointment booking, or contact details only?]
-
-## STACK
-React with Next.js (App Router), TypeScript.
-
-## OUT OF SCOPE
-No patient data storage, no authentication, no medical records.
-
-## DONE WHEN
-`pnpm dev` runs and every page listed in SCOPE renders without console errors.
+## ASSUMPTIONS
+- Directory ./clinic-website; change it if the project lives elsewhere.
+- Next.js and Tailwind chosen as the ordinary stack for this kind of site.
+- Contact by form and email, no booking system.
+- Indonesian-language content, single clinic, single doctor profile.
+Change any line above and run again.
 
 ## REPORT
 - Read every file you reference before changing or describing it.
@@ -177,7 +159,7 @@ No patient data storage, no authentication, no medical records.
 - List every file you changed and anything you left undone.
 ```
 
-### 9.2 Brownfield — a fix in existing code
+### 8.2 Brownfield — existing code, nothing invented
 
 ```markdown
 ## GOAL
@@ -198,58 +180,43 @@ TypeScript, Vitest. Follow the length-recovery logic in `optimizePrompt`.
 lib/transform/**, desktop/preload.ts
 
 ## DONE WHEN
-`pnpm run test` passes, including a new test that feeds the truncated fixture and expects a truncation flag.
+`pnpm run test` passes, including a new test that feeds the truncated fixture and expects a
+truncation flag.
 
 ## REPORT
-- Read every file you reference before changing or describing it.
-- If a referenced file, function, or command does not exist, stop and ask.
-- Show each command you ran and its actual output.
-- Do not claim a result you did not execute.
-- List every file you changed and anything you left undone.
+<canonical text from §7>
 ```
 
-### 9.3 Thin — valid but warned (V11)
+No `ASSUMPTIONS`: the user supplied everything.
+
+### 8.3 Brownfield thin — valid, warned (V11)
+
+`CONTEXT` is `Explore first: the application, area not yet specified` and the check is still
+open. Returned with `warn  thin brief — add where to work and how to check it`. This is the
+only case where a brief may ship incomplete, because only the repository can close the gap.
+
+### 8.4 Invalid — what v2.0 used to produce (V13)
 
 ```markdown
-## GOAL
-Make the application faster.
-
 ## CONTEXT
-Explore first: the application, area not yet specified.
+New project: [TODO: target directory]
 
 ## SCOPE
-[TODO: which screens or operations feel slow?]
+Homepage with sky-blue visual design.
+[TODO: What other pages should belong in scope?]
 
 ## DONE WHEN
-Propose a check first: the slow operation completes noticeably faster.
-
-## REPORT
-<canonical text>
+Propose a check first: the intended outcome for verifying the website design.
 ```
 
-Returned with: `warn  thin brief — add where to work and how to check it`. The wording is
-generic on purpose: for this example the two answers are where it is slow and how to
-measure it, but the warning must read correctly for every thin brief.
+Issues: V13 (unresolved `[TODO:` in two required elements of a greenfield brief), V12
+("the intended outcome" paraphrases the instruction), V14 (no `ASSUMPTIONS`). The Optimizer
+should have proposed a directory, a page list and a check, and listed all three as
+assumptions.
 
-### 9.4 Invalid
+## 9. Non-goals
 
-```markdown
-## GOAL
-Fix the login bug. Also make the app faster for all users.
-
-## CONTEXT
-The login part.
-
-## DONE WHEN
-Login works well.
-```
-
-Issues: V1 (missing `SCOPE` and `REPORT`), V3 (two sentences), V4 (no path, no
-`New project:`, no `Explore first:`), V6 and V7 (no runnable check, vague outcome).
-
-## 10. Non-goals
-
-- No persona or role. Persona text does not say what to build or how to prove it.
-- No implementation steps. Execution decisions belong to the agent; the brief constrains
-  outcome, scope, stack and evidence.
-- No guarantee of correctness. The brief makes failure visible and cheap to detect.
+- No persona or role.
+- No implementation steps. The brief constrains outcome, scope, stack and evidence.
+- No guarantee of correctness. It makes failure visible and cheap to detect.
+- No interrogation. A brief is delivered complete; questions only refine it afterwards.
