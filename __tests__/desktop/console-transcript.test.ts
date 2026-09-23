@@ -407,6 +407,8 @@ describe('console transcript command language', () => {
       )
       expect(findLine('Correct? Type the right value, or press Enter to keep it.')).toBeTruthy()
       expect(findLine('question 2 of 2')).toBeUndefined()
+      // The questions travel beside the brief, never inside its printed body.
+      expect(findLine('## GOAL')?.textContent).not.toContain('"element"')
     })
 
     it('prints no question after a brief that has none, and the next line is a new idea', async () => {
@@ -428,6 +430,7 @@ describe('console transcript command language', () => {
       type('skip')
 
       await vi.waitFor(() => expect(findLine('questions skipped')).toBeTruthy())
+      expect(findLine('questions skipped')?.className).not.toContain('status-')
       expect(optimizeRuns()).toHaveLength(1)
 
       type('halo')
@@ -505,6 +508,8 @@ describe('console transcript command language', () => {
       await vi.waitFor(() => expect(findLine('the refined brief failed validation')).toBeTruthy())
       expect(findLine('the refined brief failed validation')?.classList.contains('status-warn')).toBe(true)
       expect(findLine('FAILED REFINEMENT BODY')).toBeUndefined()
+      // The refinement's header row goes with its body: only the delivered run's meta remains.
+      expect(document.querySelectorAll('#display .line.meta-line')).toHaveLength(1)
 
       type('copy')
 

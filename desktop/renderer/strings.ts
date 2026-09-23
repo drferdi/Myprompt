@@ -290,9 +290,10 @@ export const clarificationSkipHint = 'Type skip to keep the brief as it is.'
 
 export const clarificationKept = 'kept as proposed'
 
-export const clarificationSkipped = '[STATE] questions skipped — the brief above is unchanged'
+/** Skipping and keeping every proposal are ordinary choices, so these carry no status. */
+export const clarificationSkipped = 'questions skipped — the brief above is unchanged'
 
-export const clarificationNoAnswers = '[STATE] no answers — the brief above is unchanged'
+export const clarificationNoAnswers = 'no answers — the brief above is unchanged'
 
 export const clarificationRefineFailed =
   '[WARN] the refined brief failed validation — the brief above is unchanged'

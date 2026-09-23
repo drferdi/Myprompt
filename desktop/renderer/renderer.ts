@@ -2063,6 +2063,7 @@ async function executeOptimizeStream(
       // D3: a refinement still invalid after its repair replaces nothing. The delivered
       // brief above stays the result (copy, rerun and the recent-run store keep it).
       if (isRefinement && isDegradedResponse(payload.response)) {
+        headerMetaLine?.remove()
         streamLine.remove()
         removeOptimizeStreamArtifacts(requestId, { removeStatusLine: true })
         appendConsoleLine(container, 'sys', strings.clarificationRefineFailed)
