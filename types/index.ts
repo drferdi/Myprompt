@@ -48,6 +48,9 @@ export type OutputFormat = z.infer<typeof OutputFormatSchema>
 export const OptimizeLaneSchema = z.enum(['INTERACTIVE', 'DEEP'])
 export type OptimizeLane = z.infer<typeof OptimizeLaneSchema>
 
+export const OutputKindSchema = z.enum(['SUPER_PROMPT', 'CODING_BRIEF'])
+export type OutputKind = z.infer<typeof OutputKindSchema>
+
 export const TemplateCategorySchema = z.enum([
   'CODING',
   'EMAIL',
@@ -60,6 +63,31 @@ export const TemplateCategorySchema = z.enum([
 ])
 export type TemplateCategory = z.infer<typeof TemplateCategorySchema>
 
+// ── Coding Brief clarification (docs/CODING_BRIEF_STANDARD.md §6 P5) ──────
+
+export const ClarificationElementSchema = z.enum(['CONTEXT', 'DONE_WHEN', 'SCOPE', 'ASSUMPTION'])
+export type ClarificationElement = z.infer<typeof ClarificationElementSchema>
+
+/** A question about one line of a delivered brief: `question` is that line's text. */
+export const ClarificationItemSchema = z.object({
+  element: ClarificationElementSchema,
+  question: z.string().min(1).max(500),
+})
+export type ClarificationItem = z.infer<typeof ClarificationItemSchema>
+
+/**
+ * One refinement round. `previousBrief` is renderer text, the same trust class as `rawIdea`
+ * and bounded like it. `answer` is null when the user kept the proposal ("I don't know").
+ */
+export const CodingBriefRefinementSchema = z.object({
+  previousBrief: z.string().min(1).max(10_000),
+  clarifications: z
+    .array(ClarificationItemSchema.extend({ answer: z.string().max(2_000).nullable() }))
+    .min(1)
+    .max(3),
+})
+export type CodingBriefRefinement = z.infer<typeof CodingBriefRefinementSchema>
+
 // ── Request Schemas ──────────────────────────────────────────────────────
 
 export const OptimizeRequestSchema = z.object({
@@ -70,8 +98,12 @@ export const OptimizeRequestSchema = z.object({
   targetLlm: LLMProviderNameSchema.default('OPENAI'),
   provider: LLMProviderNameSchema.default('OPENAI'),
   optimizerLane: OptimizeLaneSchema.default('INTERACTIVE'),
+  // No default: absence is resolved from taskType in the Optimizer engine.
+  outputKind: OutputKindSchema.optional(),
   templateSlug: z.string().optional(),
   apiKey: z.string().optional(),
+  // Coding Brief only: edit the delivered brief with the user's answers (P5).
+  refinement: CodingBriefRefinementSchema.optional(),
 })
 export type OptimizeRequest = z.infer<typeof OptimizeRequestSchema>
 
@@ -157,8 +189,37 @@ export const SuperPromptSchema = z.object({
 })
 export type SuperPrompt = z.infer<typeof SuperPromptSchema>
 
+// Shape only, mirroring SuperPromptSchema: lib/prompt-quality/contract.ts remains
+// the documented source of truth for prompt quality (it re-exports this schema).
+export const CodingBriefSchema = z.object({
+  goal: z.string(),
+  context: z.string(),
+  scope: z.string(),
+  stack: z.string(),
+  outOfScope: z.string(),
+  doneWhen: z.string(),
+  // v3.0: present whenever an element was proposed rather than stated (V14).
+  assumptions: z.string().optional(),
+  report: z.string(),
+})
+export type CodingBrief = z.infer<typeof CodingBriefSchema>
+
+export const OptimizeQualitySchema = z.object({
+  complete: z.boolean(),
+  degraded: z.boolean(),
+  reason: z.enum(['parse_failed', 'invalid_brief']).optional(),
+  // Coding Brief V11: valid, but CONTEXT and DONE WHEN both defer to the user. Never
+  // presented as complete (§8.3).
+  thin: z.boolean().optional(),
+  attempts: z.number().int().min(1),
+})
+export type OptimizeQuality = z.infer<typeof OptimizeQualitySchema>
+
 export const OptimizeResponseSchema = z.object({
   superPrompt: SuperPromptSchema,
+  codingBrief: CodingBriefSchema.optional(),
+  // Questions offered after a valid Coding Brief; absent after a refinement (one round).
+  clarifications: z.array(ClarificationItemSchema).max(3).optional(),
   metadata: z.object({
     provider: LLMProviderNameSchema,
     model: z.string(),
@@ -168,6 +229,8 @@ export const OptimizeResponseSchema = z.object({
     format: OutputFormatSchema,
     tokensUsed: z.number().optional(),
     latencyMs: z.number(),
+    quality: OptimizeQualitySchema.optional(),
+    outputKind: OutputKindSchema.optional(),
   }),
 })
 export type OptimizeResponse = z.infer<typeof OptimizeResponseSchema>
@@ -295,6 +358,18 @@ export const DesktopRecentRunInputSchema = z.object({
   sourceMode: DesktopWorkspaceSourceModeSchema,
   rawInput: z.string().trim().min(1),
   outputText: z.string().trim().min(1),
+  // Optional, additive: lets the console count today's briefs by outcome. Older
+  // records without these fields still parse and are simply not counted.
+  outputKind: z.enum(['SUPER_PROMPT', 'CODING_BRIEF']).optional(),
+  quality: z
+    .object({
+      complete: z.boolean(),
+      degraded: z.boolean(),
+      thin: z.boolean().optional(),
+    })
+    .optional(),
+  // A refined Coding Brief keeps its refinement, so a rerun sends the same answers again.
+  refinement: CodingBriefRefinementSchema.optional(),
 })
 export type DesktopRecentRunInput = z.infer<typeof DesktopRecentRunInputSchema>
 

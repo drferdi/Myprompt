@@ -1,29 +1,50 @@
 /* ═══════════════════════════════════════════════════════════════
-   SENTRA CONSOLE — SENTRA DESIGN OPTION SYSTEM
-   Canonical Design System from DesignOption.html
+   SENTRA CONSOLE — TERMINAL TRANSCRIPT
+   One window (macOS title bar) above a single monospace transcript.
+   Every colour resolves to a console-* token below. Token naming follows
+   the Sentra token style with a console- prefix and stays separate:
+   Sentra tokens are never reused or redefined.
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  /* 🎨 PALET ASLI + SENTRA TUNING (DesignOption.html) */
-  --bg-deep: #0D0F14;
-  --card-bg: #161922;
-  --card-border: rgba(255, 255, 255, 0.12);
-  --card-highlight: rgba(255, 255, 255, 0.06);
-  --text-primary: #F2F4F7;
-  --text-secondary: #9CA3AF;
-  --text-muted: #6B7280;
-  --accent: #3B82F6;
-  --accent-gradient: linear-gradient(135deg, #3B82F6, #1D4ED8);
-  --neu-light: rgba(255, 255, 255, 0.04);
-  --neu-dark: rgba(0, 0, 0, 0.45);
-  --signal: #EF4444;
-  --success: #10B981;
-  --warning: #F59E0B;
-  /* Sentra brand signal (rust/orange) — used for shell status badges */
-  --ro: oklch(62% 0.19 30);
-  --ro-light: oklch(22% 0.035 30);
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-  --font-stack: 'Inter', system-ui, -apple-system, sans-serif;
+  /* Console palette and measurements: every value below is copied from
+     desktop/renderer/reference/reference-console-sentra.html (the pixel
+     reference). Change the reference first, then this block; never the reverse. */
+  --console-bg-window: #16191d;
+  --console-bg-chrome: #111316;
+  --console-bg-app: #16191d;
+  --console-text: #c5cad3;
+  --console-text-strong: #ffffff;
+  --console-text-dim: #8a929e;
+  --console-prompt: #89ca78;
+  --console-success: #89ca78;
+  --console-path: #61afef;
+  --console-heading: #d55fde;
+  --console-error: #ef596f;
+  --console-warn: #d19a66;
+  --console-accent: #2bbac5;
+  --console-yellow: #e5c07b;
+  --console-rule: rgba(255, 255, 255, 0.07);
+  /* Window shadow: visible only where the window is transparent (macOS); on Windows the
+     window is opaque (desktop/main.ts) and the shadow is clipped. */
+  --console-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.55);
+
+  /* Typography: JetBrains Mono everywhere, one size everywhere (11px, Terminal.app's
+     default point size on a 1x display). Hierarchy comes from colour and spacing only;
+     the chrome token exists so the title bar keeps its own leading, it never carries a
+     different size. */
+  --console-font: 'JetBrains Mono', 'Fira Code', monospace;
+  --console-size-body: 11px;
+  --console-leading-body: 1.45;
+  --console-size-chrome: 11px;
+  --console-leading-chrome: 1.2;
+
+  /* Text layout, in character cells: content sits behind a two-space margin, a status
+     prefix hangs left in a fixed six-character column, prose wraps at 72 characters even
+     when the window fits 120. */
+  --console-margin: 2ch;
+  --console-prefix: 6ch;
+  --console-prose: 72ch;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -34,1144 +55,314 @@ html, body {
   height: 100vh;
   background: transparent;
   overflow: hidden;
-  font-family: var(--font-stack);
-  color: var(--text-primary);
+  font-family: var(--console-font);
+  font-size: var(--console-size-body);
+  line-height: var(--console-leading-body);
+  /* 500 is a loaded weight (index.html); it keeps 11px text crisp on the dark background. */
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--console-text);
   user-select: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-/* ═══ BOOT OVERLAY ═══ */
-#bootOverlay {
-  position: fixed; inset: 0; z-index: 10000;
-  background: var(--bg-deep);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  transition: opacity 0.8s cubic-bezier(0.4,0,0.2,1);
+button, input {
+  font-family: var(--console-font);
 }
-#bootOverlay.fade-out { opacity: 0; pointer-events: none; }
 
-.post-sequence {
-  font-family: var(--font-mono); font-size: 12px;
-  color: var(--text-muted); line-height: 1.8;
-  max-width: 460px; width: 100%; padding: 0 24px;
-  opacity: 0; transition: opacity 0.4s ease;
-}
-.post-sequence.visible { opacity: 1; }
-.post-line { display: flex; justify-content: space-between; opacity: 0; animation: postLineIn 0.25s ease forwards; }
-@keyframes postLineIn { to { opacity: 1; } }
-.post-label { color: rgba(255,255,255,0.3); }
-.post-value { color: rgba(255,255,255,0.5); }
-.post-value.ok { color: var(--success); }
-.post-divider { border: none; border-top: 1px solid rgba(255,255,255,0.05); margin: 6px 0; opacity: 0; animation: postLineIn 0.2s ease forwards; }
-
-.boot-progress-container { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 16px; opacity: 0; transition: opacity 0.5s ease; }
-.boot-progress-container.visible { opacity: 1; }
-.progress-ring { width: 48px; height: 48px; transform: rotate(-90deg); }
-.progress-ring-track { fill: none; stroke: rgba(255,255,255,0.03); stroke-width: 2.5; }
-.progress-ring-fill { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 141.37; stroke-dashoffset: 141.37; transition: stroke-dashoffset 0.4s ease; filter: drop-shadow(0 0 6px rgba(59,130,246,0.4)); }
-.progress-text { font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary); letter-spacing: 0.15em; text-transform: uppercase; }
-
-.cinematic-boot { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 20px; opacity: 0; transition: opacity 1s ease; }
-.cinematic-boot.visible { opacity: 1; }
-
-/* 📦 CONSOLE RIG & SENTRA CARD ENCLOSURE */
-.console-rig {
+/* ═══ WINDOW ═══ */
+/* The only rounded corners in the UI besides the scrollbar thumb. Everything else inside
+   is square. */
+.window {
   width: 100%;
   height: 100%;
-  padding: 10px;
+  background: var(--console-bg-window);
+  border-radius: 10px;
+  box-shadow: var(--console-shadow);
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background: transparent;
-  -webkit-app-region: no-drag !important;
-}
-
-.front-panel, .top-vent-section, .side-vent, .console-feet, .rear-ports {
-  display: none !important;
-}
-
-.console-body {
-  width: 100%;
-  height: 100%;
-  max-width: 720px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 12px;
-  padding: 14px 16px;
-  display: flex;
-  flex-direction: column;
-  box-shadow:
-    0 12px 28px rgba(0, 0, 0, 0.6),
-    0 0 0 1px rgba(255, 255, 255, 0.04),
-    inset 0 1px 0 var(--card-highlight);
-  position: relative;
   overflow: hidden;
   -webkit-app-region: no-drag !important;
 }
 
-.screen-area, .screen-content {
-  flex: 1;
+/* ═══ TITLE BAR (drag surface) ═══ */
+.title-bar {
+  position: relative;
   display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  -webkit-app-region: no-drag !important;
-}
-
-/* ═══ WINDOW CONTROLS & HEADER ═══ */
-/* ═══ CARD HEADER & DRAG BAR ═══ */
-.card-header {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
-  padding: 4px 6px;
+  justify-content: center;
+  flex-shrink: 0;
+  /* 28px: the macOS title bar height for a window without a toolbar. */
+  height: 28px;
+  padding: 0 12px;
+  background: var(--console-bg-chrome);
+  /* One hairline divider below the bar and a faint highlight along its top, inset so the
+     bar keeps its height. Chrome colours stay literal, never status tokens. */
+  box-shadow:
+    inset 0 -1px 0 rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
   cursor: grab;
-  -webkit-app-region: no-drag !important;
   user-select: none;
+  -webkit-app-region: no-drag !important;
 }
 
-.card-header:active {
+.title-bar:active {
   cursor: grabbing;
 }
 
-.brand-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.title {
+  position: relative;
+  /* Optical centring: the glyphs sit one pixel high in the bar (Chief, 2026-09-23). */
+  top: 1px;
+  font-size: var(--console-size-chrome);
+  line-height: var(--console-leading-chrome);
+  color: var(--console-text-dim);
+  text-align: center;
   pointer-events: none;
 }
 
-/* Shared Sentra mark (same artwork as Sentra Dataset Studio): the SVG carries its own
-   gradient and neumorphic shadow, so the container must stay a bare frame. */
-.brand-icon {
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  box-shadow: none;
-}
-
-.brand-icon svg {
-  width: 30px;
-  height: 30px;
-  display: block;
-}
-
-.card-title { font-size: 14px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.01em; }
-.card-subtitle { font-size: 10px; color: var(--text-secondary); margin-top: 1px; }
-
-.window-controls, .mode-bar, .mode-btn, .status-panel, .transform-switch, .transform-btn, .optimizer-lane-switch, .optimizer-lane-btn, .console-box, .command-bar, .cmd-input, .secondary-btn, .action-btn, .footer {
-  -webkit-app-region: no-drag !important;
-  pointer-events: auto !important;
-}
-
-
-.card-header, .status-panel, .command-bar, .footer {
-  flex-shrink: 0;
-}
-
-.window-controls {
-  position: relative;
-  top: 0; right: 0;
+.traffic-lights {
+  position: absolute;
+  left: 12px;
+  top: 0;
+  bottom: 0;
   display: flex;
   align-items: center;
   gap: 8px;
-  z-index: 50;
-  -webkit-app-region: no-drag;
 }
 
-.window-controls .status-dot {
-  width: 6px;
-  height: 6px;
-  background: var(--success);
+.traffic-light {
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  box-shadow: 0 0 6px var(--success);
-}
-
-.close-btn, .mini-toggle-btn {
-  -webkit-app-region: no-drag;
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: var(--text-secondary);
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.close-btn:hover, .mini-toggle-btn:hover {
-  color: white;
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.close-btn:hover {
-  background: var(--signal);
-  border-color: var(--signal);
-}
-
-/* ═══ MODE BAR — NEUMORPHIC RAISED SELECTOR (EXACT DesignOption.html) ═══ */
-.mode-bar {
-  margin: 6px 0 10px 0;
-  padding: 5px;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  background: var(--bg-deep);
-  border-radius: 10px;
-  box-shadow: 3px 3px 8px var(--neu-dark), -2px -2px 6px var(--neu-light);
-  -webkit-app-region: no-drag;
-  flex-shrink: 0;
-}
-
-.mode-btn {
-  display: block;
-  text-align: center;
-  padding: 8px 0;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-muted);
-  border-radius: 6px;
-  cursor: pointer;
   border: none;
-  background: transparent;
-  transition: all 0.15s ease;
-  font-family: inherit;
-  -webkit-app-region: no-drag;
-}
-
-.mode-btn:hover {
-  color: var(--text-primary);
-}
-
-.mode-btn.active {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-primary);
-  box-shadow: inset 1px 1px 3px var(--neu-dark), inset -1px -1px 2px var(--neu-light);
-  font-weight: 600;
-}
-
-/* ═══ STATUS PANEL ═══ */
-.status-panel {
-  background: var(--bg-deep);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  padding: 9px 12px;
-  margin-bottom: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  box-shadow: inset 1px 1px 3px var(--neu-dark), inset -1px -1px 2px var(--neu-light);
-  -webkit-app-region: no-drag;
-}
-
-.status-panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.status-panel-header strong {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.status-label {
-  min-width: 0;
-  max-width: 100%;
-  overflow-wrap: anywhere;
-  text-align: right;
-  font-size: 10px;
-  padding: 2px 8px;
-  border-radius: 12px;
-  background: rgba(59, 130, 246, 0.15);
-  color: var(--accent);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  font-weight: 500;
-}
-
-.status-copy {
-  min-width: 0;
-  overflow-wrap: anywhere;
-  font-size: 11px;
-  color: var(--text-secondary);
-  line-height: 1.4;
-}
-
-/* OPTIMIZER LANE SWITCH */
-.optimizer-lane-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.optimizer-lane-label {
-  font-size: 10px;
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-}
-
-.optimizer-lane-switch {
-  display: flex;
-  gap: 4px;
-  background: rgba(0, 0, 0, 0.3);
-  padding: 2px;
-  border-radius: 6px;
-}
-
-.optimizer-lane-btn {
-  padding: 4px 10px;
-  font-size: 10px;
-  border-radius: 4px;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
+  padding: 0;
   cursor: pointer;
-  font-family: inherit;
-  transition: all 0.15s ease;
+  background: var(--console-text-dim);
 }
 
-.optimizer-lane-btn.active {
-  background: var(--accent);
-  color: white;
-  font-weight: 600;
+/* macOS traffic lights are chrome, not content: literal system colours,
+   never the status tokens. */
+.traffic-light.close { background: #ff5f57; }
+.traffic-light.minimize { background: #febc2e; }
+.traffic-light.zoom { background: #28c840; cursor: default; }
+
+.traffic-light:focus-visible {
+  outline: 1px solid var(--console-text-strong);
+  outline-offset: 2px;
 }
 
-/* TRANSFORM CONTROLS (PROFILE & EFFORT) */
-.transform-controls-row {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 4px;
-  min-width: 0;
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.transform-control-group {
-  display: grid;
-  grid-template-columns: 48px minmax(0, 1fr);
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  width: 100%;
-}
-
-.transform-control-label {
-  font-size: 10px;
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-}
-
-.transform-switch {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
-  min-width: 0;
-  max-width: 100%;
-  background: rgba(0, 0, 0, 0.3);
-  padding: 2px;
-  border-radius: 6px;
-}
-
-.transform-btn {
-  flex: 1 1 auto;
-  min-width: 0;
-  padding: 3px 7px;
-  font-size: 10px;
-  border-radius: 4px;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.15s ease;
-}
-
-.transform-btn:hover {
-  color: var(--text-primary);
-}
-
-.transform-btn.active {
-  background: var(--accent);
-  color: white;
-  font-weight: 600;
-}
-
-/* ═══ CONSOLE BOX DISPLAY (RECESSED NEUMORPHIC INSET) ═══ */
-
-/* min-height 0 so the console yields space to the panels stacked below it;
-   every other child of .screen-content is flex-shrink: 0 and must stay visible. */
-.console-box {
+/* ═══ TRANSCRIPT (the whole body) ═══ */
+.transcript {
   flex: 1;
   min-height: 0;
   min-width: 0;
   max-inline-size: 100%;
-  background: var(--bg-deep);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  padding: 14px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 1.6;
-  color: #9CDCFE;
-  box-shadow: inset 2px 2px 5px var(--neu-dark), inset -2px -2px 4px var(--neu-light);
+  margin: 0;
+  padding: 10px 14px;
+  background: var(--console-bg-app);
+  font-family: var(--console-font);
+  font-size: var(--console-size-body);
+  line-height: var(--console-leading-body);
+  letter-spacing: 0;
+  color: var(--console-text);
   overflow-y: auto;
-  overflow-x: auto;
+  overflow-x: hidden;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
   word-break: break-word;
-  margin-bottom: 12px;
-  -webkit-app-region: no-drag;
+  user-select: text;
+  -webkit-app-region: no-drag !important;
 }
 
-/* ═══ COMMAND BAR & INPUT (NEUMORPHIC INSET) ═══ */
-.command-bar {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 10px;
-  -webkit-app-region: no-drag;
-}
-
-/* min-width 0 lets the input shrink so CLR/EXEC/COPY stay inside the 420px shell */
-.cmd-input {
-  flex: 1;
-  min-width: 0;
-  padding: 10px 12px;
-  font-size: 12px;
-  font-family: var(--font-mono);
-  color: var(--text-primary);
-  background: var(--bg-deep);
-  border: 1px solid transparent;
-  border-radius: 8px;
-  box-shadow: inset 2px 2px 5px var(--neu-dark), inset -2px -2px 4px var(--neu-light);
-  transition: all 0.18s ease;
-  outline: none;
-  -webkit-app-region: no-drag;
-}
-
-.cmd-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25), inset 2px 2px 5px var(--neu-dark), inset -2px -2px 4px var(--neu-light);
-}
-
-.secondary-btn {
-  padding: 8px 10px;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  font-family: inherit;
-  -webkit-app-region: no-drag;
-}
-
-.secondary-btn:hover:not(:disabled) {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.15);
-}
-
-.secondary-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.action-btn {
-  padding: 8px 14px;
-  font-size: 11px;
-  font-weight: 600;
-  color: white;
-  background: linear-gradient(135deg, #3B82F6, #2563EB);
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);
-  transition: all 0.15s ease;
-  font-family: inherit;
-  -webkit-app-region: no-drag;
-}
-
-.action-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.45);
-}
-
-/* ═══ FOOTER & HUD ═══ */
-.footer {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  -webkit-app-region: no-drag;
-}
-
-.footer-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.footer-left {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.footer-right {
-  display: flex;
-  gap: 12px;
-}
-
-.footer-metric {
-  font-size: 10px;
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-}
-
-.footer-hud {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  background: var(--bg-deep);
-  padding: 7px 10px;
-  border-radius: 6px;
-  box-shadow: inset 1px 1px 3px var(--neu-dark);
-}
-
-.hud-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.hud-label {
-  font-size: 9px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-}
-
-.hud-value {
-  font-size: 10px;
-  font-family: var(--font-mono);
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.hud-bar {
-  height: 3px;
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.hud-bar-fill {
-  height: 100%;
-  background: var(--accent);
-  border-radius: 2px;
-}
-
-/* ═══ MINI WIDGET ═══ */
-.mini-widget {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 9999;
-}
-
-.mini-bar {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 20px;
-  padding: 6px 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.5);
-}
-
-.mini-hint {
-  font-size: 11px;
-  color: var(--text-secondary);
-}
-
-.mini-panel {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 12px;
-  padding: 14px;
-  width: 320px;
-  box-shadow: 0 12px 28px rgba(0,0,0,0.6);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* ═══ SHELL BADGES ═══ */
-.shell-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-.shell-badges:empty {
-  display: none;
-}
-
-/* No uppercase transform: badge labels carry exact glyphs (e.g. FTDRᵢ(t,h)) */
-.shell-badge {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  padding: 3px 8px;
-  border-radius: 10px;
-  border: 1px solid var(--ro);
-  background: var(--ro-light);
-  color: var(--ro);
-}
-
-.shell-badge.tone-danger {
-  background: var(--ro);
-  border-color: var(--ro);
-  color: #FFF6F2;
-}
-
-/* ═══ CONSOLE OUTPUT LINES ═══ */
+/* ═══ TRANSCRIPT LINES ═══ */
+/* A line is one row of the transcript: no extra spacing, exactly like a <pre>.
+   Content lines start two cells in; label rows (meta, help) may use the full width. */
 .line {
   position: relative;
+  display: block;
   min-width: 0;
   max-inline-size: 100%;
+  padding-left: var(--console-margin);
   overflow-wrap: anywhere;
-  margin-bottom: 4px;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-.line.type-sys { color: var(--text-muted); }
-.line.type-user { color: var(--text-primary); }
-.line.type-agent { color: #9CDCFE; }
-
-.scramble-line {
-  color: var(--accent);
-  opacity: 0.85;
+/* Prose wraps at 72 characters: the margin is added because the box includes its padding. */
+.line.type-agent,
+.line.type-user,
+.line.banner-title,
+.line.banner-subtitle,
+.line.banner-hint {
+  max-inline-size: min(100%, calc(var(--console-prose) + var(--console-margin)));
 }
 
-.line-has-copy {
-  padding-right: 56px;
+/* Exactly one blank line between blocks; the row keeps its line box via a no-break space. */
+.line.blank-line {
+  min-height: calc(var(--console-size-body) * var(--console-leading-body));
 }
 
-.copy-line-btn {
+/* Hidden run of 100 "M" used once at boot to measure the real character cell. */
+.cell-probe {
   position: absolute;
-  top: 0;
-  right: 0;
-  padding: 2px 7px;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.copy-line-btn:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.output-action-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 8px 0 10px;
-}
-
-.output-action-btn {
-  padding: 5px 10px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 5px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.output-action-btn:hover:not(:disabled) {
-  color: var(--text-primary);
-  background: rgba(59, 130, 246, 0.16);
-  border-color: rgba(59, 130, 246, 0.4);
-}
-
-.output-action-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-/* ═══ SUGGESTION PANEL ═══ */
-.suggestion-panel {
-  background: var(--bg-deep);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  padding: 8px 12px;
-  margin-bottom: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  box-shadow: inset 1px 1px 3px var(--neu-dark);
-  flex-shrink: 0;
-  -webkit-app-region: no-drag;
-}
-
-.suggestion-chip-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.suggestion-chip {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.04em;
-  padding: 3px 8px;
-  border-radius: 10px;
-  background: rgba(59, 130, 246, 0.14);
-  border: 1px solid rgba(59, 130, 246, 0.28);
-  color: var(--accent);
-}
-
-.suggestion-copy {
-  font-size: 10px;
-  line-height: 1.45;
-  color: var(--text-muted);
-}
-
-/* ═══ SLASH PALETTE & CATALOG ═══ */
-.slash-palette {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  max-height: 130px;
-  overflow-y: auto;
-  padding: 4px;
-  margin-bottom: 10px;
-  background: var(--bg-deep);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  box-shadow: inset 1px 1px 3px var(--neu-dark);
-  flex-shrink: 0;
-  -webkit-app-region: no-drag;
-}
-
-.catalog-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  width: 100%;
-  text-align: left;
-  padding: 6px 8px;
-  border: none;
-  border-radius: 5px;
-  background: transparent;
-  cursor: pointer;
-  transition: background 0.15s ease;
-  font-family: inherit;
-}
-
-.catalog-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.catalog-item strong {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.catalog-item span {
-  font-size: 10px;
-  color: var(--text-muted);
-  line-height: 1.4;
-}
-
-/* ═══ OVERLAY PANELS ═══ */
-.overlay-panel {
-  display: flex;
-  flex-direction: column;
-  max-height: 150px;
-  margin-bottom: 10px;
-  background: var(--bg-deep);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  box-shadow: inset 1px 1px 3px var(--neu-dark);
-  flex-shrink: 0;
-  -webkit-app-region: no-drag;
-}
-
-/* An overlay panel plus an open slash palette overflow the 620px shell and push the
-   command bar off-screen. While the palette is open the user is typing a command,
-   so the palette wins. */
-.overlay-panel:has(~ .slash-palette:not([hidden])) {
-  display: none;
-}
-
-.overlay-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.overlay-panel-header strong {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.panel-close-btn {
-  width: 20px;
-  height: 20px;
-  border-radius: 5px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: var(--text-secondary);
-  font-size: 11px;
-  line-height: 1;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.panel-close-btn:hover {
-  color: white;
-  background: var(--signal);
-  border-color: var(--signal);
-}
-
-.overlay-panel-body {
-  padding: 6px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.workbench-empty {
-  padding: 10px 8px;
-  font-size: 10px;
-  line-height: 1.5;
-  color: var(--text-muted);
-}
-
-/* ═══ HUD BAR TONES ═══ */
-.hud-bar-fill.temp { background: var(--warning); }
-.hud-bar-fill.load { background: var(--success); }
-
-/* ═══ MINI WIDGET INTERNALS ═══ */
-.mini-status {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--text-muted);
-}
-
-.mini-status.ready {
-  background: var(--success);
-  box-shadow: 0 0 6px var(--success);
-}
-
-.panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  cursor: grab;
-}
-
-.panel-header:active { cursor: grabbing; }
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  visibility: hidden;
+  white-space: pre;
   pointer-events: none;
 }
 
-.header-status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--success);
-  box-shadow: 0 0 6px var(--success);
+.line.type-sys { color: var(--console-accent); }
+/* The echoed command is yellow; the prompt in front of it stays green. */
+.line.type-user { color: var(--console-yellow); }
+.line.type-agent { color: var(--console-text); }
+
+/* Echo of the typed command keeps the prompt in front of it. */
+.line.type-user::before {
+  content: 'sentra ~/myprompt $ ';
+  color: var(--console-prompt);
 }
 
-.header-title-stack {
-  display: flex;
-  flex-direction: column;
+/* Result status prefixes: ok / warn / error, rendered as a coloured pseudo-element
+   so the DOM and the copied text stay unchanged. A status line starts at column 1: the
+   prefix hangs left in a fixed six-character column (hanging indent), so the text after
+   it always starts at column 7, on wrapped rows too. */
+.line.status-ok,
+.line.status-warn,
+.line.status-error {
+  padding-left: var(--console-prefix);
+  text-indent: calc(-1 * var(--console-prefix));
+  max-inline-size: min(100%, calc(var(--console-prose) + var(--console-prefix)));
 }
 
-.header-title { font-size: 12px; font-weight: 600; color: var(--text-primary); }
-.header-subtitle { font-size: 9px; color: var(--text-secondary); }
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.line.status-ok::before,
+.line.status-warn::before,
+.line.status-error::before {
+  display: inline-block;
+  width: var(--console-prefix);
+  text-indent: 0;
+  white-space: pre;
+  font-weight: 700;
 }
 
-.header-model-chip {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  padding: 2px 7px;
-  border-radius: 10px;
-  background: rgba(59, 130, 246, 0.15);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  color: var(--accent);
+.line.status-ok::before { content: 'ok    '; color: var(--console-success); }
+.line.status-warn::before { content: 'warn  '; color: var(--console-warn); }
+.line.status-error::before { content: 'error '; color: var(--console-error); }
+
+/* Meta line is settings, not a verdict; the quality line is the verdict, printed in
+   the status column (ok / warn / error prefix) with the text in body colour. */
+.line.meta-line { color: var(--console-accent); }
+/* help rows: the command column is a green seg-cmd run, the summary stays body text. */
+.line.help-row { color: var(--console-text); }
+.line.quality-line { color: var(--console-text); }
+
+.line.scramble-line {
+  color: var(--console-accent);
+  opacity: 0.85;
 }
 
-.header-btn {
-  width: 20px;
-  height: 20px;
-  border-radius: 5px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: var(--text-secondary);
-  font-size: 11px;
-  line-height: 1;
+/* ═══ BOOT BANNER ═══ */
+/* Printed once at boot, never through the status-prefix path: title in strong text,
+   subtitle dimmed, rule in the heading colour, hint in the path colour, then one blank line. */
+.line.banner-title { color: var(--console-text-strong); }
+.line.banner-subtitle { color: var(--console-text-dim); }
+.line.banner-rule { color: var(--console-heading); }
+.line.banner-hint { color: var(--console-path); }
+.line.banner-blank { min-height: calc(var(--console-size-body) * var(--console-leading-body)); }
+/* Startup block rows (reference-console-startup.html): session labels cyan, commands
+   green, descriptions dim; the rows are label tables, so they use the full width. */
+.line.banner-session,
+.line.banner-example,
+.line.banner-command { color: var(--console-text); }
+.seg-bright { color: var(--console-text-strong); }
+.seg-dim { color: var(--console-text-dim); }
+.seg-label { color: var(--console-accent); }
+.seg-cmd { color: var(--console-prompt); }
+/* Result body runs (reference-console-sentra.html): `## HEADING` in the heading colour,
+   directories blue and bold, file names bright, backticked commands green. */
+.seg-heading { color: var(--console-heading); }
+.seg-dir { color: var(--console-path); font-weight: 700; }
+.seg-file { color: var(--console-text-strong); }
+
+/* ═══ ACTIONABLE LINES ═══ */
+/* Real buttons that look like plain text: no chrome, underline on hover,
+   keyboard focusable, accessible name in aria-label. */
+/* The action row sits in the status text column, dim, under the verdict. */
+.tx-actions {
+  display: block;
+  padding-left: var(--console-prefix);
+}
+
+.tx-action {
+  all: unset;
+  display: inline;
   cursor: pointer;
-  transition: all 0.15s ease;
+  color: var(--console-path);
+  font: inherit;
+  margin-right: 12px;
+  white-space: nowrap;
 }
 
-.header-btn:hover {
-  color: white;
-  background: rgba(255, 255, 255, 0.12);
+.tx-action:hover,
+.tx-action:focus-visible {
+  text-decoration: underline;
+  color: var(--console-text-strong);
 }
 
-.mini-mode-bar {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
-  padding: 5px;
-  background: var(--bg-deep);
-  border-radius: 8px;
-  box-shadow: 3px 3px 8px var(--neu-dark), -2px -2px 6px var(--neu-light);
+.tx-action:disabled {
+  cursor: default;
+  color: var(--console-text-dim);
+  text-decoration: none;
 }
 
-.mini-mode-btn {
+/* ═══ PROMPT LINE (the only input; last line of the transcript) ═══ */
+.prompt-line {
   display: flex;
-  flex-direction: column;
-  gap: 1px;
-  padding: 6px 4px;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.15s ease;
-}
-
-.mini-mode-btn strong { font-size: 10px; font-weight: 600; }
-.mini-mode-btn span { font-size: 9px; opacity: 0.8; }
-
-.mini-mode-btn.active {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-primary);
-  box-shadow: inset 1px 1px 3px var(--neu-dark), inset -1px -1px 2px var(--neu-light);
-}
-
-.mini-status-panel {
-  background: var(--bg-deep);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  box-shadow: inset 1px 1px 3px var(--neu-dark);
-}
-
-.mini-status-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.mini-status-header strong { font-size: 11px; color: var(--text-primary); }
-
-.mini-status-tag {
-  font-size: 9px;
-  padding: 2px 7px;
-  border-radius: 10px;
-  background: rgba(59, 130, 246, 0.15);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  color: var(--accent);
-}
-
-.mini-status-copy { min-width: 0; overflow-wrap: anywhere; font-size: 10px; line-height: 1.4; color: var(--text-secondary); }
-
-.mini-console {
-  min-height: 120px;
-  max-height: 180px;
-  overflow-y: auto;
-  overflow-x: auto;
+  align-items: baseline;
   min-width: 0;
-  max-inline-size: 100%;
-  overflow-wrap: anywhere;
-  padding: 10px;
-  background: var(--bg-deep);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  line-height: 1.55;
-  color: #9CDCFE;
-  white-space: pre-wrap;
-  word-break: break-word;
-  box-shadow: inset 2px 2px 5px var(--neu-dark), inset -2px -2px 4px var(--neu-light);
+  padding-left: var(--console-margin);
 }
 
-.mini-hud {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  padding: 6px 10px;
-  background: var(--bg-deep);
-  border-radius: 6px;
-  box-shadow: inset 1px 1px 3px var(--neu-dark);
+.prompt {
+  color: var(--console-prompt);
+  white-space: pre;
+  flex-shrink: 0;
 }
 
-.mini-hud-item { display: flex; flex-direction: column; gap: 1px; }
-.mini-hud-label { font-size: 8px; text-transform: uppercase; color: var(--text-muted); }
-.mini-hud-value { font-family: var(--font-mono); font-size: 10px; color: var(--text-secondary); }
-
-.mini-cmd-bar {
-  display: flex;
-  gap: 6px;
-}
-
-.mini-cmd-input {
+.prompt-input {
   flex: 1;
   min-width: 0;
-  padding: 8px 10px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-primary);
-  background: var(--bg-deep);
-  border: 1px solid transparent;
-  border-radius: 6px;
-  outline: none;
-  box-shadow: inset 2px 2px 5px var(--neu-dark), inset -2px -2px 4px var(--neu-light);
-  transition: all 0.18s ease;
-}
-
-.mini-cmd-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25), inset 2px 2px 5px var(--neu-dark);
-}
-
-.mini-btn-sm {
-  padding: 7px 10px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 600;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.mini-btn-sec {
-  color: var(--text-secondary);
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.mini-btn-sec:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.mini-btn-exec {
-  color: white;
-  background: linear-gradient(135deg, #3B82F6, #2563EB);
   border: none;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);
+  outline: none;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  letter-spacing: 0;
+  color: var(--console-text-strong);
+  caret-color: var(--console-prompt);
 }
 
-.mini-btn-exec:hover {
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.45);
+.prompt-input::placeholder {
+  color: var(--console-text-dim);
 }
 
-.mini-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  font-size: 9px;
-  color: var(--text-muted);
+.prompt-input:disabled {
+  color: var(--console-text-dim);
 }
 
-.mini-footer-left { font-weight: 600; color: var(--text-secondary); }
-
-/* ═══ SCROLLBARS ═══ */
-.console-box::-webkit-scrollbar,
-.mini-console::-webkit-scrollbar,
-.slash-palette::-webkit-scrollbar,
-.overlay-panel-body::-webkit-scrollbar {
+/* ═══ SCROLLBAR ═══ */
+.transcript::-webkit-scrollbar {
   width: 6px;
 }
 
-.console-box::-webkit-scrollbar-track,
-.mini-console::-webkit-scrollbar-track,
-.slash-palette::-webkit-scrollbar-track,
-.overlay-panel-body::-webkit-scrollbar-track {
+.transcript::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.console-box::-webkit-scrollbar-thumb,
-.mini-console::-webkit-scrollbar-thumb,
-.slash-palette::-webkit-scrollbar-thumb,
-.overlay-panel-body::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+/* macOS overlay bars are rounded: the one curve inside the window. */
+.transcript::-webkit-scrollbar-thumb {
+  background: var(--console-rule);
   border-radius: 3px;
 }
 
-.console-box::-webkit-scrollbar-thumb:hover,
-.mini-console::-webkit-scrollbar-thumb:hover,
-.slash-palette::-webkit-scrollbar-thumb:hover,
-.overlay-panel-body::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.22);
+.transcript::-webkit-scrollbar-thumb:hover {
+  background: var(--console-text-dim);
 }

@@ -283,11 +283,56 @@ function appendDesktopEnvWarning() {
   )
 }
 
-const DEFAULT_WINDOW = { width: 420, height: 580, x: 0, y: 0 }
+// The window is sized in transcript columns and rows, never in fixed pixels. The renderer
+// measures the real character cell once its fonts are loaded and reports it over
+// 'window:fit-grid'; the chrome offsets below mirror index.css (title bar 28px, transcript
+// padding 10px 14px) so that columns × cell width + padding is the content width.
+// The target sits on the floor Chief set (80 × 20): prose (72) plus the margin (2) still
+// fits with room for a scrollbar. Smaller than this needs a new minimum and prose width.
+const GRID_TARGET = { columns: 80, rows: 20 }
+const GRID_MIN = { columns: 80, rows: 20 }
+const CHROME = { titleBar: 28, padX: 14, padY: 10 }
+// JetBrains Mono at 11px / 1.45 measures 6.6 × 15.95; used when measurement fails (556×367).
+const FALLBACK_CELL = { width: 6.6, height: 15.95 }
+
+interface GridCell {
+  width: number
+  height: number
+}
+
+function gridToContentSize(cell: GridCell, grid: { columns: number; rows: number }) {
+  return {
+    // Ceil, never round: the requested grid must always fit in whole pixels.
+    width: Math.ceil(grid.columns * cell.width + CHROME.padX * 2),
+    height: Math.ceil(grid.rows * cell.height + CHROME.padY * 2 + CHROME.titleBar),
+  }
+}
+
+const DEFAULT_WINDOW = { ...gridToContentSize(FALLBACK_CELL, GRID_TARGET), x: 0, y: 0 }
+const FALLBACK_MIN_SIZE = gridToContentSize(FALLBACK_CELL, GRID_MIN)
 
 // Bumped whenever the default shell size changes, so a persisted size from an older
 // layout is discarded instead of pinning the window to the previous dimensions.
-const WINDOW_STATE_VERSION = 2
+// v4: the stored 1280×860 from the pixel-sized era is discarded for the grid fit.
+// v5: the grid target halved to 84 × 21; the stored 964×616 is discarded.
+// v6: the grid target is the 80 × 20 floor; the stored 684×446 is discarded.
+// v7: the face shrank from 13px to 11px; the 13px-era fit is discarded and measured again.
+const WINDOW_STATE_VERSION = 7
+
+// The grid fit runs once, on the first launch with no persisted state at the current
+// version. After that the user's own size always wins.
+let windowStatePersisted = false
+let gridFitApplied = false
+
+function parseGridCell(payload: unknown): GridCell | null {
+  if (typeof payload !== 'object' || payload === null) return null
+  const { cellWidth, cellHeight } = payload as { cellWidth?: unknown; cellHeight?: unknown }
+  if (typeof cellWidth !== 'number' || typeof cellHeight !== 'number') return null
+  if (!Number.isFinite(cellWidth) || !Number.isFinite(cellHeight)) return null
+  // Sane monospace cells only: an 11px face is roughly 5–8px wide and 13–19px tall.
+  if (cellWidth < 3 || cellWidth > 30 || cellHeight < 6 || cellHeight > 60) return null
+  return { width: cellWidth, height: cellHeight }
+}
 
 function resolveWindowStatePath() {
   const baseDir = app.getPath('userData')
@@ -301,6 +346,7 @@ function loadWindowState(): typeof DEFAULT_WINDOW {
       const content = readFileSync(statePath, 'utf8')
       const saved = JSON.parse(content)
       if (saved?.version === WINDOW_STATE_VERSION) {
+        windowStatePersisted = true
         return {
           width: typeof saved.width === 'number' ? saved.width : DEFAULT_WINDOW.width,
           height: typeof saved.height === 'number' ? saved.height : DEFAULT_WINDOW.height,
@@ -344,6 +390,8 @@ function resolveDesktopWorkspaceFilePath() {
   return path.join(baseDir, 'sentra-desktop-workspace.json')
 }
 
+const isWindows = process.platform === 'win32'
+
 function createWindow() {
   const winState = loadWindowState()
 
@@ -354,11 +402,17 @@ function createWindow() {
       ? { x: winState.x, y: winState.y }
       : {}),
     resizable: true,
-    minWidth: 320,
-    minHeight: 480,
+    minWidth: FALLBACK_MIN_SIZE.width,
+    minHeight: FALLBACK_MIN_SIZE.height,
     frame: false,
-    transparent: true,
-    backgroundColor: '#00000000',
+    // On Windows a transparent window disables ClearType (sub-pixel antialiasing), so small
+    // text rendered greyscale and soft: measured 0% sub-pixel edge pixels transparent vs
+    // 82% opaque. The window is opaque there in the console colour (--console-bg-window);
+    // Windows 11 still rounds frameless corners natively. Elsewhere it stays transparent
+    // for the CSS radius and the window shadow.
+    transparent: !isWindows,
+    backgroundColor: isWindows ? '#16191d' : '#00000000',
+    roundedCorners: true,
     show: !isSmokeMode,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -464,6 +518,40 @@ app.whenReady().then(() => {
     mainWindow?.minimize()
   })
   ipcMain.handle('window:get-pos', () => mainWindow?.getPosition())
+  // Renderer-measured character cell → window size in columns and rows. The minimum
+  // (80 × 20) is applied on every launch; the target (120 × 30) only on the first launch
+  // without persisted state, and it is persisted at once so later launches keep the user's
+  // own size. Only the shell's own renderer may call this, and only with a sane cell.
+  ipcMain.handle('window:fit-grid', (event, payload) => {
+    if (!mainWindow || isSmokeMode || event.sender.id !== mainWindow.webContents.id) {
+      return { applied: false, reason: 'rejected' }
+    }
+    const cell = parseGridCell(payload)
+    if (!cell) {
+      return { applied: false, reason: 'invalid-cell' }
+    }
+    const minimum = gridToContentSize(cell, GRID_MIN)
+    mainWindow.setMinimumSize(minimum.width, minimum.height)
+    if (windowStatePersisted || gridFitApplied) {
+      return {
+        applied: false,
+        reason: windowStatePersisted ? 'persisted' : 'already-applied',
+        minWidth: minimum.width,
+        minHeight: minimum.height,
+      }
+    }
+    const target = gridToContentSize(cell, GRID_TARGET)
+    mainWindow.setContentSize(target.width, target.height)
+    gridFitApplied = true
+    saveWindowState(mainWindow.getBounds())
+    return {
+      applied: true,
+      width: target.width,
+      height: target.height,
+      minWidth: minimum.width,
+      minHeight: minimum.height,
+    }
+  })
   ipcMain.on('window:set-pos', (_event, { x, y }: { x: number; y: number }) => {
     mainWindow?.setPosition(Math.round(x), Math.round(y))
   })

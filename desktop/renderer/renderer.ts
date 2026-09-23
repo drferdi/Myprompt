@@ -1,5 +1,9 @@
+import * as strings from './strings'
+
 type DesktopPrimaryModeId = 'transform' | 'optimize'
 type DesktopOptimizeLane = 'INTERACTIVE' | 'DEEP'
+type DesktopCompilerProfile = 'default' | 'claude' | 'codex' | 'gemini' | 'grok'
+type DesktopEffortLevel = 'low' | 'medium' | 'high' | 'xhigh' | 'max'
 type DesktopCommandId =
   | 'help.show'
   | 'evaluate'
@@ -43,6 +47,8 @@ interface DesktopRunRecord {
   format: string
   targetLlm: DesktopLLMProvider
   optimizerLane?: DesktopOptimizeLane
+  /** Set on a refined Coding Brief: a rerun sends it again, answers included. */
+  refinement?: CodingBriefRefinementPayload
 }
 
 interface DesktopRecentRunRecord {
@@ -51,6 +57,15 @@ interface DesktopRecentRunRecord {
   outputText: string
   sourceMode: 'transform' | 'optimize' | 'evaluate'
   createdAt?: string
+  outputKind?: DesktopOutputKind
+  quality?: { complete: boolean; degraded: boolean; thin?: boolean }
+  refinement?: CodingBriefRefinementPayload
+}
+
+interface BriefCounts {
+  total: number
+  complete: number
+  needsCheck: number
 }
 
 interface DesktopBenchmarkRecord {
@@ -72,10 +87,13 @@ interface DesktopCommandCatalogEntry {
   transportCommand: string
 }
 
+type DesktopOutputKind = 'SUPER_PROMPT' | 'CODING_BRIEF'
+
 interface DesktopOptimizerSuggestion {
   taskType: string
   optimizerLane: DesktopOptimizeLane
   templateSlug?: string
+  outputKind: DesktopOutputKind
   reasons: string[]
 }
 
@@ -153,204 +171,152 @@ function generateScrambleText(length: number): string {
   return out
 }
 
-const MODE_COPY: Record<
-  DesktopPrimaryModeId,
-  {
-    title: string
-    tag: string
-    copy: string
-    subtitle: string
-    placeholder: string
-  }
-> = {
-  transform: {
-    title: 'Transform',
-    tag: 'Zero Cost',
-    copy: 'Wrap raw prompts into a deterministic prompt-engineering scaffold.',
-    subtitle: 'Deterministic prompt shell',
-    placeholder: 'Masukkan prompt mentah untuk dibungkus...',
-  },
-  optimize: {
-    title: 'Optimizer',
-    tag: 'LLM Mode',
-    copy: 'Generate a provider-backed Super Prompt with structured reasoning.',
-    subtitle: 'LLM-backed prompt shell',
-    placeholder: 'Masukkan ide mentah untuk dioptimalkan...',
-  },
-}
-
 const COMMAND_CATALOG: DesktopCommandCatalogEntry[] = [
   {
     id: 'help.show',
     slash: '/help',
-    summary: 'Show available commands and badges',
+    summary: strings.summaryHelpShow,
     transportCommand: 'help:show',
   },
   {
     id: 'evaluate',
     slash: '/evaluate <text>',
-    summary: 'Evaluate a prompt body with the current provider',
+    summary: strings.summaryEvaluate,
     transportCommand: 'evaluate:run',
   },
   {
     id: 'library.list',
     slash: '/library',
-    summary: 'List saved library prompts',
+    summary: strings.summaryLibraryList,
     transportCommand: 'library:list',
   },
   {
     id: 'library.search',
     slash: '/library search <query>',
-    summary: 'Search saved library prompts',
+    summary: strings.summaryLibrarySearch,
     transportCommand: 'library:search',
   },
   {
     id: 'library.save',
     slash: '/library save',
-    summary: 'Save the current output to Library',
+    summary: strings.summaryLibrarySave,
     transportCommand: 'library:save',
   },
   {
     id: 'draft.save',
     slash: '/draft save',
-    summary: 'Save the current run as a local draft',
+    summary: strings.summaryDraftSave,
     transportCommand: 'draft:save',
   },
   {
     id: 'recent.list',
     slash: '/recent',
-    summary: 'Open recent runs in the workbench',
+    summary: strings.summaryRecentList,
     transportCommand: 'recent:list',
   },
   {
     id: 'benchmark.list',
     slash: '/benchmark list',
-    summary: 'List saved benchmark cases',
+    summary: strings.summaryBenchmarkList,
     transportCommand: 'benchmark:list',
   },
   {
     id: 'benchmark.save',
     slash: '/benchmark save',
-    summary: 'Save the current run as a benchmark case',
+    summary: strings.summaryBenchmarkSave,
     transportCommand: 'benchmark:save',
   },
   {
     id: 'benchmark.run',
     slash: '/benchmark run <id>',
-    summary: 'Run one saved benchmark case',
+    summary: strings.summaryBenchmarkRun,
     transportCommand: 'benchmark:run',
   },
   {
     id: 'provider.list',
     slash: '/provider',
-    summary: 'Show provider key status',
+    summary: strings.summaryProviderList,
     transportCommand: 'provider:list',
   },
   {
     id: 'usage.summary',
     slash: '/usage',
-    summary: 'Show current quota usage and tier',
+    summary: strings.summaryUsageSummary,
     transportCommand: 'usage:summary',
   },
   {
     id: 'subscription.upgrade',
     slash: '/subscription upgrade <tier> <interval>',
-    summary: 'Start a desktop upgrade checkout flow',
+    summary: strings.summarySubscriptionUpgrade,
     transportCommand: 'subscription:upgrade',
   },
 ]
 
-const OPTIMIZER_LANE_COPY: Record<
-  DesktopOptimizeLane,
-  {
-    tag: string
-    copy: string
-    subtitle: string
-    placeholder: string
-  }
-> = {
-  INTERACTIVE: {
-    tag: 'Fast Lane',
-    copy: 'Fast default: skip retrieval, use a denser prompt, and optimize for first useful output.',
-    subtitle: 'Interactive prompt shell',
-    placeholder: 'Masukkan ide mentah untuk optimasi cepat...',
-  },
-  DEEP: {
-    tag: 'Deep Lane',
-    copy: 'Deeper optimization: allow richer prompt engineering and retrieval-aware guidance when needed.',
-    subtitle: 'Deep prompt shell',
-    placeholder: 'Masukkan ide untuk optimasi mendalam...',
-  },
+const COMPILER_PROFILES: DesktopCompilerProfile[] = [
+  'default',
+  'claude',
+  'codex',
+  'gemini',
+  'grok',
+]
+const EFFORT_LEVELS: DesktopEffortLevel[] = ['low', 'medium', 'high', 'xhigh', 'max']
+const EFFORT_MAX_TOKENS: Record<DesktopEffortLevel, number> = {
+  low: 700,
+  medium: 1200,
+  high: 1800,
+  xhigh: 2600,
+  max: 3200,
 }
 
 const shell = document.getElementById('consoleShell') as HTMLElement | null
 const display = document.getElementById('display') as HTMLElement | null
+const promptLine = document.getElementById('promptLine') as HTMLElement | null
 const input = document.getElementById('cmdInput') as HTMLInputElement | null
-const appTitle = document.getElementById('appTitle') as HTMLElement | null
-const modelChip = document.getElementById('modelChip') as HTMLElement | null
-const shellBadges = document.getElementById('shellBadges') as HTMLElement | null
-const slashPalette = document.getElementById('slashPalette') as HTMLElement | null
-const suggestionPanel = document.getElementById('suggestionPanel') as HTMLElement | null
-const suggestionChips = document.getElementById('suggestionChips') as HTMLElement | null
-const suggestionCopy = document.getElementById('suggestionCopy') as HTMLElement | null
-const commandHelpPanel = document.getElementById('commandHelpPanel') as HTMLElement | null
-const commandHelpBody = document.getElementById('commandHelpBody') as HTMLElement | null
-const commandHelpCloseBtn = document.getElementById(
-  'commandHelpCloseBtn'
-) as HTMLButtonElement | null
-const workbenchPanel = document.getElementById('workbenchPanel') as HTMLElement | null
-const workbenchBody = document.getElementById('workbenchBody') as HTMLElement | null
-const workbenchCloseBtn = document.getElementById('workbenchCloseBtn') as HTMLButtonElement | null
 const closeBtn = document.getElementById('closeBtn') as HTMLElement | null
-const clearBtn = document.getElementById('clearBtn') as HTMLButtonElement | null
-const runBtn = document.getElementById('runBtn') as HTMLButtonElement | null
-const copyLastBtn = document.getElementById('copyLastBtn') as HTMLButtonElement | null
-const miniToggleBtn = document.getElementById('miniToggleBtn') as HTMLButtonElement | null
-const powerBtn = document.getElementById('powerBtn') as HTMLButtonElement | null
-const consoleRig = document.getElementById('consoleRig') as HTMLElement | null
-const miniWidget = document.getElementById('miniWidget') as HTMLElement | null
-const miniBar = document.getElementById('miniBar') as HTMLElement | null
-const miniPanel = document.getElementById('miniPanel') as HTMLElement | null
-const mCollapseBtn = document.getElementById('mCollapseBtn') as HTMLButtonElement | null
-const mTransformBtn = document.getElementById('mTransformBtn') as HTMLButtonElement | null
-const mOptimizeBtn = document.getElementById('mOptimizeBtn') as HTMLButtonElement | null
-const mCmdInput = document.getElementById('mCmdInput') as HTMLInputElement | null
-const mDisplay = document.getElementById('mDisplay') as HTMLElement | null
-const mRunBtn = document.getElementById('mRunBtn') as HTMLButtonElement | null
-const mClearBtn = document.getElementById('mClearBtn') as HTMLButtonElement | null
-const mTitle = document.getElementById('mTitle') as HTMLElement | null
-const mSubtitle = document.getElementById('mSubtitle') as HTMLElement | null
-const mModel = document.getElementById('mModel') as HTMLElement | null
-const mStatusTitle = document.getElementById('mStatusTitle') as HTMLElement | null
-const mStatusTag = document.getElementById('mStatusTag') as HTMLElement | null
-const mStatusCopy = document.getElementById('mStatusCopy') as HTMLElement | null
-const modeButtons = Array.from(document.querySelectorAll<HTMLElement>('.mode-btn'))
-const optimizerLaneControls = document.getElementById('optimizerLaneControls') as HTMLElement | null
-const optimizerLaneButtons = Array.from(
-  document.querySelectorAll<HTMLElement>('.optimizer-lane-btn')
-)
-const transformControls = document.getElementById('transformControls') as HTMLElement | null
-const transformProfileButtons = Array.from(
-  document.querySelectorAll<HTMLElement>('#transformProfileSwitch .transform-btn')
-)
-const transformEffortButtons = Array.from(
-  document.querySelectorAll<HTMLElement>('#transformEffortSwitch .transform-btn')
-)
+const minimizeBtn = document.getElementById('minimizeBtn') as HTMLElement | null
 
-let currentMode: DesktopPrimaryModeId = 'transform'
-let currentCompilerProfile: 'default' | 'claude' | 'codex' | 'gemini' | 'grok' = 'default'
-let currentEffortLevel: 'low' | 'medium' | 'high' | 'xhigh' | 'max' = 'high'
+let currentMode: DesktopPrimaryModeId = 'optimize'
+let currentOutputKind: DesktopOutputKind = 'CODING_BRIEF'
+let currentCompilerProfile: DesktopCompilerProfile = 'default'
+let currentEffortLevel: DesktopEffortLevel = 'high'
 let currentOptimizerLane: DesktopOptimizeLane = 'INTERACTIVE'
 let currentProvider: DesktopLLMProvider | null = null
 let currentModelLabel = 'provider-resolving'
 let providerReadinessStatus: 'resolving' | 'ready' | 'missing' = 'resolving'
 
-type WidgetState = 'full' | 'minimized'
-
-let widgetState: WidgetState = 'full'
 let isExecuting = false
 let lastRunRecord: DesktopRunRecord | null = null
+// Startup block state: printed once the shell state is known, and again on `clear`.
+let shellStateLoaded = false
+let briefCounts: BriefCounts | null = null
 let lastCopyText = ''
+
+// Clarification round (docs/CODING_BRIEF_STANDARD.md §6 P5). The main process derives the
+// questions and sends them with a delivered brief; this module cannot import lib/.
+type ClarificationElement = keyof typeof strings.clarificationHints
+
+interface ClarificationItem {
+  element: ClarificationElement
+  question: string
+}
+
+interface CodingBriefRefinementPayload {
+  previousBrief: string
+  clarifications: Array<ClarificationItem & { answer: string | null }>
+}
+
+interface ClarificationRound {
+  rawIdea: string
+  previousBrief: string
+  items: ClarificationItem[]
+  /** One entry per answered question: the typed text, or null for "keep" (Enter). */
+  answers: Array<string | null>
+}
+
+/** Set by a delivered brief; its first question prints once that run's command block closes. */
+let offeredClarificationRound: ClarificationRound | null = null
+/** While set, every typed line answers the current question (D2). */
+let pendingClarificationRound: ClarificationRound | null = null
 const activeOptimizeLines = new Map<string, HTMLElement>()
 const activeOptimizeStatusLines = new Map<string, HTMLElement>()
 let optimizerLaneStates: Partial<
@@ -487,11 +453,15 @@ function suggestOptimizerConfig(rawIdea: string): DesktopOptimizerSuggestion {
     ? 'DEEP'
     : 'INTERACTIVE'
   const templateSlug = inferTemplateSlug(rawIdea, taskType)
+  const outputKind: DesktopOutputKind = taskType === 'CODING' ? 'CODING_BRIEF' : 'SUPER_PROMPT'
   const reasons = [
     `Task type inferred as ${taskType}.`,
     optimizerLane === 'DEEP'
       ? 'Deep lane suggested because the prompt asks for richer analysis or trade-offs.'
       : 'Interactive lane suggested because the prompt looks execution-first and short-horizon.',
+    outputKind === 'CODING_BRIEF'
+      ? 'Coding Brief output selected because the task type is CODING.'
+      : 'Super Prompt output selected.',
   ]
 
   if (templateSlug) {
@@ -502,6 +472,7 @@ function suggestOptimizerConfig(rawIdea: string): DesktopOptimizerSuggestion {
     taskType,
     optimizerLane,
     templateSlug,
+    outputKind,
     reasons,
   }
 }
@@ -509,20 +480,6 @@ function suggestOptimizerConfig(rawIdea: string): DesktopOptimizerSuggestion {
 function joinArgs(parts: string[]) {
   const value = parts.join(' ').trim()
   return value ? [value] : []
-}
-
-function getModeCopy(
-  mode: DesktopPrimaryModeId,
-  optimizerLane: DesktopOptimizeLane = currentOptimizerLane
-) {
-  if (mode === 'transform') {
-    return MODE_COPY.transform
-  }
-
-  return {
-    ...MODE_COPY.optimize,
-    ...OPTIMIZER_LANE_COPY[optimizerLane],
-  }
 }
 
 function parseConsoleInput(inputValue: string): ParsedConsoleInput {
@@ -650,149 +607,6 @@ function parseConsoleInput(inputValue: string): ParsedConsoleInput {
   }
 }
 
-function hideSlashPalette() {
-  if (slashPalette) {
-    slashPalette.hidden = true
-    slashPalette.innerHTML = ''
-  }
-}
-
-function hideSuggestionPanel() {
-  suggestionPanel?.setAttribute('hidden', '')
-  if (suggestionChips) {
-    suggestionChips.innerHTML = ''
-  }
-  if (suggestionCopy) {
-    suggestionCopy.textContent = ''
-  }
-}
-
-function renderSuggestionPanel(rawIdea: string) {
-  if (!suggestionPanel || !suggestionChips || !suggestionCopy) {
-    return
-  }
-
-  const normalized = rawIdea.trim()
-  if (currentMode !== 'optimize' || !normalized) {
-    hideSuggestionPanel()
-    return
-  }
-
-  const suggestion = suggestOptimizerConfig(normalized)
-  suggestionChips.innerHTML = [
-    `Task · ${suggestion.taskType}`,
-    `Lane · ${suggestion.optimizerLane}`,
-    suggestion.templateSlug ? `Template · ${suggestion.templateSlug}` : null,
-  ]
-    .filter((item): item is string => Boolean(item))
-    .map((item) => `<span class="suggestion-chip">${item}</span>`)
-    .join('')
-  suggestionCopy.textContent = suggestion.reasons.join(' ')
-  suggestionPanel.removeAttribute('hidden')
-}
-
-function hideOverlayPanels() {
-  commandHelpPanel?.setAttribute('hidden', '')
-  workbenchPanel?.setAttribute('hidden', '')
-}
-
-function renderShellBadges(badges: NonNullable<DesktopShellState['badges']> = []) {
-  if (!shellBadges) {
-    return
-  }
-
-  shellBadges.innerHTML = badges
-    .map((badge) => `<span class="shell-badge tone-${badge.tone}">${badge.label}</span>`)
-    .join('')
-}
-
-function buildCatalogItemMarkup(slash: string, summary: string) {
-  return `<strong>${slash}</strong><span>${summary}</span>`
-}
-
-function filterCommandCatalog(query: string) {
-  const normalized = query.trim().toLowerCase()
-
-  if (!normalized) {
-    return COMMAND_CATALOG.slice(0, 8)
-  }
-
-  return COMMAND_CATALOG.filter(
-    (entry) =>
-      entry.slash.toLowerCase().includes(normalized) ||
-      entry.summary.toLowerCase().includes(normalized)
-  ).slice(0, 8)
-}
-
-function renderSlashPalette(query: string) {
-  if (!slashPalette) {
-    return
-  }
-
-  const normalized = query.trim()
-  if (!normalized.startsWith('/')) {
-    hideSlashPalette()
-    return
-  }
-
-  const items = filterCommandCatalog(normalized)
-  if (items.length === 0) {
-    hideSlashPalette()
-    return
-  }
-
-  slashPalette.innerHTML = ''
-  for (const item of items) {
-    const button = document.createElement('button')
-    button.className = 'catalog-item'
-    button.type = 'button'
-    button.innerHTML = buildCatalogItemMarkup(item.slash, item.summary)
-    button.addEventListener('click', () => {
-      if (!input) {
-        return
-      }
-
-      input.value = item.slash
-      input.focus()
-      hideSlashPalette()
-
-      if (item.id === 'help.show') {
-        renderCommandHelpPanel('')
-        commandHelpPanel?.removeAttribute('hidden')
-      }
-    })
-    slashPalette.appendChild(button)
-  }
-
-  slashPalette.hidden = false
-}
-
-function renderCommandHelpPanel(query: string) {
-  if (!commandHelpBody) {
-    return
-  }
-
-  const items = filterCommandCatalog(query)
-  commandHelpBody.innerHTML = ''
-
-  for (const item of items) {
-    const button = document.createElement('button')
-    button.className = 'catalog-item'
-    button.type = 'button'
-    button.innerHTML = buildCatalogItemMarkup(item.slash, item.summary)
-    button.addEventListener('click', () => {
-      if (!input) {
-        return
-      }
-
-      input.value = item.slash
-      input.focus()
-      hideSlashPalette()
-    })
-    commandHelpBody.appendChild(button)
-  }
-}
-
 function normalizeRecentRuns(payload: unknown): DesktopRecentRunRecord[] {
   if (!isObjectRecord(payload) || !Array.isArray(payload.recentRuns)) {
     return []
@@ -808,6 +622,31 @@ function normalizeRecentRuns(payload: unknown): DesktopRecentRunRecord[] {
         item.sourceMode === 'optimize' ||
         item.sourceMode === 'evaluate')
   )
+}
+
+/**
+ * Today's Coding Briefs by outcome, from the stored runs. Only records that carry an
+ * output kind and a quality verdict are counted, so the numbers are never inferred.
+ */
+function countTodaysBriefs(recentRuns: DesktopRecentRunRecord[], now = new Date()): BriefCounts {
+  const today = now.toDateString()
+  const counts: BriefCounts = { total: 0, complete: 0, needsCheck: 0 }
+
+  for (const record of recentRuns) {
+    if (record.sourceMode !== 'optimize' || record.outputKind !== 'CODING_BRIEF') continue
+    if (!record.quality || typeof record.createdAt !== 'string') continue
+    const createdAt = new Date(record.createdAt)
+    if (Number.isNaN(createdAt.getTime()) || createdAt.toDateString() !== today) continue
+    counts.total += 1
+    // A thin brief is valid but never complete (§8.3): the user still owes two answers.
+    if (record.quality.degraded || record.quality.thin) {
+      counts.needsCheck += 1
+    } else if (record.quality.complete) {
+      counts.complete += 1
+    }
+  }
+
+  return counts
 }
 
 function normalizeBenchmarkRecords(payload: unknown): DesktopBenchmarkRecord[] {
@@ -853,7 +692,41 @@ async function appendRecentRunToWorkspace(record: DesktopRecentRunRecord) {
     sourceMode: record.sourceMode,
     rawInput: record.rawInput,
     outputText: record.outputText,
+    ...(record.outputKind && { outputKind: record.outputKind }),
+    ...(record.quality && { quality: record.quality }),
+    ...(record.refinement && { refinement: record.refinement }),
   })
+}
+
+/** The stored fields the startup counts need, read from an optimize response's metadata. */
+function readRunOutcome(response: unknown): Pick<DesktopRecentRunRecord, 'outputKind' | 'quality'> {
+  const metadata = isObjectRecord(response) && isObjectRecord(response.metadata) ? response.metadata : null
+  const quality = metadata && isObjectRecord(metadata.quality) ? metadata.quality : null
+  return {
+    ...(metadata?.outputKind === 'SUPER_PROMPT' || metadata?.outputKind === 'CODING_BRIEF'
+      ? { outputKind: metadata.outputKind }
+      : {}),
+    ...(quality && typeof quality.complete === 'boolean' && typeof quality.degraded === 'boolean'
+      ? {
+          quality: {
+            complete: quality.complete,
+            degraded: quality.degraded,
+            ...(quality.thin === true && { thin: true }),
+          },
+        }
+      : {}),
+  }
+}
+
+/** Re-issue a stored run as the console command that would have produced it. */
+function buildRerunCommand(sourceMode: DesktopRunSourceMode, rawInput: string) {
+  if (sourceMode === 'transform') {
+    return `transform ${rawInput}`
+  }
+
+  return suggestOptimizerConfig(rawInput).outputKind === 'CODING_BRIEF'
+    ? `brief ${rawInput}`
+    : `super ${rawInput}`
 }
 
 async function rerunRecentRecord(record: DesktopRecentRunRecord) {
@@ -861,15 +734,16 @@ async function rerunRecentRecord(record: DesktopRecentRunRecord) {
     return
   }
 
-  if (record.sourceMode === 'optimize') {
-    updateMode('optimize')
-    input.value = record.rawInput
-  } else if (record.sourceMode === 'transform') {
-    updateMode('transform')
-    input.value = record.rawInput
-  } else {
-    input.value = `/evaluate ${record.rawInput}`
+  endPendingClarificationRound()
+  if (record.sourceMode === 'optimize' && isRefinementPayload(record.refinement)) {
+    await rerunRefinedBrief(record.rawInput, record.refinement)
+    return
   }
+
+  input.value =
+    record.sourceMode === 'evaluate'
+      ? `/evaluate ${record.rawInput}`
+      : buildRerunCommand(record.sourceMode, record.rawInput)
 
   input.focus()
   await execute()
@@ -883,7 +757,7 @@ async function evaluateRecentRecord(record: DesktopRecentRunRecord) {
   setExecutionState(true)
   const started = Date.now()
   appendConsoleLine(display, 'user', '/evaluate saved output')
-  appendConsoleLine(display, 'sys', '[WAIT] Evaluator sedang memproses output tersimpan...')
+  appendConsoleLine(display, 'sys', strings.evaluatorPending)
 
   try {
     const result = await desktopWindow.sentraDesktop?.invoke?.('desktop:command', {
@@ -905,7 +779,7 @@ async function evaluateRecentRecord(record: DesktopRecentRunRecord) {
     appendConsoleLine(
       display,
       'sys',
-      `[DONE] Evaluasi selesai dalam ${Math.round((Date.now() - started) / 1000)}s`
+      strings.evaluationFinishedIn(Math.round((Date.now() - started) / 1000))
     )
   } catch (error) {
     appendConsoleLine(display, 'sys', `[ERROR] ${formatDesktopErrorMessage(error)}`)
@@ -923,7 +797,7 @@ async function runBenchmarkRecord(record: DesktopBenchmarkRecord) {
   setExecutionState(true)
   const started = Date.now()
   appendConsoleLine(display, 'user', `/benchmark run ${record.id}`)
-  appendConsoleLine(display, 'sys', '[WAIT] Benchmark sedang menjalankan acceptance harness...')
+  appendConsoleLine(display, 'sys', strings.benchmarkPending)
 
   try {
     const result = await desktopWindow.sentraDesktop?.invoke?.('desktop:command', {
@@ -938,7 +812,7 @@ async function runBenchmarkRecord(record: DesktopBenchmarkRecord) {
     appendConsoleLine(
       display,
       'sys',
-      `[DONE] Benchmark selesai dalam ${Math.round((Date.now() - started) / 1000)}s`
+      strings.benchmarkFinishedIn(Math.round((Date.now() - started) / 1000))
     )
   } catch (error) {
     appendConsoleLine(display, 'sys', `[ERROR] ${formatDesktopErrorMessage(error)}`)
@@ -948,134 +822,32 @@ async function runBenchmarkRecord(record: DesktopBenchmarkRecord) {
   }
 }
 
-async function openWorkbenchPanel() {
-  if (!workbenchPanel || !workbenchBody) {
-    return
+function buildTransformInvocation(value: string): DesktopInvocation {
+  return {
+    channel: 'desktop:command',
+    payload: {
+      command: 'transform:run',
+      payload: {
+        prompt: value,
+        model: 'claude-sonnet',
+        mode: 'professional',
+        temperature: 0.7,
+        maxTokens: EFFORT_MAX_TOKENS[currentEffortLevel],
+        locale: 'id',
+        profile: currentCompilerProfile === 'default' ? undefined : currentCompilerProfile,
+        effort: currentEffortLevel,
+        target: 'general',
+      },
+    },
   }
-
-  const [recentResult, benchmarkResult] = await Promise.all([
-    desktopWindow.sentraDesktop?.invoke?.('desktop:command', {
-      command: 'recent:list',
-      payload: {},
-    }),
-    desktopWindow.sentraDesktop?.invoke?.('desktop:command', {
-      command: 'benchmark:list',
-      payload: {},
-    }),
-  ])
-  const recentRuns = normalizeRecentRuns(recentResult)
-  const benchmarks = normalizeBenchmarkRecords(benchmarkResult)
-  const compareGroups = buildCompareGroups(recentRuns).slice(0, 4)
-
-  workbenchBody.innerHTML = ''
-
-  if (compareGroups.length > 0) {
-    for (const group of compareGroups) {
-      const summary = document.createElement('div')
-      summary.className = 'catalog-item'
-      summary.innerHTML = buildCatalogItemMarkup(
-        'COMPARE READY · Transform + Optimizer',
-        group[0]?.rawInput.slice(0, 120) ?? ''
-      )
-      workbenchBody.appendChild(summary)
-    }
-  }
-
-  if (recentRuns.length === 0) {
-    const empty = document.createElement('div')
-    empty.className = 'workbench-empty'
-    empty.textContent = 'No recent runs yet.'
-    workbenchBody.appendChild(empty)
-  } else {
-    for (const record of recentRuns.slice(0, 8)) {
-      const card = document.createElement('div')
-      card.className = 'catalog-item'
-      card.innerHTML = buildCatalogItemMarkup(
-        `${record.sourceMode.toUpperCase()} · ${record.id}`,
-        record.rawInput.slice(0, 120)
-      )
-
-      const actionRow = document.createElement('div')
-      actionRow.className = 'output-action-row'
-      actionRow.appendChild(
-        createActionButton('Re-run', async () => {
-          await rerunRecentRecord(record)
-        })
-      )
-      actionRow.appendChild(
-        createActionButton('Evaluate', async () => {
-          await evaluateRecentRecord(record)
-        })
-      )
-      card.appendChild(actionRow)
-      workbenchBody.appendChild(card)
-    }
-  }
-
-  if (benchmarks.length > 0) {
-    const benchmarkHeader = document.createElement('div')
-    benchmarkHeader.className = 'catalog-item'
-    benchmarkHeader.innerHTML = buildCatalogItemMarkup(
-      'BENCHMARKS',
-      'Saved canonical prompts for acceptance comparison.'
-    )
-    workbenchBody.appendChild(benchmarkHeader)
-
-    for (const record of benchmarks.slice(0, 8)) {
-      const card = document.createElement('div')
-      card.className = 'catalog-item'
-      card.innerHTML = buildCatalogItemMarkup(
-        `${record.id} · ${record.lanes.join(' + ')}`,
-        record.title
-      )
-
-      const actionRow = document.createElement('div')
-      actionRow.className = 'output-action-row'
-      actionRow.appendChild(
-        createActionButton('Run Benchmark', async () => {
-          await runBenchmarkRecord(record)
-        })
-      )
-      card.appendChild(actionRow)
-      workbenchBody.appendChild(card)
-    }
-  }
-
-  workbenchPanel.removeAttribute('hidden')
 }
 
-function buildPromptInvocation(
-  mode: DesktopPrimaryModeId,
+function buildOptimizeInvocation(
   value: string,
-  requestId?: string
+  outputKind: DesktopOutputKind,
+  requestId?: string,
+  refinement?: CodingBriefRefinementPayload
 ): DesktopInvocation {
-  if (mode === 'transform') {
-    return {
-      channel: 'desktop:command',
-      payload: {
-        command: 'transform:run',
-        payload: {
-          prompt: value,
-          model: 'claude-sonnet',
-          mode: 'professional',
-          temperature: 0.7,
-          maxTokens: {
-            low: 700,
-            medium: 1200,
-            high: 1800,
-            xhigh: 2600,
-            max: 3200,
-          }[currentEffortLevel],
-          locale: 'id',
-          profile: currentCompilerProfile === 'default' ? undefined : currentCompilerProfile,
-          effort: currentEffortLevel,
-          target: 'general',
-        },
-
-      },
-    }
-  }
-
   const suggestion = suggestOptimizerConfig(value)
   const provider = requireActiveDesktopProvider()
 
@@ -1091,7 +863,9 @@ function buildPromptInvocation(
         targetLlm: provider,
         provider,
         optimizerLane: currentOptimizerLane,
+        outputKind,
         requestId,
+        ...(refinement && { refinement }),
       },
     },
   }
@@ -1138,7 +912,7 @@ function buildCommandInvocation(
 
   if (parsed.command === 'library.save') {
     if (!lastRunRecord) {
-      throw new Error('Tidak ada output terbaru untuk disimpan ke library.')
+      throw new Error(strings.noOutputForLibrary)
     }
 
     return {
@@ -1166,7 +940,7 @@ function buildCommandInvocation(
 
   if (parsed.command === 'draft.save') {
     if (!lastRunRecord) {
-      throw new Error('Tidak ada output terbaru untuk disimpan sebagai draft.')
+      throw new Error(strings.noOutputForDraft)
     }
 
     return {
@@ -1195,7 +969,7 @@ function buildCommandInvocation(
 
   if (parsed.command === 'benchmark.save') {
     if (!lastRunRecord) {
-      throw new Error('Tidak ada output terbaru untuk disimpan sebagai benchmark.')
+      throw new Error(strings.noOutputForBenchmark)
     }
 
     return {
@@ -1219,7 +993,7 @@ function buildCommandInvocation(
     const benchmarkId = parsed.args[0]?.trim()
 
     if (!benchmarkId) {
-      throw new Error('Benchmark run memerlukan benchmark id.')
+      throw new Error(strings.benchmarkRunNeedsId)
     }
     const provider = requireActiveDesktopProvider()
 
@@ -1335,56 +1109,34 @@ function buildCommandInvocation(
     }
   }
 
-  throw new Error(`Unsupported command: ${parsed.command}`)
+  throw new Error(strings.unsupportedCommand(parsed.command))
 }
 
 function extractCopyableText(formattedText: string): string {
   let text = formattedText
   text = text.replace(/^# (?:Optimized|Transformed) Prompt\n\n/, '')
-  const metaIdx = text.indexOf('\n\n## Metadata\n')
-  if (metaIdx !== -1) {
-    text = text.slice(0, metaIdx)
+  // The meta flag line and the quality line close the result; neither is part of the prompt.
+  const lines = text.trimEnd().split('\n')
+  while (lines.length > 1 && isTrailingResultLine(lines[lines.length - 1])) {
+    lines.pop()
   }
-  return text.trim()
+  return lines.join('\n').trim()
 }
 
-function attachCopyButton(line: HTMLElement, textToCopy: string) {
-  lastCopyText = textToCopy
-  if (copyLastBtn) {
-    copyLastBtn.disabled = false
-  }
-  line.classList.add('line-has-copy')
-
-  const btn = document.createElement('button')
-  btn.className = 'copy-line-btn'
-  btn.type = 'button'
-  btn.title = 'Copy output'
-  btn.textContent = 'COPY'
-  btn.addEventListener('click', (e) => {
-    e.stopPropagation()
-    navigator.clipboard
-      .writeText(extractCopyableText(textToCopy))
-      .then(() => {
-        btn.textContent = 'COPIED'
-        setTimeout(() => {
-          btn.textContent = 'COPY'
-        }, 1500)
-      })
-      .catch(() => {
-        btn.textContent = 'FAILED'
-      })
-  })
-  line.appendChild(btn)
-}
-
+/**
+ * Actions render as plain-text buttons on their own transcript line: real `<button>`
+ * elements so they stay keyboard reachable, with the spoken name in `aria-label`.
+ */
 function createActionButton(
   label: string,
+  ariaLabel: string,
   handler: (button: HTMLButtonElement) => Promise<void> | void
 ) {
   const button = document.createElement('button')
-  button.className = 'output-action-btn'
+  button.className = 'tx-action'
   button.type = 'button'
   button.textContent = label
+  button.setAttribute('aria-label', ariaLabel)
   button.addEventListener('click', () => {
     if (button.disabled) {
       return
@@ -1399,179 +1151,126 @@ function createActionButton(
   return button
 }
 
-function attachOutputActions(line: HTMLElement, runRecord: DesktopRunRecord) {
+interface ConsoleAction {
+  label: string
+  ariaLabel: string
+  handler: (button: HTMLButtonElement) => Promise<void> | void
+}
+
+function buildActionLine(actions: ConsoleAction[]) {
   const row = document.createElement('div')
-  row.className = 'output-action-row'
+  row.className = 'line tx-actions'
 
-  row.appendChild(
-    createActionButton('Save to Library', async (button) => {
-      if (!desktopWindow.sentraDesktop?.invoke || !display) {
-        return
-      }
+  for (const action of actions) {
+    row.appendChild(createActionButton(action.label, action.ariaLabel, action.handler))
+  }
 
-      const originalLabel = button.textContent ?? 'Save to Library'
-      button.disabled = true
-      button.textContent = 'Saving...'
+  return row
+}
 
-      try {
-        const result = await desktopWindow.sentraDesktop.invoke('desktop:command', {
-          command: 'library:save',
-          payload: {
-            rawInput: runRecord.rawInput,
-            optimizedText: runRecord.outputText,
-            taskType: runRecord.taskType,
-            tone: runRecord.tone,
-            format: runRecord.format,
-            targetLlm: runRecord.targetLlm,
-            tags: [runRecord.sourceMode],
-          },
-        })
-        const promptId =
-          isObjectRecord(result) &&
-          isObjectRecord(result.prompt) &&
-          typeof result.prompt.id === 'string'
-            ? result.prompt.id
-            : 'saved'
+function appendActionLine(container: HTMLElement, actions: ConsoleAction[]) {
+  const row = buildActionLine(actions)
+  insertBeforePrompt(container, row)
+  container.scrollTop = container.scrollHeight
+  return row
+}
 
-        button.textContent = 'Saved'
-        appendConsoleLine(display, 'sys', `[SAVED] Library item ${promptId} created.`)
-      } catch (error) {
-        button.textContent = 'Failed'
-        appendConsoleLine(display, 'sys', `[ERROR] ${formatDesktopErrorMessage(error)}`)
-      } finally {
-        window.setTimeout(() => {
-          button.disabled = false
-          button.textContent = originalLabel
-        }, 1500)
-      }
-    })
-  )
+/** Wraps a save handler in the transient `Saving... / Saved / Failed` button states. */
+function withTransientSaveState(
+  label: string,
+  run: () => Promise<string>
+): (button: HTMLButtonElement) => Promise<void> {
+  return async (button) => {
+    if (!desktopWindow.sentraDesktop?.invoke || !display) {
+      return
+    }
 
-  row.appendChild(
-    createActionButton('Save as Draft', async (button) => {
-      if (!desktopWindow.sentraDesktop?.invoke || !display) {
-        return
-      }
+    button.disabled = true
+    button.textContent = strings.transientSaving
 
-      const originalLabel = button.textContent ?? 'Save as Draft'
-      button.disabled = true
-      button.textContent = 'Saving...'
+    try {
+      const note = await run()
+      button.textContent = strings.transientSaved
+      appendConsoleLine(display, 'sys', note)
+    } catch (error) {
+      button.textContent = strings.transientFailed
+      appendConsoleLine(display, 'sys', `[ERROR] ${formatDesktopErrorMessage(error)}`)
+    } finally {
+      window.setTimeout(() => {
+        button.disabled = false
+        button.textContent = label
+      }, 1500)
+    }
+  }
+}
 
-      try {
-        const result = await desktopWindow.sentraDesktop.invoke('desktop:command', {
-          command: 'draft:save',
-          payload: {
-            id: `draft-${runRecord.id}`,
-            rawInput: runRecord.rawInput,
-            optimizedText: runRecord.outputText,
-            sourceMode: runRecord.sourceMode,
-          },
-        })
-        const draftId =
-          isObjectRecord(result) &&
-          isObjectRecord(result.draft) &&
-          typeof result.draft.id === 'string'
-            ? result.draft.id
-            : 'draft'
+function buildResultActions(copyText: string, runRecord?: DesktopRunRecord): ConsoleAction[] {
+  const actions: ConsoleAction[] = [
+    {
+      label: strings.actionCopyLabel,
+      ariaLabel: strings.actionCopyAria,
+      handler: (button) => {
+        navigator.clipboard
+          .writeText(extractCopyableText(copyText))
+          .then(() => {
+            button.textContent = strings.actionCopiedLabel
+            window.setTimeout(() => {
+              button.textContent = strings.actionCopyLabel
+            }, 1500)
+          })
+          .catch(() => {
+            button.textContent = strings.actionCopyFailedLabel
+          })
+      },
+    },
+  ]
 
-        button.textContent = 'Saved'
-        appendConsoleLine(display, 'sys', `[DRAFT] Saved as ${draftId}.`)
-      } catch (error) {
-        button.textContent = 'Failed'
-        appendConsoleLine(display, 'sys', `[ERROR] ${formatDesktopErrorMessage(error)}`)
-      } finally {
-        window.setTimeout(() => {
-          button.disabled = false
-          button.textContent = originalLabel
-        }, 1500)
-      }
-    })
-  )
+  if (!runRecord) {
+    return actions
+  }
 
-  row.appendChild(
-    createActionButton('Save as Benchmark', async (button) => {
-      if (!desktopWindow.sentraDesktop?.invoke || !display) {
-        return
-      }
-
-      const originalLabel = button.textContent ?? 'Save as Benchmark'
-      button.disabled = true
-      button.textContent = 'Saving...'
-
-      try {
-        const result = await desktopWindow.sentraDesktop.invoke('desktop:command', {
-          command: 'benchmark:save',
-          payload: {
-            id: `bench-${runRecord.id}`,
-            title: runRecord.rawInput.slice(0, 72),
-            prompt: runRecord.rawInput,
-            taskType: runRecord.taskType,
-            tone: runRecord.tone,
-            format: runRecord.format,
-            optimizerLane: runRecord.optimizerLane ?? 'INTERACTIVE',
-          },
-        })
-        const benchmarkId =
-          isObjectRecord(result) &&
-          isObjectRecord(result.benchmark) &&
-          typeof result.benchmark.id === 'string'
-            ? result.benchmark.id
-            : 'benchmark'
-
-        button.textContent = 'Saved'
-        appendConsoleLine(
-          display,
-          'sys',
-          `[BENCHMARK] Saved as ${benchmarkId}. Jalankan /benchmark run ${benchmarkId} kapan saja.`
-        )
-      } catch (error) {
-        button.textContent = 'Failed'
-        appendConsoleLine(display, 'sys', `[ERROR] ${formatDesktopErrorMessage(error)}`)
-      } finally {
-        window.setTimeout(() => {
-          button.disabled = false
-          button.textContent = originalLabel
-        }, 1500)
-      }
-    })
-  )
-
-  row.appendChild(
-    createActionButton('Re-run', () => {
+  actions.push({
+    label: strings.actionRerunLabel,
+    ariaLabel: strings.actionRerunAria,
+    handler: () => {
       if (!input || isExecuting) {
         return
       }
 
+      // A clicked rerun is not a typed answer (D2): it ends a pending round first.
+      endPendingClarificationRound()
+
       currentProvider = runRecord.targetLlm
-      if (runRecord.sourceMode === 'optimize') {
-        updateMode('optimize')
-        if (runRecord.optimizerLane) {
-          updateOptimizerLane(runRecord.optimizerLane)
-        }
-      } else {
-        updateMode('transform')
+      if (runRecord.sourceMode === 'optimize' && runRecord.optimizerLane) {
+        updateOptimizerLane(runRecord.optimizerLane)
       }
 
-      input.value = runRecord.rawInput
+      if (runRecord.refinement) {
+        void rerunRefinedBrief(runRecord.rawInput, runRecord.refinement)
+        return
+      }
+
+      input.value = buildRerunCommand(runRecord.sourceMode, runRecord.rawInput)
       input.focus()
       void execute()
-    })
-  )
+    },
+  })
 
-  row.appendChild(
-    createActionButton('Evaluate', async (button) => {
+  actions.push({
+    label: strings.actionEvaluateLabel,
+    ariaLabel: strings.actionEvaluateAria,
+    handler: async (button) => {
       if (!desktopWindow.sentraDesktop?.invoke || !display || isExecuting) {
         return
       }
 
-      const originalLabel = button.textContent ?? 'Evaluate'
       button.disabled = true
-      button.textContent = 'Running...'
+      button.textContent = strings.transientRunning
       setExecutionState(true)
 
       const started = Date.now()
       appendConsoleLine(display, 'user', '/evaluate saved output')
-      appendConsoleLine(display, 'sys', '[WAIT] Evaluator sedang memproses output tersimpan...')
+      appendConsoleLine(display, 'sys', strings.evaluatorPending)
 
       try {
         const result = await desktopWindow.sentraDesktop.invoke('desktop:command', {
@@ -1586,20 +1285,46 @@ function attachOutputActions(line: HTMLElement, runRecord: DesktopRunRecord) {
         appendConsoleLine(
           display,
           'sys',
-          `[DONE] Evaluasi selesai dalam ${Math.round((Date.now() - started) / 1000)}s`
+          strings.evaluationFinishedIn(Math.round((Date.now() - started) / 1000))
         )
       } catch (error) {
         appendConsoleLine(display, 'sys', `[ERROR] ${formatDesktopErrorMessage(error)}`)
       } finally {
         setExecutionState(false)
         button.disabled = false
-        button.textContent = originalLabel
+        button.textContent = strings.actionEvaluateLabel
         input?.focus()
       }
-    })
-  )
+    },
+  })
 
-  line.appendChild(row)
+  actions.push({
+    label: strings.actionLibraryLabel,
+    ariaLabel: strings.actionLibraryAria,
+    handler: withTransientSaveState(strings.actionLibraryLabel, async () => {
+      const result = await desktopWindow.sentraDesktop?.invoke?.('desktop:command', {
+        command: 'library:save',
+        payload: {
+          rawInput: runRecord.rawInput,
+          optimizedText: runRecord.outputText,
+          taskType: runRecord.taskType,
+          tone: runRecord.tone,
+          format: runRecord.format,
+          targetLlm: runRecord.targetLlm,
+          tags: [runRecord.sourceMode],
+        },
+      })
+      const promptId =
+        isObjectRecord(result) &&
+        isObjectRecord(result.prompt) &&
+        typeof result.prompt.id === 'string'
+          ? result.prompt.id
+          : 'saved'
+
+      return strings.libraryItemCreatedNotice(promptId)
+    }),
+  })
+  return actions
 }
 
 function buildOptimizePromptText(superPrompt: Record<string, unknown>) {
@@ -1694,6 +1419,121 @@ function buildRunRecord(
   return null
 }
 
+const STATUS_PREFIX_PATTERN =
+  /^\[(DONE|SAVED|DRAFT|BENCHMARK|BOOT|INFO|WORKBENCH|WAIT|STATE|WARN|ERROR)\]\s*/
+
+/**
+ * Result status lines carry an ok / warn / error prefix rendered by CSS (`::before`),
+ * so the legacy `[TAG]` marker is stripped from the text and mapped to a class.
+ */
+function applyStatusPrefix(line: HTMLElement, text: string): string {
+  const match = STATUS_PREFIX_PATTERN.exec(text)
+  if (!match) {
+    return text
+  }
+
+  const tag = match[1]
+  const status =
+    tag === 'ERROR'
+      ? 'error'
+      : tag === 'WAIT' || tag === 'STATE' || tag === 'WARN'
+        ? 'warn'
+        : 'ok'
+  line.classList.add(`status-${status}`)
+  return text.slice(match[0].length)
+}
+
+/**
+ * The prompt line is the transcript's last line, so every emitted line is inserted
+ * before it rather than appended.
+ */
+function insertBeforePrompt(container: HTMLElement, node: HTMLElement) {
+  if (promptLine && promptLine.parentNode === container) {
+    container.insertBefore(node, promptLine)
+    return
+  }
+
+  container.appendChild(node)
+}
+
+// A path: optional @, one or more `dir/` segments, then a file name or glob (may be empty
+// after a trailing slash). Not preceded by a path or URL character, so URLs stay plain.
+const PATH_PATTERN = /(?<![\w:/.\-@])(@?(?:[\w.\-]+\/)+)([\w.\-*]*)/g
+// A bare file name with a source-like extension, e.g. `engine.ts` or `README.md`.
+const FILE_PATTERN =
+  /(?<![\w:/.\-@])[\w\-]+\.(?:ts|tsx|js|jsx|mjs|cjs|json|md|css|html|py|yml|yaml|toml|sh|ps1|sql|prisma)\b/g
+
+function appendRun(line: HTMLElement, text: string, tone?: string) {
+  if (!text) return
+  if (!tone) {
+    line.appendChild(document.createTextNode(text))
+    return
+  }
+  const span = document.createElement('span')
+  span.className = `seg-${tone}`
+  span.textContent = text
+  line.appendChild(span)
+}
+
+/** Colour every path in `text`: directories blue and bold, the file name bright. */
+function appendPathRuns(line: HTMLElement, text: string) {
+  let cursor = 0
+  const matches: Array<{ start: number; end: number; dir: string; file: string }> = []
+  for (const match of text.matchAll(PATH_PATTERN)) {
+    // Sentence punctuation after a path is not part of the file name.
+    let file = match[2]
+    while (file.endsWith('.')) file = file.slice(0, -1)
+    matches.push({ start: match.index, end: match.index + match[1].length + file.length, dir: match[1], file })
+  }
+  for (const match of text.matchAll(FILE_PATTERN)) {
+    const start = match.index
+    if (matches.some((item) => start >= item.start && start < item.end)) continue
+    matches.push({ start, end: start + match[0].length, dir: '', file: match[0] })
+  }
+  matches.sort((a, b) => a.start - b.start)
+  for (const match of matches) {
+    if (match.start < cursor) continue
+    appendRun(line, text.slice(cursor, match.start))
+    appendRun(line, match.dir, 'dir')
+    appendRun(line, match.file, 'file')
+    cursor = match.end
+  }
+  appendRun(line, text.slice(cursor))
+}
+
+/**
+ * Render a result body as coloured runs inside one line element, as the pixel reference
+ * shows a brief: `## HEADING` lines in the heading colour, paths with the directory blue
+ * and the file bright, backticked runs green (a backticked path keeps the path colours).
+ * The DOM text stays identical to the plain body, so copying is unchanged.
+ */
+function renderBodyRuns(line: HTMLElement, body: string) {
+  line.replaceChildren()
+  const rows = body.split('\n')
+  rows.forEach((row, index) => {
+    if (/^#{1,6} \S/.test(row)) {
+      appendRun(line, row, 'heading')
+    } else {
+      let cursor = 0
+      for (const match of row.matchAll(/`([^`\n]+)`/g)) {
+        appendPathRuns(line, row.slice(cursor, match.index))
+        const inner = match[1]
+        const pathOnly = new RegExp(`^${PATH_PATTERN.source}$`).test(inner) || new RegExp(`^${FILE_PATTERN.source}$`).test(inner)
+        if (pathOnly) {
+          appendPathRuns(line, match[0])
+        } else {
+          appendRun(line, match[0], 'cmd')
+        }
+        cursor = match.index + match[0].length
+      }
+      appendPathRuns(line, row.slice(cursor))
+    }
+    if (index < rows.length - 1) {
+      line.appendChild(document.createTextNode('\n'))
+    }
+  })
+}
+
 function appendConsoleLine(
   container: HTMLElement,
   type: 'sys' | 'user' | 'agent',
@@ -1702,16 +1542,254 @@ function appendConsoleLine(
 ) {
   const line = document.createElement('div')
   line.className = `line type-${type}`
-  line.textContent = text
+
   if (type === 'agent') {
-    attachCopyButton(line, options.copyText ?? text)
-    if (options.runRecord) {
-      attachOutputActions(line, options.runRecord)
-    }
+    const { body, trailing } = splitTrailingResultLines(text)
+    renderBodyRuns(line, body)
+    insertBeforePrompt(container, line)
+    const anchor = appendTrailingResultLines(line, trailing)
+    const copyText = options.copyText ?? text
+    lastCopyText = copyText
+    const actionRow = buildActionLine(buildResultActions(copyText, options.runRecord))
+    anchor.insertAdjacentElement('afterend', actionRow)
+  } else {
+    line.textContent = type === 'sys' ? applyStatusPrefix(line, text) : text
+    insertBeforePrompt(container, line)
   }
-  container.appendChild(line)
+
   container.scrollTop = container.scrollHeight
   return line
+}
+
+function isBlankLine(element: Element | null): boolean {
+  return (
+    element instanceof HTMLElement &&
+    element.classList.contains('line') &&
+    (element.classList.contains('blank-line') || element.classList.contains('banner-blank'))
+  )
+}
+
+function createBlankLine() {
+  const line = document.createElement('div')
+  line.className = 'line blank-line'
+  line.textContent = strings.bannerBlank
+  return line
+}
+
+/**
+ * Exactly one blank line between blocks: appends a blank line before the prompt unless the
+ * previous line already is one, so no path through the shell can print two in a row.
+ */
+function appendBlankLine(container: HTMLElement) {
+  const last =
+    promptLine && promptLine.parentNode === container
+      ? promptLine.previousElementSibling
+      : container.lastElementChild
+
+  if (isBlankLine(last)) {
+    return last as HTMLElement
+  }
+
+  const line = createBlankLine()
+  insertBeforePrompt(container, line)
+  container.scrollTop = container.scrollHeight
+  return line
+}
+
+/** Dim settings line; never a verdict. */
+function appendMetaLine(container: HTMLElement, text: string) {
+  const line = document.createElement('div')
+  line.className = 'line type-sys meta-line'
+  line.textContent = text
+  insertBeforePrompt(container, line)
+  container.scrollTop = container.scrollHeight
+  return line
+}
+
+/** Banner rows carry no status prefix; they are chrome, not verdicts. */
+function appendBannerLine(container: HTMLElement, cls: string, text: string) {
+  const line = document.createElement('div')
+  line.className = `line banner-${cls}`
+  line.textContent = text
+  insertBeforePrompt(container, line)
+  container.scrollTop = container.scrollHeight
+  return line
+}
+
+type SegmentTone = 'bright' | 'dim' | 'label' | 'cmd'
+
+interface BannerSegment {
+  text: string
+  tone?: SegmentTone
+}
+
+/** A banner row made of coloured runs (title + dim version, cyan labels, green commands). */
+function appendBannerSegments(container: HTMLElement, cls: string, segments: BannerSegment[]) {
+  const line = document.createElement('div')
+  line.className = `line banner-${cls}`
+  for (const segment of segments) {
+    if (!segment.tone) {
+      line.appendChild(document.createTextNode(segment.text))
+      continue
+    }
+    const span = document.createElement('span')
+    span.className = `seg-${segment.tone}`
+    span.textContent = segment.text
+    line.appendChild(span)
+  }
+  insertBeforePrompt(container, line)
+  container.scrollTop = container.scrollHeight
+  return line
+}
+
+interface TwoColumnPair {
+  label: string
+  value: string
+  labelTone: SegmentTone
+  valueTone?: SegmentTone
+}
+
+/**
+ * Two columns of label/value pairs, as in the startup reference: labels padded to the
+ * longest label in their column plus three spaces, the right column starting at a fixed
+ * screen column. Rows are zipped; a column that runs out leaves its half empty.
+ */
+function buildTwoColumnRows(
+  left: TwoColumnPair[],
+  right: TwoColumnPair[],
+  rightColumn: number
+): BannerSegment[][] {
+  const labelWidth = (pairs: TwoColumnPair[]) =>
+    Math.max(0, ...pairs.map((pair) => pair.label.length)) + 3
+  const leftWidth = labelWidth(left)
+  const rightWidth = labelWidth(right)
+  const rows: BannerSegment[][] = []
+
+  for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
+    const segments: BannerSegment[] = []
+    let column = LABEL_COLUMNS[0]
+    const leftPair = left[index]
+    const rightPair = right[index]
+
+    if (leftPair) {
+      segments.push({ text: leftPair.label, tone: leftPair.labelTone })
+      segments.push({ text: ' '.repeat(leftWidth - leftPair.label.length) })
+      segments.push({ text: leftPair.value, tone: leftPair.valueTone })
+      column += leftWidth + leftPair.value.length
+    }
+    if (rightPair) {
+      segments.push({ text: ' '.repeat(Math.max(2, rightColumn - column)) })
+      segments.push({ text: rightPair.label, tone: rightPair.labelTone })
+      segments.push({ text: ' '.repeat(rightWidth - rightPair.label.length) })
+      segments.push({ text: rightPair.value, tone: rightPair.valueTone })
+    }
+    rows.push(segments)
+  }
+
+  return rows
+}
+
+/** Right column of the session block: screen column 40, as in the startup reference. */
+const SESSION_RIGHT_COLUMN = 40
+/** Right column of the command hint block: screen column 31, as in the startup reference. */
+const HINT_RIGHT_COLUMN = 31
+
+/**
+ * The session block rows, from real state only. A field the shell does not have (no
+ * provider loaded, model still unresolved) is left out; nothing is ever a placeholder.
+ * There is no agent setting in the shell, so the reference's `agent` row is not printed.
+ */
+function buildSessionPairs(): { left: TwoColumnPair[]; right: TwoColumnPair[] } {
+  const left: TwoColumnPair[] = []
+  const right: TwoColumnPair[] = []
+
+  if (currentProvider) {
+    left.push({ label: strings.sessionLabelProvider, value: currentProvider.toLowerCase(), labelTone: 'label' })
+  }
+  const modelKnown =
+    currentModelLabel.trim().length > 0 &&
+    currentModelLabel !== 'provider-resolving' &&
+    !/(^|\/)(model|env)-required$/.test(currentModelLabel)
+  if (currentProvider && modelKnown) {
+    left.push({ label: strings.sessionLabelModel, value: currentModelLabel, labelTone: 'label' })
+  }
+  right.push({ label: strings.sessionLabelLane, value: currentOptimizerLane.toLowerCase(), labelTone: 'label' })
+  right.push({ label: strings.sessionLabelProfile, value: currentCompilerProfile, labelTone: 'label' })
+  right.push({ label: strings.sessionLabelEffort, value: currentEffortLevel, labelTone: 'label' })
+
+  return { left, right }
+}
+
+/**
+ * Everything below the rule on the startup screen (reference-console-startup.html):
+ * session block, instruction, two example commands, command hints, then the `ok` lines.
+ * Printed once the shell state is known, and again after `clear`.
+ */
+function printStartupBlock(container: HTMLElement) {
+  const { left, right } = buildSessionPairs()
+  for (const row of buildTwoColumnRows(left, right, SESSION_RIGHT_COLUMN)) {
+    appendBannerSegments(container, 'session', row)
+  }
+  appendBlankLine(container)
+
+  appendBannerLine(container, 'hint', strings.startupInstruction)
+  appendBlankLine(container)
+
+  for (const example of strings.startupExamples) {
+    appendBannerSegments(container, 'example', [
+      { text: example.command, tone: 'cmd' },
+      { text: ' ' },
+      { text: example.argument, tone: 'dim' },
+    ])
+  }
+  appendBlankLine(container)
+
+  const toHintPair = (hint: [string, string]): TwoColumnPair => ({
+    label: hint[0],
+    value: hint[1],
+    labelTone: 'cmd',
+    valueTone: 'dim',
+  })
+  const hintRows = buildTwoColumnRows(
+    strings.startupCommandHints.map((row) => toHintPair(row[0])),
+    strings.startupCommandHints.map((row) => toHintPair(row[1])),
+    HINT_RIGHT_COLUMN
+  )
+  for (const row of hintRows) {
+    appendBannerSegments(container, 'command', row)
+  }
+  appendBlankLine(container)
+
+  if (briefCounts) {
+    appendConsoleLine(
+      container,
+      'sys',
+      strings.briefCountsLine(briefCounts.total, briefCounts.complete, briefCounts.needsCheck)
+    )
+  }
+  if (providerReadinessStatus === 'ready') {
+    appendConsoleLine(container, 'sys', strings.readyLine)
+  } else if (providerReadinessStatus === 'missing') {
+    appendConsoleLine(container, 'sys', strings.providerMissingBadge)
+  }
+  appendBlankLine(container)
+}
+
+
+/** Build-time substituted meta tag; empty until the build step fills it in. */
+const VERSION_PLACEHOLDER = '__SENTRA_VERSION__'
+
+function readAppVersion(): string {
+  const raw = document
+    .querySelector('meta[name="sentra-version"]')
+    ?.getAttribute('content')
+    ?.trim()
+
+  if (!raw || raw === VERSION_PLACEHOLDER) {
+    return ''
+  }
+
+  return raw
 }
 
 function syncOptimizerLaneModelPresentation() {
@@ -1720,14 +1798,6 @@ function syncOptimizerLaneModelPresentation() {
   if (typeof laneState?.preferredModel === 'string' && laneState.preferredModel.trim()) {
     currentModelLabel = laneState.preferredModel
   }
-
-  if (modelChip && typeof laneState?.modelChip === 'string' && laneState.modelChip.trim()) {
-    modelChip.textContent = laneState.modelChip
-  }
-}
-
-function isOptimizerProviderReady() {
-  return providerReadinessStatus === 'ready' && currentProvider !== null
 }
 
 function requireActiveDesktopProvider(): DesktopLLMProvider {
@@ -1736,67 +1806,32 @@ function requireActiveDesktopProvider(): DesktopLLMProvider {
   }
 
   if (providerReadinessStatus === 'resolving') {
-    throw new Error('Provider desktop sedang diverifikasi. Tunggu hingga status provider siap.')
+    throw new Error(strings.providerResolving)
   }
 
-  throw new Error('Tidak ada provider desktop yang siap. Tambahkan provider key lalu jalankan ulang desktop shell.')
+  throw new Error(strings.providerUnavailable)
 }
 
 function setExecutionState(running: boolean) {
   isExecuting = running
-  const optimizerBlocked = currentMode === 'optimize' && !isOptimizerProviderReady()
 
   if (input) {
-    input.disabled = running || optimizerBlocked
-  }
-
-  if (runBtn) {
-    runBtn.disabled = running || optimizerBlocked
-    runBtn.textContent = running ? 'WAIT' : 'EXEC'
-  }
-
-  if (clearBtn) {
-    clearBtn.disabled = running
-  }
-
-  for (const button of modeButtons) {
-    button.toggleAttribute('disabled', running)
-  }
-
-  for (const button of optimizerLaneButtons) {
-    button.toggleAttribute('disabled', running || optimizerBlocked)
-  }
-
-  for (const button of transformProfileButtons) {
-    button.toggleAttribute('disabled', running)
-  }
-
-  for (const button of transformEffortButtons) {
-    button.toggleAttribute('disabled', running)
-  }
-
-  if (mCmdInput) {
-    mCmdInput.disabled = running || optimizerBlocked
-  }
-
-  if (mRunBtn) {
-    mRunBtn.disabled = running || optimizerBlocked
-    mRunBtn.textContent = running ? 'WAIT' : 'EXEC'
-  }
-
-  if (mClearBtn) {
-    mClearBtn.disabled = running
+    input.disabled = running || providerReadinessStatus === 'resolving'
   }
 }
 
-
 function buildPendingLabel() {
   if (currentMode === 'transform') {
-    return 'Transform sedang memproses prompt...'
+    return strings.transformPendingLabel
   }
 
-  const laneLabel = currentOptimizerLane === 'INTERACTIVE' ? 'Interactive' : 'Deep'
-  return `Optimizer ${laneLabel} berjalan di ${currentProvider ?? 'provider-unavailable'}/${currentModelLabel}...`
+  const laneLabel =
+    currentOptimizerLane === 'INTERACTIVE' ? strings.laneLabelInteractive : strings.laneLabelDeep
+  return strings.optimizerPendingLabel(
+    laneLabel,
+    currentProvider ?? 'provider-unavailable',
+    currentModelLabel
+  )
 }
 
 function isOptimizeInvocation(invocation: DesktopInvocation) {
@@ -1820,7 +1855,7 @@ function ensureOptimizeStreamLine(container: HTMLElement, requestId: string) {
   line.className = 'line type-agent'
   line.dataset.requestId = requestId
   line.textContent = ''
-  container.appendChild(line)
+  insertBeforePrompt(container, line)
   container.scrollTop = container.scrollHeight
   activeOptimizeLines.set(requestId, line)
   return line
@@ -1834,10 +1869,10 @@ function ensureOptimizeStatusLine(container: HTMLElement, requestId: string) {
   }
 
   const line = document.createElement('div')
-  line.className = 'line type-sys'
+  line.className = 'line type-sys status-warn'
   line.dataset.requestStatusId = requestId
-  line.textContent = '[STATE] Menyiapkan Optimizer...'
-  container.appendChild(line)
+  line.textContent = strings.preparingOptimizer
+  insertBeforePrompt(container, line)
   container.scrollTop = container.scrollHeight
   activeOptimizeStatusLines.set(requestId, line)
   return line
@@ -1877,15 +1912,18 @@ async function executeOptimizeStream(
   invocation: DesktopInvocation,
   requestId: string,
   container: HTMLElement,
-  rawInput: string
+  rawInput: string,
+  headerMetaLine: HTMLElement | null = null,
+  refinement?: CodingBriefRefinementPayload
 ) {
+  const isRefinement = refinement !== undefined
   const streamLine = ensureOptimizeStreamLine(container, requestId)
   const statusLine = ensureOptimizeStatusLine(container, requestId)
   const onStream = desktopWindow.sentraDesktop?.onStream
   const offStream = desktopWindow.sentraDesktop?.offStream
 
   if (!onStream || !offStream) {
-    throw new Error('Desktop stream bridge not ready yet.')
+    throw new Error(strings.streamBridgeNotReady)
   }
 
   // ── Scramble decode state (scoped per request) ──
@@ -1925,7 +1963,7 @@ async function executeOptimizeStream(
     const line = document.createElement('div')
     line.className = 'line scramble-line'
     line.textContent = generateScrambleText(DECODE_TARGET_LENGTH)
-    container.appendChild(line)
+    insertBeforePrompt(container, line)
     activeScrambleLine = line
     scrambleIntervalId = setInterval(() => {
       if (activeScrambleLine) {
@@ -1983,7 +2021,7 @@ async function executeOptimizeStream(
         return
       }
 
-      statusLine.textContent = `[STATE] ${payload.message}`
+      statusLine.textContent = payload.message
       if (payload.stage === 'waiting') {
         startScramble()
       }
@@ -2034,23 +2072,61 @@ async function executeOptimizeStream(
       }
 
       clearScramble()
+
+      // D3: a refinement still invalid after its repair replaces nothing. The delivered
+      // brief above stays the result (copy, rerun and the recent-run store keep it).
+      if (isRefinement && isDegradedResponse(payload.response)) {
+        headerMetaLine?.remove()
+        streamLine.remove()
+        removeOptimizeStreamArtifacts(requestId, { removeStatusLine: true })
+        appendConsoleLine(container, 'sys', strings.clarificationRefineFailed)
+        cleanup()
+        resolve()
+        return
+      }
+
       const formattedText = formatDesktopResult(payload.response)
-      streamLine.textContent = formattedText
-      attachCopyButton(streamLine, formattedText)
-      const runRecord = buildRunRecord('optimize', rawInput, payload.response, requestId)
+      const { body, trailing } = splitTrailingResultLines(formattedText)
+      renderBodyRuns(streamLine, body)
+      // The run has one meta block, printed with the echo (reference-console-sentra.html):
+      // the settings rows written at the start are completed in place with provider,
+      // model and latency, so only the verdict follows the body.
+      const metaRows = trailing.filter(isMetaFlagLine)
+      const verdictRows = trailing.filter((row) => !isMetaFlagLine(row))
+      if (headerMetaLine && metaRows.length > 0) {
+        headerMetaLine.textContent = metaRows.join('\n')
+      }
+      const anchor = appendTrailingResultLines(
+        streamLine,
+        headerMetaLine ? verdictRows : trailing
+      )
+      lastCopyText = formattedText
+      const builtRecord = buildRunRecord('optimize', rawInput, payload.response, requestId)
+      const runRecord = builtRecord && refinement ? { ...builtRecord, refinement } : builtRecord
       if (runRecord) {
         lastRunRecord = runRecord
-        attachOutputActions(streamLine, runRecord)
+      }
+      anchor.insertAdjacentElement(
+        'afterend',
+        buildActionLine(buildResultActions(formattedText, runRecord ?? undefined))
+      )
+      if (runRecord) {
         void appendRecentRunToWorkspace({
           id: runRecord.id,
           sourceMode: runRecord.sourceMode,
           rawInput: runRecord.rawInput,
           outputText: runRecord.outputText,
+          ...readRunOutcome(payload.response),
+          ...(runRecord.refinement && { refinement: runRecord.refinement }),
         })
       }
       removeOptimizeStreamArtifacts(requestId, {
         removeStatusLine: true,
       })
+      // One round only (P5): the main process sends no questions with a refinement.
+      if (!isRefinement) {
+        offeredClarificationRound = readClarificationRound(rawInput, payload.response)
+      }
       cleanup()
       resolve()
     }
@@ -2096,97 +2172,89 @@ async function executeOptimizeStream(
         ) {
           clearOptimizeTransientFailureArtifacts(requestId)
           cleanup()
-          reject(new Error('Desktop stream request mismatch.'))
+          reject(new Error(strings.streamRequestMismatch))
         }
       } catch (error) {
         clearOptimizeTransientFailureArtifacts(requestId)
         cleanup()
-        reject(error instanceof Error ? error : new Error('Desktop stream bridge not ready yet.'))
+        reject(error instanceof Error ? error : new Error(strings.streamBridgeNotReady))
       }
     })()
   })
 }
 
-function applyMode(
-  container: HTMLElement,
-  mode: DesktopPrimaryModeId,
-  buttons: HTMLElement[],
-  inputElement?: HTMLInputElement | null
-) {
-  const copy = getModeCopy(mode)
-  const modeSubtitle = document.getElementById('modeSubtitle') as HTMLElement | null
-  const statusTitle = document.getElementById('statusTitle') as HTMLElement | null
-  const statusTag = document.getElementById('statusTag') as HTMLElement | null
-  const statusCopy = document.getElementById('statusCopy') as HTMLElement | null
+/**
+ * Measure the real character cell of the transcript font (a hidden run of 100 "M", width
+ * divided by 100; row height is font-size × line-height) and hand it to the main process,
+ * which sizes the window in columns and rows: the target on first run only, the minimum on
+ * every run. Skips silently when nothing can be measured (no fonts API, zero-sized layout).
+ */
+async function fitWindowToGrid(container: HTMLElement) {
+  const probe = document.createElement('span')
+  probe.className = 'cell-probe'
+  probe.setAttribute('aria-hidden', 'true')
+  probe.textContent = 'M'.repeat(100)
+  container.appendChild(probe)
+  const cellWidth = probe.getBoundingClientRect().width / 100
+  probe.remove()
 
-  container.dataset.mode = mode
+  const style = getComputedStyle(container)
+  const fontSize = parseFloat(style.fontSize)
+  const cellHeight = parseFloat(style.lineHeight)
 
-  if (modeSubtitle) {
-    modeSubtitle.textContent = copy.subtitle
+  if (!Number.isFinite(cellWidth) || cellWidth <= 0 || !Number.isFinite(cellHeight) || cellHeight <= 0) {
+    return
   }
 
-  if (statusTitle) {
-    statusTitle.textContent = copy.title
+  if (shell) {
+    shell.dataset.cellWidth = cellWidth.toFixed(3)
+    shell.dataset.cellHeight = cellHeight.toFixed(3)
+    shell.dataset.fontLoaded = String(
+      Boolean(document.fonts?.check?.(`${fontSize}px "JetBrains Mono"`))
+    )
   }
 
-  if (statusTag) {
-    statusTag.textContent = copy.tag
-  }
-
-  if (statusCopy) {
-    statusCopy.textContent = copy.copy
-  }
-
-  if (inputElement) {
-    inputElement.placeholder = copy.placeholder
-  }
-
-  if (transformControls) {
-    transformControls.hidden = mode !== 'transform'
-  }
-
-  for (const button of transformProfileButtons) {
-    button.classList.toggle('active', (button.dataset.profile || 'default') === currentCompilerProfile)
-  }
-
-  for (const button of transformEffortButtons) {
-    button.classList.toggle('active', (button.dataset.effort || 'high') === currentEffortLevel)
-  }
-
-  if (optimizerLaneControls) {
-    optimizerLaneControls.hidden = mode !== 'optimize'
-  }
-
-  for (const button of optimizerLaneButtons) {
-    button.classList.toggle('active', button.dataset.lane === currentOptimizerLane)
-  }
-
-
-  for (const button of buttons) {
-    button.classList.toggle('active', button.dataset.mode === mode)
+  try {
+    const result = await desktopWindow.sentraDesktop?.invoke?.('window:fit-grid', {
+      cellWidth,
+      cellHeight,
+    })
+    if (shell) {
+      shell.dataset.gridFit = isObjectRecord(result) ? JSON.stringify(result) : 'no-bridge'
+    }
+  } catch (error) {
+    if (shell) {
+      shell.dataset.gridFit = `error:${error instanceof Error ? error.message : String(error)}`
+    }
   }
 }
 
-function resetConsoleView(container: HTMLElement, mode: DesktopPrimaryModeId) {
-  container.innerHTML = ''
-  appendConsoleLine(container, 'sys', '[BOOT] Sentra Prompt Console ready.')
-  appendConsoleLine(container, 'agent', `${MODE_COPY[mode].title} mode active.`)
-  if (mode === 'optimize') {
-    appendConsoleLine(
-      container,
-      'sys',
-      `[INFO] Lane aktif: ${currentOptimizerLane === 'INTERACTIVE' ? 'Interactive' : 'Deep'}`
-    )
+function resetConsoleView(container: HTMLElement) {
+  for (const child of Array.from(container.childNodes)) {
+    if (child !== promptLine) {
+      child.parentNode?.removeChild(child)
+    }
   }
-  appendConsoleLine(
-    container,
-    'sys',
-    '[INFO] Guest-ready: prompt, /evaluate, /templates list. Account commands: /library search, /usage summary, /auth login.'
-  )
+
+  activeOptimizeLines.clear()
+  activeOptimizeStatusLines.clear()
+
+  const version = readAppVersion()
+  appendBannerSegments(container, 'title', [
+    { text: strings.bannerTitle, tone: 'bright' },
+    ...(version ? [{ text: '  ' }, { text: version, tone: 'dim' as const }] : []),
+  ])
+  appendBannerLine(container, 'subtitle', strings.bannerSubtitle)
+  appendBannerLine(container, 'rule', strings.bannerRule)
+  appendBannerLine(container, 'blank', strings.bannerBlank)
+
+  if (shellStateLoaded) {
+    printStartupBlock(container)
+  }
 }
 
 function formatDesktopErrorMessage(error: unknown) {
-  const message = error instanceof Error ? error.message : 'Desktop command bridge not ready yet.'
+  const message = error instanceof Error ? error.message : strings.bridgeNotReady
 
   const providerMatch = message.match(/No API key provided for (\w+)/)
 
@@ -2200,7 +2268,7 @@ function formatDesktopErrorMessage(error: unknown) {
       QWEN: 'QWEN_API_KEY',
     }
     const envKey = envHintMap[provider] ?? 'provider env key'
-    return `Provider ${provider} diminta, tetapi ${envKey} tidak terdeteksi di runtime desktop. Set ${envKey} lalu jalankan ulang desktop shell.`
+    return strings.providerEnvKeyMissing(provider, envKey)
   }
 
   return message
@@ -2224,34 +2292,184 @@ function tryParseStructuredDesktopResult(value: string): unknown {
   }
 }
 
-function formatMetadataList(metadata: Record<string, unknown>) {
-  const lines: string[] = []
+/**
+ * Screen columns (0-based, from the window edge) where label/value pairs sit: content
+ * starts at column 2 (two-space margin), the second pair at column 40, as in
+ * reference-console-startup.html. A line holds two pairs (the window is 80 columns);
+ * more pairs continue on the next row at the same columns.
+ */
+const LABEL_COLUMNS = [2, 40]
+
+/** Text after a six-character status prefix starts at screen column 6. */
+const STATUS_TEXT_COLUMN = 6
+
+/**
+ * Lay `label=value` pairs out in fixed-width columns. `firstColumn` is the screen column
+ * where the text starts: 2 for content, 6 for text after a status prefix. A pair too long
+ * for its column pushes the next one right by at least two spaces instead of overlapping.
+ */
+function formatLabelColumns(pairs: string[], firstColumn = LABEL_COLUMNS[0]): string {
+  const rows: string[] = []
+  let row = ''
+  let column = firstColumn
+  let slot = 0
+
+  for (const pair of pairs) {
+    if (slot === LABEL_COLUMNS.length) {
+      rows.push(row)
+      row = ''
+      column = firstColumn
+      slot = 0
+    }
+    if (slot > 0) {
+      const pad = Math.max(2, LABEL_COLUMNS[slot] - column)
+      row += ' '.repeat(pad)
+      column += pad
+    }
+    row += pair
+    column += pair.length
+    slot += 1
+  }
+
+  if (row) {
+    rows.push(row)
+  }
+
+  return rows.join('\n')
+}
+
+/** One text line for metadata.quality; `sectionCount` is the number of `## ` headings shown. */
+function formatQualityLine(quality: unknown, sectionCount?: number): string | null {
+  if (!isObjectRecord(quality) || typeof quality.degraded !== 'boolean') {
+    return null
+  }
+
+  const attempts = typeof quality.attempts === 'number' ? quality.attempts : 1
+  const attemptsText = strings.attemptsCount(attempts)
+
+  if (quality.degraded) {
+    const reason = typeof quality.reason === 'string' ? quality.reason : 'unknown'
+    return `${strings.qualityNeedsReview} · ${reason} · ${attemptsText}`
+  }
+
+  // V11: valid but thin. A warning naming the two missing answers, never an ok line.
+  if (quality.thin === true) {
+    return strings.qualityThin
+  }
+
+  const sectionsText = typeof sectionCount === 'number' ? strings.sectionsCount(sectionCount) : null
+  return [strings.qualityOk, sectionsText, attemptsText].filter(Boolean).join(' · ')
+}
+
+function countPromptSections(promptText: string): number {
+  return (promptText.match(/^##[ \t]+\S/gm) ?? []).length
+}
+
+/**
+ * The meta flags are settings, never a verdict:
+ * `task=coding  provider=openai  lane=interactive  model=<model>  output=coding_brief  3.8s`.
+ * Quality and attempts live on the separate quality line.
+ */
+function collectMetaFlags(metadata: Record<string, unknown>, lane?: DesktopOptimizeLane): string[] {
+  const flags: string[] = []
+
+  if (typeof metadata.taskType === 'string') {
+    flags.push(`task=${metadata.taskType.toLowerCase()}`)
+  }
 
   if (typeof metadata.provider === 'string') {
-    lines.push(`- Provider: ${metadata.provider}`)
+    flags.push(`provider=${metadata.provider.toLowerCase()}`)
+  }
+
+  if (lane) {
+    flags.push(`lane=${lane.toLowerCase()}`)
   }
 
   if (typeof metadata.model === 'string') {
-    lines.push(`- Model: ${metadata.model}`)
+    flags.push(`model=${metadata.model}`)
   }
 
-  if (typeof metadata.taskType === 'string') {
-    lines.push(`- Task Type: ${metadata.taskType}`)
-  }
-
-  if (typeof metadata.tone === 'string') {
-    lines.push(`- Tone: ${metadata.tone}`)
-  }
-
-  if (typeof metadata.format === 'string') {
-    lines.push(`- Format: ${metadata.format}`)
+  if (typeof metadata.outputKind === 'string') {
+    flags.push(`output=${metadata.outputKind.toLowerCase()}`)
   }
 
   if (typeof metadata.latencyMs === 'number') {
-    lines.push(`- Latency: ${metadata.latencyMs}ms`)
+    flags.push(`${(metadata.latencyMs / 1000).toFixed(1)}s`)
   }
 
-  return lines
+  return flags
+}
+
+/** Meta flags laid out in label columns; rows are separate meta lines in the transcript. */
+function formatMetaFlags(metadata: Record<string, unknown>, lane?: DesktopOptimizeLane): string {
+  return formatLabelColumns(collectMetaFlags(metadata, lane))
+}
+
+function isMetaFlagLine(line: string): boolean {
+  return /^((task|provider|lane|model|output|code|tokens)=|\d+\.\d+s(\s|$))/.test(line)
+}
+
+function isQualityLine(line: string): boolean {
+  return (
+    line.startsWith(`${strings.qualityOk} · `) ||
+    line.startsWith(`${strings.qualityNeedsReview} · `) ||
+    line === strings.qualityThin
+  )
+}
+
+/**
+ * Status class of a quality line, as reference-console-sentra.html prints the verdict:
+ * `ok    complete · …`, `warn  thin brief …`, `error needs review · …`. The prefix comes
+ * from the status style, so the DOM text stays the verdict alone.
+ */
+function qualityLineClass(text: string): string {
+  if (text.startsWith(`${strings.qualityOk} · `)) return 'status-ok'
+  if (text === strings.qualityThin) return 'status-warn'
+  return 'status-error'
+}
+
+function isTrailingResultLine(line: string): boolean {
+  return isMetaFlagLine(line) || isQualityLine(line)
+}
+
+/** Split the meta flag line and the quality line off the end of a formatted result. */
+function splitTrailingResultLines(formattedText: string): { body: string; trailing: string[] } {
+  const lines = formattedText.trimEnd().split('\n')
+  const trailing: string[] = []
+
+  while (lines.length > 1 && isTrailingResultLine(lines[lines.length - 1])) {
+    trailing.unshift(lines.pop() as string)
+  }
+
+  // Exactly one blank line between blocks inside the body as well: collapse doubled blanks.
+  const body = lines.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd()
+  return { body, trailing }
+}
+
+/**
+ * The meta line is settings (dim); the quality line is a verdict (coloured by status).
+ * Both render as their own console lines after the result block, separated from the body
+ * by exactly one blank line. Returns the last element written so an action line can
+ * follow the whole result block.
+ */
+function appendTrailingResultLines(afterLine: HTMLElement, trailing: string[]) {
+  const blank = createBlankLine()
+  afterLine.insertAdjacentElement('afterend', blank)
+  let anchor: HTMLElement = blank
+
+  for (const text of trailing) {
+    const line = document.createElement('div')
+    if (isQualityLine(text)) {
+      line.className = `line type-sys quality-line ${qualityLineClass(text)}`
+    } else {
+      line.className = 'line type-sys meta-line'
+    }
+    line.textContent = text
+    anchor.insertAdjacentElement('afterend', line)
+    anchor = line
+  }
+
+  return anchor
 }
 
 function formatBenchmarkReport(result: {
@@ -2341,14 +2559,15 @@ function formatDesktopResult(result: unknown): string {
         ? failure.message
         : 'Evaluator could not parse provider output.',
     ]
-    const metadataLines = metadata ? formatMetadataList(metadata) : []
+    const metaFlags = formatLabelColumns(
+      [
+        typeof failure?.code === 'string' ? `code=${failure.code}` : null,
+        ...(metadata ? collectMetaFlags(metadata) : []),
+      ].filter((flag): flag is string => Boolean(flag))
+    )
 
-    if (typeof failure?.code === 'string') {
-      metadataLines.unshift(`- Code: ${failure.code}`)
-    }
-
-    if (metadataLines.length > 0) {
-      lines.push('', '## Metadata', ...metadataLines)
+    if (metaFlags) {
+      lines.push('', metaFlags)
     }
 
     lines.push('', '## Retry', '- Re-run with the same provider from the action row.')
@@ -2358,15 +2577,18 @@ function formatDesktopResult(result: unknown): string {
   if (superPrompt && typeof superPrompt.fullPrompt === 'string') {
     const promptBody = buildOptimizePromptText(superPrompt)
 
-    const lines = [
-      '# Optimized Prompt',
-      '',
-      promptBody || '[No visible prompt content returned by provider.]',
-    ]
-    const metadataLines = metadata ? formatMetadataList(metadata) : []
+    const lines = [promptBody || '[No visible prompt content returned by provider.]']
+    const metaFlags = metadata ? formatMetaFlags(metadata, currentOptimizerLane) : ''
+    const qualityLine = metadata
+      ? formatQualityLine(metadata.quality, countPromptSections(promptBody))
+      : null
 
-    if (metadataLines.length > 0) {
-      lines.push('', '## Metadata', ...metadataLines)
+    if (metaFlags) {
+      lines.push('', metaFlags)
+    }
+
+    if (qualityLine) {
+      lines.push(qualityLine)
     }
 
     return lines.join('\n')
@@ -2376,7 +2598,7 @@ function formatDesktopResult(result: unknown): string {
     const lines = ['# Transformed Prompt', '', result.transformedPrompt.trim()]
 
     if (typeof result.tokensEstimate === 'number') {
-      lines.push('', '## Metadata', `- Tokens Estimate: ${result.tokensEstimate}`)
+      lines.push('', `tokens=${result.tokensEstimate}`)
     }
 
     return lines.join('\n')
@@ -2385,78 +2607,27 @@ function formatDesktopResult(result: unknown): string {
   return JSON.stringify(result, null, 2)
 }
 
-function updateMiniPanel() {
-  if (!mTitle || !mSubtitle || !mModel || !mStatusTitle || !mStatusTag || !mStatusCopy) {
-    return
-  }
-
-  const copy = {
-    transform: {
-      title: 'Transform',
-      tag: 'Default Mode',
-      copy: 'Wrap raw prompts into a deterministic prompt-engineering scaffold.',
-      subtitle: 'Desktop prompt shell',
-    },
-    optimize: {
-      title: 'Optimizer',
-      tag: 'drferdiskandar',
-      copy: 'LLM-backed super-prompt editor.',
-      subtitle: 'LLM editor',
-    },
-  }[currentMode]
-
-  mTitle.textContent = 'Sentra Prompt Console'
-  mSubtitle.textContent = copy.subtitle
-  mModel.textContent = currentModelLabel
-  mStatusTitle.textContent = copy.title
-  mStatusTag.textContent = copy.tag
-  mStatusCopy.textContent = copy.copy
-
-  mTransformBtn?.classList.toggle('active', currentMode === 'transform')
-  mOptimizeBtn?.classList.toggle('active', currentMode === 'optimize')
-}
-
-function updateMode(mode: DesktopPrimaryModeId) {
-  currentMode = mode
-  setExecutionState(isExecuting)
-
-  if (!shell || !display || isExecuting) {
-    updateMiniPanel()
-    return
-  }
-
-  applyMode(shell, mode, modeButtons, input)
-  resetConsoleView(display, mode)
-  renderSuggestionPanel(input?.value ?? '')
-  updateMiniPanel()
-}
-
 function updateOptimizerLane(lane: DesktopOptimizeLane) {
   currentOptimizerLane = lane
   syncOptimizerLaneModelPresentation()
+}
 
-  if (!shell || !display || isExecuting || currentMode !== 'optimize') {
-    return
-  }
+function updateCompilerProfile(nextProfile: DesktopCompilerProfile) {
+  currentCompilerProfile = nextProfile
+}
 
-  applyMode(shell, currentMode, modeButtons, input)
-  resetConsoleView(display, currentMode)
-  renderSuggestionPanel(input?.value ?? '')
+function updateEffortLevel(nextEffort: DesktopEffortLevel) {
+  currentEffortLevel = nextEffort
 }
 
 async function loadShellState() {
   try {
     const state = await desktopWindow.sentraDesktop?.getShellState?.()
 
+    // The title bar text is static chrome ("sentra prompt console" in index.html, from
+    // the pixel reference); only the OS window title follows the app name.
     if (state?.appName) {
       document.title = state.appName
-      if (appTitle) {
-        appTitle.textContent = state.appName
-      }
-    }
-
-    if (state?.modelChip && modelChip) {
-      modelChip.textContent = state.modelChip
     }
 
     if (state?.preferredProvider) {
@@ -2474,122 +2645,350 @@ async function loadShellState() {
       currentModelLabel = state.preferredModel
     }
 
-    renderShellBadges(state?.badges ?? [])
-
     if (state?.optimizerLaneStates) {
       optimizerLaneStates = state.optimizerLaneStates
       syncOptimizerLaneModelPresentation()
     }
 
+    // Raw badge labels from the main process (for example the FTDR score) are never
+    // printed; the startup block prints the provider-missing warning from readiness.
+    briefCounts = await loadBriefCounts()
+    shellStateLoaded = true
+    if (display) {
+      printStartupBlock(display)
+    }
+
     setExecutionState(isExecuting)
-    updateMiniPanel()
   } catch (error) {
     providerReadinessStatus = 'missing'
     currentProvider = null
+    shellStateLoaded = true
     setExecutionState(isExecuting)
-    const message = error instanceof Error ? error.message : 'Unable to load desktop shell state.'
+    const message = error instanceof Error ? error.message : strings.shellStateUnavailable
     if (display) {
+      printStartupBlock(display)
       appendConsoleLine(display, 'sys', `[WARN] ${message}`)
+      appendBlankLine(display)
     }
   }
 }
 
-async function executeMini() {
-  if (!mCmdInput || !mDisplay) {
-    return
-  }
-
-  const value = mCmdInput.value.trim()
-  if (!value) {
-    return
-  }
-
-  appendConsoleLine(mDisplay, 'user', value)
-  mCmdInput.value = ''
-
-  const parsed = parseConsoleInput(value)
-  if (parsed.kind === 'command') {
-    appendConsoleLine(mDisplay, 'sys', `[CMD] ${parsed.command}`)
-    return
-  }
-
-  const promptValue = parsed.value
-  const requestId = currentMode === 'optimize' ? crypto.randomUUID() : undefined
-  const invocation = buildPromptInvocation(currentMode, promptValue, requestId)
-
-  if (mRunBtn) {
-    mRunBtn.disabled = true
-    mRunBtn.textContent = 'WAIT'
-  }
-  if (mClearBtn) {
-    mClearBtn.disabled = true
-  }
-  mCmdInput.disabled = true
-
+/** Today's brief counts from the workspace store; null (row omitted) when unreadable. */
+async function loadBriefCounts(): Promise<BriefCounts | null> {
   try {
-    if (requestId && isOptimizeInvocation(invocation)) {
-      await executeOptimizeStream(invocation, requestId, mDisplay, promptValue)
+    const recentRuns = await desktopWindow.sentraDesktop?.workspace?.listRecentRuns?.()
+    if (!Array.isArray(recentRuns)) {
+      return null
+    }
+    return countTodaysBriefs(normalizeRecentRuns({ recentRuns }))
+  } catch {
+    return null
+  }
+}
+
+// ═══ CONSOLE COMMAND LANGUAGE ═══
+
+function splitBareCommand(value: string) {
+  const match = /^(\S+)\s*([\s\S]*)$/.exec(value)
+  return {
+    word: (match?.[1] ?? '').toLowerCase(),
+    rest: (match?.[2] ?? '').trim(),
+  }
+}
+
+function stripQuotes(value: string) {
+  const trimmed = value.trim()
+
+  if (
+    trimmed.length >= 2 &&
+    ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+      (trimmed.startsWith("'") && trimmed.endsWith("'")))
+  ) {
+    return trimmed.slice(1, -1).trim()
+  }
+
+  return trimmed
+}
+
+/** One help row: the command run is green, the summary is body text; the text is the same label-column row. */
+function appendHelpRow(container: HTMLElement, usage: string, summary: string) {
+  const line = document.createElement('div')
+  line.className = 'line help-row'
+  const command = document.createElement('span')
+  command.className = 'seg-cmd'
+  command.textContent = usage
+  line.append(command, formatLabelColumns([usage, summary]).slice(usage.length))
+  insertBeforePrompt(container, line)
+  container.scrollTop = container.scrollHeight
+}
+
+function printHelp(container: HTMLElement) {
+  for (const entry of strings.bareCommandCatalog) {
+    appendHelpRow(container, entry.usage, entry.summary)
+  }
+
+  for (const entry of COMMAND_CATALOG) {
+    appendHelpRow(container, entry.slash, entry.summary)
+  }
+}
+
+function printModeLine(container: HTMLElement) {
+  appendMetaLine(
+    container,
+    formatLabelColumns([
+      `mode=${currentMode}`,
+      `lane=${currentOptimizerLane.toLowerCase()}`,
+      `profile=${currentCompilerProfile}`,
+      `effort=${currentEffortLevel}`,
+      `output=${currentOutputKind.toLowerCase()}`,
+    ])
+  )
+}
+
+function runLaneCommand(container: HTMLElement, rest: string) {
+  const value = rest.trim().toLowerCase()
+
+  if (value !== 'interactive' && value !== 'deep') {
+    appendConsoleLine(container, 'sys', strings.laneOptionsError)
+    return
+  }
+
+  updateOptimizerLane(value === 'deep' ? 'DEEP' : 'INTERACTIVE')
+  appendConsoleLine(container, 'sys', `[DONE] lane=${currentOptimizerLane.toLowerCase()}`)
+}
+
+function runProfileCommand(container: HTMLElement, rest: string) {
+  const value = rest.trim().toLowerCase() as DesktopCompilerProfile
+
+  if (!COMPILER_PROFILES.includes(value)) {
+    appendConsoleLine(container, 'sys', strings.profileOptionsError(COMPILER_PROFILES.join(', ')))
+    return
+  }
+
+  updateCompilerProfile(value)
+  appendConsoleLine(container, 'sys', `[DONE] profile=${currentCompilerProfile}`)
+}
+
+function runEffortCommand(container: HTMLElement, rest: string) {
+  const value = rest.trim().toLowerCase() as DesktopEffortLevel
+
+  if (!EFFORT_LEVELS.includes(value)) {
+    appendConsoleLine(container, 'sys', strings.effortOptionsError(EFFORT_LEVELS.join(', ')))
+    return
+  }
+
+  updateEffortLevel(value)
+  appendConsoleLine(container, 'sys', `[DONE] effort=${currentEffortLevel}`)
+}
+
+function runCopyCommand(container: HTMLElement) {
+  if (!lastCopyText) {
+    appendConsoleLine(container, 'sys', strings.nothingToCopy)
+    return
+  }
+
+  void navigator.clipboard
+    .writeText(extractCopyableText(lastCopyText))
+    .then(() => {
+      appendConsoleLine(container, 'sys', strings.copiedNotice)
+    })
+    .catch(() => {
+      appendConsoleLine(container, 'sys', strings.clipboardRejected)
+    })
+}
+
+async function runKeyCommand(container: HTMLElement, rest: string) {
+  const parts = rest.split(/\s+/).filter(Boolean)
+  const provider = (parts[0] ?? '').toUpperCase()
+  const apiKey = parts.slice(1).join(' ')
+
+  const invocation: DesktopInvocation =
+    provider && apiKey
+      ? {
+          channel: 'desktop:command',
+          payload: {
+            command: 'provider:save',
+            payload: { provider, apiKey },
+          },
+        }
+      : {
+          channel: 'desktop:command',
+          payload: {
+            command: 'provider:list',
+            payload: {},
+          },
+        }
+
+  // Reference: `ok    provider=openai saved`; a listing prints each provider's key
+  // source in label columns. The result payload is never echoed as JSON.
+  setExecutionState(true)
+  try {
+    const result = await desktopWindow.sentraDesktop?.invoke?.(
+      invocation.channel,
+      invocation.payload
+    )
+    if (provider && apiKey) {
+      appendConsoleLine(container, 'sys', strings.providerKeySaved(provider))
     } else {
-      const result = (await desktopWindow.sentraDesktop?.invoke?.(
-        invocation.channel,
-        invocation.payload
-      )) ?? {
-        status: 'pending',
-        channel: invocation.channel,
-      }
-      const formattedText = formatDesktopResult(result)
-      appendConsoleLine(mDisplay, 'agent', formattedText)
+      const providers =
+        isObjectRecord(result) && Array.isArray(result.providers)
+          ? result.providers.filter(isObjectRecord)
+          : []
+      const flags = providers
+        .filter((entry) => typeof entry.provider === 'string' && typeof entry.source === 'string')
+        .map((entry) => `${String(entry.provider).toLowerCase()}=${String(entry.source).toLowerCase()}`)
+      appendConsoleLine(
+        container,
+        'sys',
+        flags.length > 0 ? `[DONE] ${formatLabelColumns(flags)}` : strings.providerKeysNone
+      )
     }
   } catch (error) {
-    appendConsoleLine(mDisplay, 'sys', `[ERROR] ${formatDesktopErrorMessage(error)}`)
+    appendConsoleLine(container, 'sys', `[ERROR] ${formatDesktopErrorMessage(error)}`)
   } finally {
-    if (mRunBtn) {
-      mRunBtn.disabled = false
-      mRunBtn.textContent = 'EXEC'
-    }
-    if (mClearBtn) {
-      mClearBtn.disabled = false
-    }
-    mCmdInput.disabled = false
-    mCmdInput.focus()
+    setExecutionState(false)
+    input?.focus()
   }
 }
 
-async function execute() {
-  if (!input || !display) {
+async function runStatCommand(container: HTMLElement) {
+  try {
+    const stats = await desktopWindow.sentraDesktop?.invoke?.('system:stats')
+
+    if (!isSystemStats(stats)) {
+      appendConsoleLine(container, 'sys', strings.telemetryUnavailable)
+      return
+    }
+
+    appendConsoleLine(
+      container,
+      'sys',
+      `[DONE] ${formatLabelColumns(
+        [
+          `heap=${stats.heapMb.toFixed(1)} MB`,
+          `cpu=${stats.cpuPercent.toFixed(1)}%`,
+          `mem=${stats.usedMemGb.toFixed(1)} / ${Math.round(stats.totalMemGb)} GB`,
+          `uptime=${formatUptime(stats.uptimeSeconds)}`,
+        ],
+        STATUS_TEXT_COLUMN
+      )}`
+    )
+  } catch (error) {
+    appendConsoleLine(container, 'sys', `[ERROR] ${formatDesktopErrorMessage(error)}`)
+  }
+}
+
+async function runLogCommand(container: HTMLElement) {
+  try {
+    const [recentResult, benchmarkResult] = await Promise.all([
+      desktopWindow.sentraDesktop?.invoke?.('desktop:command', {
+        command: 'recent:list',
+        payload: {},
+      }),
+      desktopWindow.sentraDesktop?.invoke?.('desktop:command', {
+        command: 'benchmark:list',
+        payload: {},
+      }),
+    ])
+    const recentRuns = normalizeRecentRuns(recentResult)
+    const benchmarks = normalizeBenchmarkRecords(benchmarkResult)
+    const compareGroups = buildCompareGroups(recentRuns).slice(0, 4)
+
+    for (const group of compareGroups) {
+      appendConsoleLine(
+        container,
+        'sys',
+        strings.compareReadyLine(group[0]?.rawInput.slice(0, 120) ?? '')
+      )
+    }
+
+    if (recentRuns.length === 0 && benchmarks.length === 0) {
+      appendConsoleLine(container, 'sys', strings.noRecentRuns)
+      return
+    }
+
+    for (const record of recentRuns.slice(0, 8)) {
+      appendConsoleLine(
+        container,
+        'sys',
+        `${record.sourceMode.toUpperCase()} · ${record.id}  ${record.rawInput.slice(0, 120)}`
+      )
+      appendActionLine(container, [
+        {
+          label: strings.actionRerunLabel,
+          ariaLabel: strings.actionRerunAria,
+          handler: async () => {
+            await rerunRecentRecord(record)
+          },
+        },
+        {
+          label: strings.actionEvaluateLabel,
+          ariaLabel: strings.actionEvaluateAria,
+          handler: async () => {
+            await evaluateRecentRecord(record)
+          },
+        },
+      ])
+    }
+
+    for (const record of benchmarks.slice(0, 8)) {
+      appendConsoleLine(
+        container,
+        'sys',
+        `BENCHMARK · ${record.id} · ${record.lanes.join(' + ')}  ${record.title}`
+      )
+      appendActionLine(container, [
+        {
+          label: strings.actionRunBenchmarkLabel,
+          ariaLabel: strings.actionRunBenchmarkAria,
+          handler: async () => {
+            await runBenchmarkRecord(record)
+          },
+        },
+      ])
+    }
+  } catch (error) {
+    appendConsoleLine(container, 'sys', `[ERROR] ${formatDesktopErrorMessage(error)}`)
+  }
+}
+
+async function runPromptCommand(
+  container: HTMLElement,
+  mode: DesktopPrimaryModeId,
+  outputKind: DesktopOutputKind,
+  rawValue: string,
+  refinement?: CodingBriefRefinementPayload
+) {
+  if (!rawValue) {
+    appendConsoleLine(container, 'sys', strings.missingIdeaText)
     return
   }
 
-  const value = input.value.trim()
-  if (!value) {
-    return
-  }
+  currentMode = mode
+  currentOutputKind = outputKind
 
-  appendConsoleLine(display, 'user', value)
-  input.value = ''
-  hideSlashPalette()
-  hideSuggestionPanel()
-
-  const parsed = parseConsoleInput(value)
-  if (parsed.kind === 'command' && parsed.command === 'help.show') {
-    renderCommandHelpPanel('')
-    commandHelpPanel?.removeAttribute('hidden')
-    appendConsoleLine(display, 'sys', '[HELP] Command panel opened.')
-    input.focus()
-    return
+  let headerMetaLine: HTMLElement | null = null
+  if (mode === 'optimize') {
+    const suggestion = suggestOptimizerConfig(rawValue)
+    headerMetaLine = appendMetaLine(
+      container,
+      formatLabelColumns(
+        [
+          `task=${suggestion.taskType.toLowerCase()}`,
+          `lane=${currentOptimizerLane.toLowerCase()}`,
+          `output=${outputKind.toLowerCase()}`,
+          suggestion.templateSlug ? `template=${suggestion.templateSlug}` : null,
+        ].filter((flag): flag is string => Boolean(flag))
+      )
+    )
   }
-
-  if (parsed.kind === 'command' && parsed.command === 'recent.list') {
-    await openWorkbenchPanel()
-    appendConsoleLine(display, 'sys', '[WORKBENCH] Recent runs opened.')
-    input.focus()
-    return
-  }
+  // The command header (echo plus meta) is one block; the result body is the next.
+  appendBlankLine(container)
 
   setExecutionState(true)
 
   const started = Date.now()
-  const pendingLines = [appendConsoleLine(display, 'sys', `[WAIT] ${buildPendingLabel()}`)]
+  const pendingLines = [appendConsoleLine(container, 'sys', `[WAIT] ${buildPendingLabel()}`)]
   const clearPendingLines = () => {
     for (const line of pendingLines) {
       line.remove()
@@ -2599,25 +2998,30 @@ async function execute() {
   const heartbeat = window.setInterval(() => {
     pendingLines.push(
       appendConsoleLine(
-        display,
+        container,
         'sys',
-        `[WAIT] Masih berjalan... ${Math.round((Date.now() - started) / 1000)}s`
+        strings.stillRunning(Math.round((Date.now() - started) / 1000))
       )
     )
   }, 10000)
 
   try {
-    const promptValue = parsed.kind === 'prompt' ? parsed.value : null
-    const requestId =
-      promptValue !== null && currentMode === 'optimize' ? crypto.randomUUID() : undefined
-    const invocation =
-      promptValue !== null
-        ? buildPromptInvocation(currentMode, promptValue, requestId)
-        : buildCommandInvocation(parsed as Extract<ParsedConsoleInput, { kind: 'command' }>)
+    if (mode === 'optimize') {
+      const requestId = crypto.randomUUID()
+      const invocation = buildOptimizeInvocation(rawValue, outputKind, requestId, refinement)
 
-    if (requestId && isOptimizeInvocation(invocation)) {
-      await executeOptimizeStream(invocation, requestId, display, promptValue ?? '')
+      if (isOptimizeInvocation(invocation)) {
+        await executeOptimizeStream(
+          invocation,
+          requestId,
+          container,
+          rawValue,
+          headerMetaLine,
+          refinement
+        )
+      }
     } else {
+      const invocation = buildTransformInvocation(rawValue)
       const result = (await desktopWindow.sentraDesktop?.invoke?.(
         invocation.channel,
         invocation.payload
@@ -2626,16 +3030,13 @@ async function execute() {
         channel: invocation.channel,
       }
       const formattedText = formatDesktopResult(result)
-      const runRecord =
-        promptValue !== null && currentMode === 'transform'
-          ? buildRunRecord('transform', promptValue, result)
-          : null
+      const runRecord = buildRunRecord('transform', rawValue, result)
 
       if (runRecord) {
         lastRunRecord = runRecord
       }
 
-      appendConsoleLine(display, 'agent', formattedText, {
+      appendConsoleLine(container, 'agent', formattedText, {
         copyText: formattedText,
         runRecord: runRecord ?? undefined,
       })
@@ -2647,162 +3048,312 @@ async function execute() {
           rawInput: runRecord.rawInput,
           outputText: runRecord.outputText,
         })
-      } else if (parsed.kind === 'command' && parsed.command === 'evaluate') {
-        await appendRecentRunToWorkspace({
-          id: crypto.randomUUID(),
-          sourceMode: 'evaluate',
-          rawInput: parsed.args[0] ?? '',
-          outputText: formattedText,
-        })
       }
     }
 
     clearPendingLines()
-    appendConsoleLine(
-      display,
-      'sys',
-      `[DONE] Selesai dalam ${Math.round((Date.now() - started) / 1000)}s`
-    )
+    // An optimize run closes with its quality verdict (ok / warn / error); the latency
+    // is already in the meta block. A transform run has no verdict, so it keeps this line.
+    if (mode !== 'optimize') {
+      appendConsoleLine(
+        container,
+        'sys',
+        strings.finishedIn(Math.round((Date.now() - started) / 1000))
+      )
+    }
   } catch (error) {
-    const message = formatDesktopErrorMessage(error)
     clearPendingLines()
-    appendConsoleLine(display, 'sys', `[ERROR] ${message}`)
+    appendConsoleLine(container, 'sys', `[ERROR] ${formatDesktopErrorMessage(error)}`)
   } finally {
     window.clearInterval(heartbeat)
     setExecutionState(false)
+    input?.focus()
+  }
+}
+
+async function runSlashInput(container: HTMLElement, value: string) {
+  const parsed = parseConsoleInput(value)
+
+  if (parsed.kind !== 'command') {
+    return
+  }
+
+  if (parsed.command === 'help.show') {
+    printHelp(container)
+    return
+  }
+
+  if (parsed.command === 'recent.list') {
+    await runLogCommand(container)
+    return
+  }
+
+  setExecutionState(true)
+  const started = Date.now()
+  const pendingLine = appendConsoleLine(container, 'sys', `[WAIT] ${buildPendingLabel()}`)
+
+  try {
+    const invocation = buildCommandInvocation(parsed)
+    const result = (await desktopWindow.sentraDesktop?.invoke?.(
+      invocation.channel,
+      invocation.payload
+    )) ?? {
+      status: 'pending',
+      channel: invocation.channel,
+    }
+    const formattedText = formatDesktopResult(result)
+
+    pendingLine.remove()
+    appendConsoleLine(container, 'agent', formattedText)
+
+    if (parsed.command === 'evaluate') {
+      await appendRecentRunToWorkspace({
+        id: crypto.randomUUID(),
+        sourceMode: 'evaluate',
+        rawInput: parsed.args[0] ?? '',
+        outputText: formattedText,
+      })
+    }
+
+    appendConsoleLine(
+      container,
+      'sys',
+      strings.finishedIn(Math.round((Date.now() - started) / 1000))
+    )
+  } catch (error) {
+    pendingLine.remove()
+    appendConsoleLine(container, 'sys', `[ERROR] ${formatDesktopErrorMessage(error)}`)
+  } finally {
+    setExecutionState(false)
+    input?.focus()
+  }
+}
+
+async function runConsoleInput(container: HTMLElement, value: string) {
+  if (value.startsWith('/')) {
+    await runSlashInput(container, value)
+    return
+  }
+
+  const { word, rest } = splitBareCommand(value)
+
+  switch (word) {
+    case 'help':
+      printHelp(container)
+      return
+    case 'clear':
+      resetConsoleView(container)
+      return
+    case 'quit':
+      desktopWindow.sentraDesktop?.close?.()
+      return
+    case 'mode':
+      printModeLine(container)
+      return
+    case 'copy':
+      runCopyCommand(container)
+      return
+    case 'lane':
+      runLaneCommand(container, rest)
+      return
+    case 'profile':
+      runProfileCommand(container, rest)
+      return
+    case 'effort':
+      runEffortCommand(container, rest)
+      return
+    case 'stat':
+      await runStatCommand(container)
+      return
+    case 'log':
+      await runLogCommand(container)
+      return
+    case 'key':
+      await runKeyCommand(container, rest)
+      return
+    case 'brief':
+      await runPromptCommand(container, 'optimize', 'CODING_BRIEF', stripQuotes(rest))
+      return
+    case 'super':
+      await runPromptCommand(container, 'optimize', 'SUPER_PROMPT', stripQuotes(rest))
+      return
+    case 'transform':
+      await runPromptCommand(container, 'transform', currentOutputKind, stripQuotes(rest))
+      return
+    default:
+      // Anything the console does not recognise is a raw idea for a Coding Brief.
+      await runPromptCommand(container, 'optimize', 'CODING_BRIEF', stripQuotes(value))
+  }
+}
+
+function isDegradedResponse(response: unknown): boolean {
+  if (!isObjectRecord(response) || !isObjectRecord(response.metadata)) {
+    return false
+  }
+  const quality = response.metadata.quality
+  return isObjectRecord(quality) && quality.degraded === true
+}
+
+/** The questions a delivered brief offers, or null when it offers none. */
+function readClarificationRound(rawIdea: string, response: unknown): ClarificationRound | null {
+  if (
+    !isObjectRecord(response) ||
+    !Array.isArray(response.clarifications) ||
+    !isObjectRecord(response.superPrompt) ||
+    typeof response.superPrompt.fullPrompt !== 'string'
+  ) {
+    return null
+  }
+
+  const items = response.clarifications
+    .filter(
+      (item): item is ClarificationItem =>
+        isObjectRecord(item) &&
+        typeof item.question === 'string' &&
+        item.question !== '' &&
+        typeof item.element === 'string' &&
+        Object.prototype.hasOwnProperty.call(strings.clarificationHints, item.element)
+    )
+    .slice(0, 3)
+
+  return items.length > 0
+    ? { rawIdea, previousBrief: response.superPrompt.fullPrompt, items, answers: [] }
+    : null
+}
+
+/** A clicked rerun is not a typed answer (D2): it ends a pending round first. */
+function endPendingClarificationRound() {
+  if (pendingClarificationRound && display) {
+    pendingClarificationRound = null
+    appendConsoleLine(display, 'sys', strings.clarificationSkipped)
+  }
+}
+
+/** Shape check for a stored refinement; main validates it again with Zod before use. */
+function isRefinementPayload(value: unknown): value is CodingBriefRefinementPayload {
+  return (
+    isObjectRecord(value) &&
+    typeof value.previousBrief === 'string' &&
+    Array.isArray(value.clarifications) &&
+    value.clarifications.length > 0
+  )
+}
+
+/**
+ * Rerun a refined brief with the same previous brief and answers. Rebuilding it from the
+ * raw idea alone would silently drop the answers.
+ */
+async function rerunRefinedBrief(rawInput: string, refinement: CodingBriefRefinementPayload) {
+  if (!display || isExecuting) {
+    return
+  }
+
+  appendConsoleLine(display, 'user', `brief ${rawInput}`)
+  appendConsoleLine(
+    display,
+    'sys',
+    strings.rerunWithAnswers(refinement.clarifications.filter((item) => item.answer !== null).length)
+  )
+  try {
+    await runPromptCommand(display, 'optimize', 'CODING_BRIEF', rawInput, refinement)
+  } finally {
+    appendBlankLine(display)
+    input?.focus()
+  }
+}
+
+/** D1: the line itself, then how to answer it. */
+function printClarificationQuestion(container: HTMLElement, round: ClarificationRound) {
+  const index = round.answers.length
+  const item = round.items[index]
+  appendConsoleLine(
+    container,
+    'sys',
+    strings.clarificationHeading(index + 1, round.items.length, item.question)
+  )
+  appendConsoleLine(container, 'sys', strings.clarificationHints[item.element])
+  if (index === 0) {
+    appendConsoleLine(container, 'sys', strings.clarificationSkipHint)
+  }
+}
+
+/**
+ * D2: the typed line answers the current question. Enter alone keeps the proposal; `skip`
+ * ends the round. Once every question is answered, one refinement runs unless every
+ * answer kept its proposal — then nothing would change, so no provider call is made.
+ */
+async function answerClarification(container: HTMLElement, round: ClarificationRound, value: string) {
+  if (value.toLowerCase() === strings.clarificationSkipWord) {
+    pendingClarificationRound = null
+    appendConsoleLine(container, 'sys', strings.clarificationSkipped)
+    return
+  }
+
+  round.answers.push(value === '' ? null : value)
+  if (value === '') {
+    appendConsoleLine(container, 'sys', strings.clarificationKept)
+  }
+
+  if (round.answers.length < round.items.length) {
+    printClarificationQuestion(container, round)
+    return
+  }
+
+  pendingClarificationRound = null
+  if (round.answers.every((answer) => answer === null)) {
+    appendConsoleLine(container, 'sys', strings.clarificationNoAnswers)
+    return
+  }
+
+  await runPromptCommand(container, 'optimize', 'CODING_BRIEF', round.rawIdea, {
+    previousBrief: round.previousBrief,
+    clarifications: round.items.map((item, index) => ({ ...item, answer: round.answers[index] })),
+  })
+}
+
+async function execute() {
+  if (!input || !display || isExecuting) {
+    return
+  }
+
+  const value = input.value.trim()
+  const round = pendingClarificationRound
+  // Enter on an empty line is an answer ("keep") only while a question is pending.
+  if (!value && !round) {
+    return
+  }
+
+  if (value) {
+    appendConsoleLine(display, 'user', value)
+  }
+  input.value = ''
+
+  try {
+    if (round) {
+      await answerClarification(display, round, value)
+    } else {
+      await runConsoleInput(display, value)
+    }
+  } finally {
+    appendBlankLine(display)
+    // A brief delivered by this command offers its questions after the command block.
+    const offered = offeredClarificationRound
+    if (offered) {
+      offeredClarificationRound = null
+      pendingClarificationRound = offered
+      printClarificationQuestion(display, offered)
+      appendBlankLine(display)
+    }
     input.focus()
   }
 }
 
-for (const button of modeButtons) {
-  button.addEventListener('click', () => {
-    const nextMode = button.dataset.mode === 'optimize' ? 'optimize' : 'transform'
-    updateMode(nextMode)
-  })
-}
-
-for (const button of optimizerLaneButtons) {
-  button.addEventListener('click', () => {
-    const nextLane = button.dataset.lane === 'DEEP' ? 'DEEP' : 'INTERACTIVE'
-    updateOptimizerLane(nextLane)
-  })
-}
-
-function updateCompilerProfile(
-  nextProfile: 'default' | 'claude' | 'codex' | 'gemini' | 'grok'
-) {
-  currentCompilerProfile = nextProfile
-  for (const button of transformProfileButtons) {
-    button.classList.toggle(
-      'active',
-      (button.dataset.profile || 'default') === currentCompilerProfile
-    )
-  }
-}
-
-function updateEffortLevel(
-  nextEffort: 'low' | 'medium' | 'high' | 'xhigh' | 'max'
-) {
-  currentEffortLevel = nextEffort
-  for (const button of transformEffortButtons) {
-    button.classList.toggle(
-      'active',
-      (button.dataset.effort || 'high') === currentEffortLevel
-    )
-  }
-}
-
-for (const button of transformProfileButtons) {
-  button.addEventListener('click', () => {
-    const p = (button.dataset.profile || 'default') as
-      | 'default'
-      | 'claude'
-      | 'codex'
-      | 'gemini'
-      | 'grok'
-    updateCompilerProfile(p)
-  })
-}
-
-for (const button of transformEffortButtons) {
-  button.addEventListener('click', () => {
-    const eff = (button.dataset.effort || 'high') as
-      | 'low'
-      | 'medium'
-      | 'high'
-      | 'xhigh'
-      | 'max'
-    updateEffortLevel(eff)
-  })
-}
-
-
 closeBtn?.addEventListener('click', () => desktopWindow.sentraDesktop?.close?.())
-powerBtn?.addEventListener('click', () => desktopWindow.sentraDesktop?.close?.())
-clearBtn?.addEventListener('click', () => {
-  if (display) {
-    resetConsoleView(display, currentMode)
-  }
-  hideOverlayPanels()
-  hideSlashPalette()
-  if (input) {
-    input.value = ''
-  }
-  hideSuggestionPanel()
-  lastCopyText = ''
-  if (copyLastBtn) {
-    copyLastBtn.disabled = true
-  }
-})
-runBtn?.addEventListener('click', () => {
-  void execute()
-})
-copyLastBtn?.addEventListener('click', () => {
-  if (!lastCopyText) return
-  navigator.clipboard.writeText(extractCopyableText(lastCopyText)).then(() => {
-    if (copyLastBtn) {
-      copyLastBtn.textContent = 'COPIED'
-      setTimeout(() => {
-        copyLastBtn.textContent = 'COPY'
-      }, 1500)
-    }
-  })
-})
+minimizeBtn?.addEventListener('click', () => desktopWindow.sentraDesktop?.minimize?.())
 
-function exitMiniMode() {
-  if (!consoleRig || !miniWidget || !miniPanel) return
-  const desktop = (window as DesktopWindow).sentraDesktop
-  widgetState = 'full'
-  miniWidget.setAttribute('hidden', '')
-  miniPanel.setAttribute('hidden', '')
-  miniPanel.classList.remove('open')
-  consoleRig.removeAttribute('hidden')
-  // Reset native drag position if needed
-  void desktop?.invoke?.('desktop:toggle-mini', { mode: 'normal' })
-  input?.focus()
-}
-
-miniToggleBtn?.addEventListener('click', () => {
-  desktopWindow.sentraDesktop?.minimize?.()
-})
-miniBar?.addEventListener('click', (e) => {
-  if (widgetState === 'minimized' && !dragDetected) {
-    e.stopPropagation()
-    exitMiniMode()
-  }
-})
-mCollapseBtn?.addEventListener('click', () => exitMiniMode())
-
-commandHelpCloseBtn?.addEventListener('click', () => {
-  commandHelpPanel?.setAttribute('hidden', '')
-})
-workbenchCloseBtn?.addEventListener('click', () => {
-  workbenchPanel?.setAttribute('hidden', '')
-})
 input?.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
-    hideOverlayPanels()
-    hideSlashPalette()
+    input.value = ''
     return
   }
 
@@ -2810,45 +3361,30 @@ input?.addEventListener('keydown', (event) => {
     void execute()
   }
 })
-input?.addEventListener('input', () => {
-  renderSlashPalette(input.value)
-  renderSuggestionPanel(input.value)
 
-  if (!commandHelpPanel?.hasAttribute('hidden')) {
-    renderCommandHelpPanel(input.value)
+if (display) {
+  resetConsoleView(display)
+  // The web font can finish loading after the last line was appended; that reflow
+  // changes scrollHeight and leaves the last line just above the fold on a cold start.
+  // Re-apply the end-of-transcript scroll once the fonts are in: after the initial load,
+  // and after every later load set (a weight is only fetched when first used). jsdom has
+  // no document.fonts, hence the guard.
+  const scrollToEnd = () => {
+    display.scrollTop = display.scrollHeight
   }
-})
-
-mTransformBtn?.addEventListener('click', () => updateMode('transform'))
-mOptimizeBtn?.addEventListener('click', () => updateMode('optimize'))
-mRunBtn?.addEventListener('click', () => void executeMini())
-mClearBtn?.addEventListener('click', () => {
-  if (mDisplay) {
-    resetConsoleView(mDisplay, currentMode)
-  }
-  if (mCmdInput) {
-    mCmdInput.value = ''
-  }
-})
-mCmdInput?.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter') {
-    void executeMini()
-  }
-})
-
-if (shell && display) {
-  applyMode(shell, currentMode, modeButtons, input)
-  resetConsoleView(display, currentMode)
-  renderSuggestionPanel(input?.value ?? '')
+  document.fonts?.ready.then(() => {
+    scrollToEnd()
+    void fitWindowToGrid(display)
+  })
+  document.fonts?.addEventListener('loadingdone', scrollToEnd)
 }
+setExecutionState(false)
 void loadShellState()
 
-const NODRAG_SELECTOR =
-  'button, input, a, select, textarea, label, span, strong, svg, path, [contenteditable="true"], .console-box, .mini-console, .overlay-panel, .slash-palette, .suggestion-panel, .mode-bar, .mode-btn, .command-bar, .cmd-input, .secondary-btn, .action-btn, .optimizer-lane-switch, .optimizer-lane-btn, .window-controls, .close-btn, .mini-toggle-btn, .mini-mode-bar, .mini-mode-btn, .mini-cmd-bar, .mini-cmd-input, .mini-btn-sm'
+const NODRAG_SELECTOR = 'button, input, a, label, pre, .transcript, .tx-action'
 
 let dragStart: { mx: number; my: number; wx: number; wy: number } | null = null
 let dragAttempt = 0
-let dragDetected = false
 
 function cancelDrag() {
   dragAttempt += 1
@@ -2858,11 +3394,9 @@ function cancelDrag() {
 document.addEventListener('mousedown', async (event) => {
   if (event.button !== 0 || !(event.target instanceof HTMLElement)) return
 
-  const dragSurface = widgetState === 'minimized' ? miniWidget : shell
+  const dragSurface = shell
   if (!dragSurface || dragSurface.hidden || !dragSurface.contains(event.target)) return
   if (event.target.closest(NODRAG_SELECTOR)) return
-
-  dragDetected = false
 
   const attempt = ++dragAttempt
   const pos = await desktopWindow.sentraDesktop?.getWindowPos?.()
@@ -2886,10 +3420,6 @@ document.addEventListener('mousemove', (event) => {
     return
   }
 
-  if (widgetState === 'minimized') {
-    dragDetected = true
-  }
-
   desktopWindow.sentraDesktop?.setWindowPos?.(dragStart.wx + dx, dragStart.wy + dy)
 })
 
@@ -2904,8 +3434,6 @@ interface DesktopSystemStats {
   totalMemGb: number
   uptimeSeconds: number
 }
-
-const HUD_POLL_MS = 1000
 
 function isSystemStats(payload: unknown): payload is DesktopSystemStats {
   return (
@@ -2922,51 +3450,6 @@ function formatUptime(totalSeconds: number) {
   const mm = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0')
   const ss = String(seconds % 60).padStart(2, '0')
   return `${hh}:${mm}:${ss}`
-}
-
-function setHudText(id: string, text: string) {
-  const element = document.getElementById(id)
-  if (element) {
-    element.textContent = text
-  }
-}
-
-function setHudBar(id: string, ratio: number) {
-  const element = document.getElementById(id)
-  if (element) {
-    element.style.width = `${Math.round(Math.min(1, Math.max(0, ratio)) * 100)}%`
-  }
-}
-
-function applySystemStats(stats: DesktopSystemStats) {
-  const heapLabel = `${stats.heapMb.toFixed(1)} MB`
-  const cpuLabel = `${stats.cpuPercent.toFixed(1)}%`
-
-  setHudText('hudTemp', heapLabel)
-  setHudText('hudLoad', cpuLabel)
-  setHudText('hudMem', `${stats.usedMemGb.toFixed(1)} / ${Math.round(stats.totalMemGb)} GB`)
-  setHudText('hudUptime', formatUptime(stats.uptimeSeconds))
-  setHudBar('hudTempBar', stats.heapLimitMb > 0 ? stats.heapMb / stats.heapLimitMb : 0)
-  setHudBar('hudLoadBar', stats.cpuPercent / 100)
-
-  setHudText('mHudTemp', heapLabel)
-  setHudText('mHudLoad', cpuLabel)
-  setHudText('mHudMem', `${stats.usedMemGb.toFixed(1)}/${Math.round(stats.totalMemGb)}`)
-}
-
-async function pollSystemStats() {
-  const stats = await desktopWindow.sentraDesktop?.invoke?.('system:stats').catch(() => null)
-
-  if (isSystemStats(stats)) {
-    applySystemStats(stats)
-  }
-}
-
-if (document.getElementById('systemHud')) {
-  void pollSystemStats()
-  window.setInterval(() => {
-    void pollSystemStats()
-  }, HUD_POLL_MS)
 }
 
 export {}

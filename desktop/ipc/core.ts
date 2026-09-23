@@ -322,6 +322,13 @@ async function streamOptimizeCommand(
         })
       }
       event.sender.send('optimize:chunk', { requestId, delta })
+    }, {
+      onRepair: () =>
+        event.sender.send('optimize:status', {
+          requestId,
+          stage: 'waiting',
+          message: 'Correcting the Coding Brief against the validator...',
+        }),
     })
 
     event.sender.send('optimize:done', { requestId, response })

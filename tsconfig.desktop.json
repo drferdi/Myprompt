@@ -11,6 +11,6 @@
     "incremental": false,
     "types": ["node"]
   },
-  "include": ["desktop/bootstrap.ts", "desktop/main.ts", "desktop/preload.ts", "desktop/renderer/renderer.ts"],
+  "include": ["desktop/bootstrap.ts", "desktop/main.ts", "desktop/preload.ts", "desktop/renderer/strings.ts", "desktop/renderer/renderer.ts"],
   "exclude": ["node_modules", "dist-electron"]
 }
