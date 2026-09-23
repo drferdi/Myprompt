@@ -85,6 +85,9 @@ describe('Sentra console visual contract', () => {
       'seg-dim',
       'seg-label',
       'seg-cmd',
+      'seg-heading',
+      'seg-dir',
+      'seg-file',
     ]) {
       expect(rendererCss).toMatch(new RegExp(`\\.${cls}[\\s,:{)]`))
     }

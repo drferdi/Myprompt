@@ -271,6 +271,41 @@ describe('console transcript command language', () => {
     expect(document.querySelector('#display .line[data-request-status-id]')).toBeNull()
   })
 
+  it('colours headings, paths and backticked commands in a result body without changing its text', async () => {
+    const body = [
+      '## GOAL',
+      'Fix the parser in lib/optimizer/engine.ts and desktop/preload.ts.',
+      '',
+      '## WHERE',
+      '`lib/optimizer/engine.ts`',
+      'lib/transform/**',
+      'See https://example.com/docs/guide.md and README.md.',
+      '',
+      '## DONE WHEN',
+      '`pnpm run test` passes.',
+    ].join('\n')
+    invoke.mockResolvedValue({ transformedPrompt: body })
+
+    type('transform x')
+    const line = await vi.waitFor(() => {
+      const found = document.querySelector<HTMLElement>('#display .line.type-agent')
+      expect(found).toBeTruthy()
+      return found as HTMLElement
+    })
+
+    // Text is unchanged (copy and the store see the plain body).
+    expect(line.textContent).toBe(`# Transformed Prompt\n\n${body}`)
+    const runs = (tone: string) =>
+      Array.from(line.querySelectorAll(`.seg-${tone}`)).map((span) => span.textContent)
+    expect(runs('heading')).toEqual(['# Transformed Prompt', '## GOAL', '## WHERE', '## DONE WHEN'])
+    expect(runs('dir')).toEqual(['lib/optimizer/', 'desktop/', 'lib/optimizer/', 'lib/transform/'])
+    expect(runs('file')).toEqual(['engine.ts', 'preload.ts', 'engine.ts', '**', 'README.md'])
+    // A backticked path keeps the path colours; a backticked command is green; URLs stay plain.
+    expect(runs('cmd')).toEqual(['`pnpm run test`'])
+    expect(line.textContent).toContain('https://example.com/docs/guide.md')
+    expect(runs('dir')).not.toContain('example.com/docs/')
+  })
+
   it('separates blocks with exactly one blank line, never two, never zero', async () => {
     invoke.mockResolvedValue({ transformedPrompt: 'x' })
 

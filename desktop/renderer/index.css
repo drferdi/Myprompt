@@ -257,6 +257,11 @@ button, input {
 .seg-dim { color: var(--console-text-dim); }
 .seg-label { color: var(--console-accent); }
 .seg-cmd { color: var(--console-prompt); }
+/* Result body runs (reference-console-sentra.html): `## HEADING` in the heading colour,
+   directories blue and bold, file names bright, backticked commands green. */
+.seg-heading { color: var(--console-heading); }
+.seg-dir { color: var(--console-path); font-weight: 700; }
+.seg-file { color: var(--console-text-strong); }
 
 /* ═══ ACTIONABLE LINES ═══ */
 /* Real buttons that look like plain text: no chrome, underline on hover,

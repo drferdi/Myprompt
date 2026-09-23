@@ -1452,6 +1452,84 @@ function insertBeforePrompt(container: HTMLElement, node: HTMLElement) {
   container.appendChild(node)
 }
 
+// A path: optional @, one or more `dir/` segments, then a file name or glob (may be empty
+// after a trailing slash). Not preceded by a path or URL character, so URLs stay plain.
+const PATH_PATTERN = /(?<![\w:/.\-@])(@?(?:[\w.\-]+\/)+)([\w.\-*]*)/g
+// A bare file name with a source-like extension, e.g. `engine.ts` or `README.md`.
+const FILE_PATTERN =
+  /(?<![\w:/.\-@])[\w\-]+\.(?:ts|tsx|js|jsx|mjs|cjs|json|md|css|html|py|yml|yaml|toml|sh|ps1|sql|prisma)\b/g
+
+function appendRun(line: HTMLElement, text: string, tone?: string) {
+  if (!text) return
+  if (!tone) {
+    line.appendChild(document.createTextNode(text))
+    return
+  }
+  const span = document.createElement('span')
+  span.className = `seg-${tone}`
+  span.textContent = text
+  line.appendChild(span)
+}
+
+/** Colour every path in `text`: directories blue and bold, the file name bright. */
+function appendPathRuns(line: HTMLElement, text: string) {
+  let cursor = 0
+  const matches: Array<{ start: number; end: number; dir: string; file: string }> = []
+  for (const match of text.matchAll(PATH_PATTERN)) {
+    // Sentence punctuation after a path is not part of the file name.
+    let file = match[2]
+    while (file.endsWith('.')) file = file.slice(0, -1)
+    matches.push({ start: match.index, end: match.index + match[1].length + file.length, dir: match[1], file })
+  }
+  for (const match of text.matchAll(FILE_PATTERN)) {
+    const start = match.index
+    if (matches.some((item) => start >= item.start && start < item.end)) continue
+    matches.push({ start, end: start + match[0].length, dir: '', file: match[0] })
+  }
+  matches.sort((a, b) => a.start - b.start)
+  for (const match of matches) {
+    if (match.start < cursor) continue
+    appendRun(line, text.slice(cursor, match.start))
+    appendRun(line, match.dir, 'dir')
+    appendRun(line, match.file, 'file')
+    cursor = match.end
+  }
+  appendRun(line, text.slice(cursor))
+}
+
+/**
+ * Render a result body as coloured runs inside one line element, as the pixel reference
+ * shows a brief: `## HEADING` lines in the heading colour, paths with the directory blue
+ * and the file bright, backticked runs green (a backticked path keeps the path colours).
+ * The DOM text stays identical to the plain body, so copying is unchanged.
+ */
+function renderBodyRuns(line: HTMLElement, body: string) {
+  line.replaceChildren()
+  const rows = body.split('\n')
+  rows.forEach((row, index) => {
+    if (/^#{1,6} \S/.test(row)) {
+      appendRun(line, row, 'heading')
+    } else {
+      let cursor = 0
+      for (const match of row.matchAll(/`([^`\n]+)`/g)) {
+        appendPathRuns(line, row.slice(cursor, match.index))
+        const inner = match[1]
+        const pathOnly = new RegExp(`^${PATH_PATTERN.source}$`).test(inner) || new RegExp(`^${FILE_PATTERN.source}$`).test(inner)
+        if (pathOnly) {
+          appendPathRuns(line, match[0])
+        } else {
+          appendRun(line, match[0], 'cmd')
+        }
+        cursor = match.index + match[0].length
+      }
+      appendPathRuns(line, row.slice(cursor))
+    }
+    if (index < rows.length - 1) {
+      line.appendChild(document.createTextNode('\n'))
+    }
+  })
+}
+
 function appendConsoleLine(
   container: HTMLElement,
   type: 'sys' | 'user' | 'agent',
@@ -1463,7 +1541,7 @@ function appendConsoleLine(
 
   if (type === 'agent') {
     const { body, trailing } = splitTrailingResultLines(text)
-    line.textContent = body
+    renderBodyRuns(line, body)
     insertBeforePrompt(container, line)
     const anchor = appendTrailingResultLines(line, trailing)
     const copyText = options.copyText ?? text
@@ -1989,7 +2067,7 @@ async function executeOptimizeStream(
       clearScramble()
       const formattedText = formatDesktopResult(payload.response)
       const { body, trailing } = splitTrailingResultLines(formattedText)
-      streamLine.textContent = body
+      renderBodyRuns(streamLine, body)
       const anchor = appendTrailingResultLines(streamLine, trailing)
       lastCopyText = formattedText
       const runRecord = buildRunRecord('optimize', rawInput, payload.response, requestId)

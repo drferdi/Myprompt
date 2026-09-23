@@ -438,6 +438,9 @@ test('Console colours and measurements match the reference :root block', async (
     await expect(appWindow.locator(doneLine('lane=interactive'))).toBeVisible()
     await runCommand(appWindow, 'lane nowhere')
     await expect(appWindow.locator('#display .line.status-error')).toBeVisible()
+    // A result body with a heading, a path and a backticked command, for the body runs.
+    await runCommand(appWindow, 'transform "Review lib/optimizer/engine.ts, then run `pnpm run test`."')
+    await expect(appWindow.locator('#display .line.type-agent .seg-dir')).toBeVisible()
 
     const computed = await appWindow.evaluate(() => {
       const read = (selector: string, property: string, pseudo?: string) => {
@@ -461,6 +464,11 @@ test('Console colours and measurements match the reference :root block', async (
         okPrefixColour: read('#display .line.status-ok', 'color', '::before'),
         warnPrefixColour: read('#display .line.status-warn', 'color', '::before'),
         errorPrefixColour: read('#display .line.status-error', 'color', '::before'),
+        headingColour: read('#display .line.type-agent .seg-heading', 'color'),
+        dirColour: read('#display .line.type-agent .seg-dir', 'color'),
+        dirWeight: read('#display .line.type-agent .seg-dir', 'font-weight'),
+        fileColour: read('#display .line.type-agent .seg-file', 'color'),
+        cmdColour: read('#display .line.type-agent .seg-cmd', 'color'),
       }
     })
 
@@ -481,11 +489,14 @@ test('Console colours and measurements match the reference :root block', async (
       { property: '--term-font-size → transcript font-size', reference: root['font-size'], computed: computed.transcriptFontSize, match: root['font-size'] === computed.transcriptFontSize },
       { property: '--term-font-size → title font-size (one size everywhere)', reference: root['font-size'], computed: computed.titleFontSize, match: root['font-size'] === computed.titleFontSize },
       { property: '--term-line → transcript line-height', reference: `${root.line} (${lineHeightPx}px)`, computed: computed.transcriptLineHeight, match: Math.abs(parseFloat(computed.transcriptLineHeight) - parseFloat(lineHeightPx)) < 0.05 },
-      { property: '--term-dir (directory names)', reference: root.dir, computed: 'not rendered by the app', match: null },
+      { property: '--term-dir → directory run colour', reference: root.dir, computed: computed.dirColour, match: hexToRgb(root.dir) === computed.dirColour },
+      { property: '.dir → directory run weight', reference: '700', computed: computed.dirWeight, match: computed.dirWeight === '700' },
+      { property: '--term-bright → file run colour', reference: root.bright, computed: computed.fileColour, match: hexToRgb(root.bright) === computed.fileColour },
+      { property: '.seg-b → backticked command colour', reference: root.green, computed: computed.cmdColour, match: hexToRgb(root.green) === computed.cmdColour },
       { property: '--term-cyan (path segment)', reference: root.cyan, computed: 'not rendered by the app', match: null },
       { property: '--term-yellow (git branch)', reference: root.yellow, computed: 'not rendered by the app', match: null },
       { property: '--term-page (outside the window)', reference: root.page, computed: 'outside the app window', match: null },
-      { property: '.head (section headings)', reference: ruleColour('head'), computed: 'not rendered by the app', match: null },
+      { property: '.head → heading run colour', reference: ruleColour('head'), computed: computed.headingColour, match: hexToRgb(ruleColour('head')) === computed.headingColour },
     ]
 
     const table = [
