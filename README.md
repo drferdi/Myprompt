@@ -1,23 +1,10 @@
 <!--
-  MyPrompt — Comprehensive Repository README
-  Repository: drferdi/Myprompt
-  Package: sentra-prompt
-  Version: 0.1.0
-
-  Source basis:
+MyPrompt — Comprehensive Repository README Repository: drferdi/Myprompt Package: sentra-prompt Version: 0.1.0 Source basis:
   - MyPrompt technical/product dossier — 23 Sep 2026
   - Current repository main/package contract — cross-checked 24 Sep 2026
   - Historical comprehensive README — visual/reference only, not authority
 
-  README DESIGN — "GAFFER"
-  Executive engineering · terminal-native · high signal · evidence first
-  Visual grammar follows the established Sentra engineering README language:
-  restrained badges, semantic Mermaid diagrams, compact tables, no decorative clutter.
-
-  IMPORTANT
-  This README explains the repository. Runtime code, validators, project contracts,
-  and applicable SAFRS controls remain authoritative when documentation disagrees.
--->
+README DESIGN — "GAFFER" Executive engineering · terminal-native · high signal · evidence first Visual grammar follows the established Sentra engineering README language: restrained badges, semantic Mermaid diagrams, compact tables, no decorative clutter. IMPORTANT This README explains the repository. Runtime code, validators, project contracts, and applicable SAFRS controls remain authoritative when documentation disagrees. -->
 
 <div align="center">
   
@@ -45,7 +32,7 @@
 
 <sub><code>FILL BY DEFAULT · ASK ONLY TO REFINE</code></sub>
 
-<br /><br />
+<br />
 
 <img src="https://img.shields.io/badge/BRIEF-8B5CF6?style=for-the-badge&labelColor=0D1117" alt="Brief" />
 <img src="https://img.shields.io/badge/SUPER-22D3EE?style=for-the-badge&labelColor=0D1117" alt="Super" />
@@ -54,7 +41,7 @@
 <img src="https://img.shields.io/badge/REFINE-F59E0B?style=for-the-badge&labelColor=0D1117" alt="Refine" />
 <img src="https://img.shields.io/badge/SHIP-F43F5E?style=for-the-badge&labelColor=0D1117" alt="Ship" />
 
-<br /><br />
+<br />
 
 [Overview](#overview) ·
 [Quick Start](#quick-start) ·
@@ -83,9 +70,7 @@
 
 ---
 
-## 01 — Overview
-
-<img src="https://img.shields.io/badge/OVERVIEW-22D3EE?style=flat-square&labelColor=0D1117" alt="Overview" />
+## 01 — Overview <img src="https://img.shields.io/badge/OVERVIEW-22D3EE?style=flat-square&labelColor=0D1117" alt="Overview" />
 
 MyPrompt turns a raw idea into an execution-ready prompt artifact.
 
@@ -132,9 +117,7 @@ and structured prompts for language models.
 
 ---
 
-## 02 — Identity
-
-<img src="https://img.shields.io/badge/IDENTITY-5B8CFF?style=flat-square&labelColor=0D1117" alt="Identity" />
+## 02 — Identity <img src="https://img.shields.io/badge/IDENTITY-5B8CFF?style=flat-square&labelColor=0D1117" alt="Identity" />
 
 | <sub>Field</sub> | <sub>Current value</sub> |
 | --- | --- |
@@ -158,36 +141,21 @@ and structured prompts for language models.
 
 The repository, package, and shell use intentionally related names:
 
-```text
-GitHub repository     drferdi/Myprompt
-npm package name      sentra-prompt
-desktop prompt        sentra ~/myprompt $
-product display       MyPrompt
-```
+<code>GitHub repository     drferdi/Myprompt</code> · <code>npm package name      sentra-prompt</code> · <code>desktop prompt        sentra ~/myprompt $</code> · <code>product display       MyPrompt</code>
 
 ---
 
-## 03 — Quick Start
-
-<img src="https://img.shields.io/badge/START-14B8A6?style=flat-square&labelColor=0D1117" alt="Start" />
+## 03 — Quick Start <img src="https://img.shields.io/badge/START-14B8A6?style=flat-square&labelColor=0D1117" alt="Start" />
 
 ### Prerequisites
 
 Current development/build scripts require:
 
-```text
-Node.js >= 22
-pnpm 11.21.0
-Windows / PowerShell for the current desktop build scripts
-```
+<code>Node.js &gt;= 22</code> · <code>pnpm 11.21.0</code> · <code>Windows / PowerShell for the current desktop build scripts</code>
 
 A provider key is optional for opening the console, but required for:
 
-```text
-brief
-super
-/evaluate
-```
+<code>brief</code> · <code>super</code> · <code>/evaluate</code>
 
 Database configuration is only required for account-backed features.
 
@@ -196,12 +164,9 @@ Database configuration is only required for account-backed features.
 ```bash
 git clone https://github.com/drferdi/Myprompt.git
 cd Myprompt
-
 pnpm install --frozen-lockfile
-
 # Optional: configure only the integrations you need.
 cp .env.example .env.local
-
 pnpm start
 ```
 
@@ -221,19 +186,13 @@ capsule rather than relying on a parent monorepo.
 
 ---
 
-## 04 — Product Modes
-
-<img src="https://img.shields.io/badge/MODES-8B5CF6?style=flat-square&labelColor=0D1117" alt="Modes" />
+## 04 — Product Modes <img src="https://img.shields.io/badge/MODES-8B5CF6?style=flat-square&labelColor=0D1117" alt="Modes" />
 
 ### Brief
 
-```text
-brief <raw idea>
-```
+<code>brief &lt;raw idea&gt;</code>
 
-Or simply type text that is not another command.
-
-The default route produces a **Coding Brief**.
+Or simply type text that is not another command. The default route produces a **Coding Brief**.
 
 ```text
 Raw idea
@@ -259,66 +218,33 @@ ready        valid / degraded
 
 ### Super
 
-```text
-super <raw idea>
-```
+<code>super &lt;raw idea&gt;</code>
 
 Produces a structured six-heading Super Prompt:
 
-```text
-ROLE
-TASK
-CONTEXT
-APPROACH        optional
-CONSTRAINTS
-OUTPUT FORMAT
-```
+<code>ROLE</code> · <code>TASK</code> · <code>CONTEXT</code> · <code>APPROACH        optional</code> · <code>CONSTRAINTS</code> · <code>OUTPUT FORMAT</code>
 
 The Super route supports two lanes:
 
-```text
-INTERACTIVE
-DEEP
-```
+<code>INTERACTIVE</code> · <code>DEEP</code>
 
 ### Transform
 
-```text
-transform <text>
-```
+<code>transform &lt;text&gt;</code>
 
-Transform is intentionally different.
-
-It is a **pure deterministic string-building path**. It does not call an LLM.
+Transform is intentionally different. It is a **pure deterministic string-building path**. It does not call an LLM.
 
 The transformer:
 
-```text
-detects intent
-selects a profile
-applies a mode
-applies an effort budget
-compiles the scaffold
-```
+<code>detects intent</code> · <code>selects a profile</code> · <code>applies a mode</code> · <code>applies an effort budget</code> · <code>compiles the scaffold</code>
 
 Supported intent classes include:
 
-```text
-translation
-summarization
-analysis
-comparison
-debugging
-explanation
-generation
-general
-```
+<code>translation</code> · <code>summarization</code> · <code>analysis</code> · <code>comparison</code> · <code>debugging</code> · <code>explanation</code> · <code>generation</code> · <code>general</code>
 
 ---
 
-## 05 — How Prompt Generation Works
-
-<img src="https://img.shields.io/badge/ENGINE-F43F5E?style=flat-square&labelColor=0D1117" alt="Engine" />
+## 05 — How Prompt Generation Works <img src="https://img.shields.io/badge/ENGINE-F43F5E?style=flat-square&labelColor=0D1117" alt="Engine" />
 
 The optimizer is the main LLM-backed engine.
 
@@ -368,29 +294,21 @@ flowchart TD
 
 `lib/optimizer/engine.ts` selects:
 
-```text
-CODING_BRIEF
-```
+<code>CODING_BRIEF</code>
 
 when explicitly requested or when:
 
-```text
-taskType = CODING
-```
+<code>taskType = CODING</code>
 
 Otherwise it selects:
 
-```text
-SUPER_PROMPT
-```
+<code>SUPER_PROMPT</code>
 
 The `transform` command bypasses the optimizer engine.
 
 ---
 
-## 06 — Coding Brief Standard v3.0
-
-<img src="https://img.shields.io/badge/CODING%20BRIEF-8B5CF6?style=flat-square&labelColor=0D1117" alt="Coding Brief" />
+## 06 — Coding Brief Standard v3.0 <img src="https://img.shields.io/badge/CODING%20BRIEF-8B5CF6?style=flat-square&labelColor=0D1117" alt="Coding Brief" />
 
 > [!NOTE]
 > The repository dossier identifies Coding Brief Standard v3.0 as a **draft**.
@@ -425,10 +343,7 @@ The complete brief is ordered as:
 ## REPORT
 ```
 
-`ASSUMPTIONS` is required when the engine has made proposals.
-
-`REPORT` is canonical text controlled by the engine rather than freely authored
-by the provider.
+`ASSUMPTIONS` is required when the engine has made proposals. `REPORT` is canonical text controlled by the engine rather than freely authored by the provider.
 
 ### Section contract
 
@@ -447,32 +362,19 @@ by the provider.
 
 For the Coding Brief route:
 
-```text
-provider budget        1200 tokens
-temperature            0.3
-maximum provider calls 2
-repair policy           exactly one repair opportunity
-clarification           after a valid brief, not before
-maximum questions       3
-```
+<code>provider budget        1200 tokens</code> · <code>temperature            0.3</code> · <code>maximum provider calls 2</code> · <code>repair policy           exactly one repair opportunity</code> · <code>clarification           after a valid brief, not before</code> · <code>maximum questions       3</code>
 
 The user prompt given to the provider is intentionally narrow:
 
-```text
-RAW IDEA: "..."
-```
+<code>RAW IDEA: &quot;...&quot;</code>
 
 Optimizer settings are not injected into the Coding Brief itself.
 
 ---
 
-## 07 — Validator V1–V14
+## 07 — Validator V1–V14 <img src="https://img.shields.io/badge/VALIDATOR-14B8A6?style=flat-square&labelColor=0D1117" alt="Validator" />
 
-<img src="https://img.shields.io/badge/VALIDATOR-14B8A6?style=flat-square&labelColor=0D1117" alt="Validator" />
-
-A Coding Brief is not accepted based on visual plausibility alone.
-
-`lib/prompt-quality/contract.ts` validates the contract.
+A Coding Brief is not accepted based on visual plausibility alone. `lib/prompt-quality/contract.ts` validates the contract.
 
 | <sub>Rule</sub> | <sub>What it checks</sub> |
 | --- | --- |
@@ -495,34 +397,20 @@ A Coding Brief is not accepted based on visual plausibility alone.
 
 The Coding Brief metadata can report:
 
-```text
-complete
-thin
-degraded
-```
+<code>complete</code> · <code>thin</code> · <code>degraded</code>
 
-`thin` is valid but warns that both working context and verification are still
-deferred.
+`thin` is valid but warns that both working context and verification are still deferred. `degraded` can carry:
 
-`degraded` can carry:
-
-```text
-parse_failed
-invalid_brief
-```
+<code>parse_failed</code> · <code>invalid_brief</code>
 
 A failed refinement does **not** replace the last valid brief already shown to
 the operator.
 
 ---
 
-## 08 — Clarification Round
+## 08 — Clarification Round <img src="https://img.shields.io/badge/REFINE-F59E0B?style=flat-square&labelColor=0D1117" alt="Refine" />
 
-<img src="https://img.shields.io/badge/REFINE-F59E0B?style=flat-square&labelColor=0D1117" alt="Refine" />
-
-Clarification is a refinement phase, not a prerequisite for producing a draft.
-
-Questions are derived mechanically rather than by another LLM call.
+Clarification is a refinement phase, not a prerequisite for producing a draft. Questions are derived mechanically rather than by another LLM call.
 
 Priority order:
 
@@ -545,28 +433,17 @@ type skip       → end clarification
 
 If every answer is empty:
 
-```text
-additional provider calls = 0
-```
+<code>additional provider calls = 0</code>
 
 A refinement sends:
 
-```text
-RAW IDEA
-PREVIOUS BRIEF
-ANSWERS FROM THE USER
-```
+<code>RAW IDEA</code> · <code>PREVIOUS BRIEF</code> · <code>ANSWERS FROM THE USER</code>
 
-The refinement is instructed to change only what was answered, carry user
-answers verbatim, and remove resolved assumptions.
-
-A rerun of a refined brief reuses those same answers.
+The refinement is instructed to change only what was answered, carry user answers verbatim, and remove resolved assumptions. A rerun of a refined brief reuses those same answers.
 
 ---
 
-## 09 — Super Prompt
-
-<img src="https://img.shields.io/badge/SUPER%20PROMPT-22D3EE?style=flat-square&labelColor=0D1117" alt="Super Prompt" />
+## 09 — Super Prompt <img src="https://img.shields.io/badge/SUPER%20PROMPT-22D3EE?style=flat-square&labelColor=0D1117" alt="Super Prompt" />
 
 The Super Prompt route uses six structural anchors:
 
@@ -585,10 +462,7 @@ The Super Prompt route uses six structural anchors:
 
 Designed for normal prompt work.
 
-```text
-max tokens   900
-temperature  0.4
-```
+<code>max tokens   900</code> · <code>temperature  0.4</code>
 
 If the result is truncated or cannot be parsed, INTERACTIVE gets one recovery
 generation with a larger 2200-token budget.
@@ -597,15 +471,9 @@ generation with a larger 2200-token budget.
 
 Designed for richer prompt construction.
 
-```text
-max tokens   2200
-temperature  0.7
-```
+<code>max tokens   2200</code> · <code>temperature  0.7</code>
 
-DEEP can use template context selected through embeddings and cosine similarity.
-If embedding retrieval fails, matching falls back to keywords.
-
-DEEP does not use the INTERACTIVE parse-recovery behavior.
+DEEP can use template context selected through embeddings and cosine similarity. If embedding retrieval fails, matching falls back to keywords. DEEP does not use the INTERACTIVE parse-recovery behavior.
 
 ### Language behavior
 
@@ -620,13 +488,9 @@ The English anchors remain stable because parser behavior depends on them.
 
 ---
 
-## 10 — Transform Compiler
+## 10 — Transform Compiler <img src="https://img.shields.io/badge/TRANSFORM-5B8CFF?style=flat-square&labelColor=0D1117" alt="Transform" />
 
-<img src="https://img.shields.io/badge/TRANSFORM-5B8CFF?style=flat-square&labelColor=0D1117" alt="Transform" />
-
-`transform` is model-aware but provider-free.
-
-It builds prompt scaffolds for these profiles:
+`transform` is model-aware but provider-free. It builds prompt scaffolds for these profiles:
 
 | <sub>Profile</sub> | <sub>Output shape</sub> |
 | --- | --- |
@@ -640,13 +504,7 @@ It builds prompt scaffolds for these profiles:
 
 Supported levels:
 
-```text
-low
-medium
-high
-xhigh
-max
-```
+<code>low</code> · <code>medium</code> · <code>high</code> · <code>xhigh</code> · <code>max</code>
 
 Current token ceilings:
 
@@ -658,52 +516,27 @@ Current token ceilings:
 | <sub>`xhigh`</sub> | <sub>2,600</sub> |
 | <sub>`max`</sub> | <sub>3,200</sub> |
 
-`xhigh` and `max` add a constraint that each deliverable appears exactly once.
+`xhigh` and `max` add a constraint that each deliverable appears exactly once. In the current console path, Transform is pinned to:
 
-In the current console path, Transform is pinned to:
-
-```text
-model     claude-sonnet
-mode      professional
-locale    id
-target    general
-```
+<code>model     claude-sonnet</code> · <code>mode      professional</code> · <code>locale    id</code> · <code>target    general</code>
 
 ---
 
-## 11 — Evaluator
+## 11 — Evaluator <img src="https://img.shields.io/badge/EVALUATOR-F59E0B?style=flat-square&labelColor=0D1117" alt="Evaluator" />
 
-<img src="https://img.shields.io/badge/EVALUATOR-F59E0B?style=flat-square&labelColor=0D1117" alt="Evaluator" />
+<code>/evaluate &lt;text&gt;</code>
 
-```text
-/evaluate <text>
-```
+The evaluator uses an LLM as a judge. It scores four dimensions from `0` to `10`:
 
-The evaluator uses an LLM as a judge.
-
-It scores four dimensions from `0` to `10`:
-
-```text
-structure
-clarity
-completeness
-specificity
-```
+<code>structure</code> · <code>clarity</code> · <code>completeness</code> · <code>specificity</code>
 
 Default weight:
 
-```text
-0.25 each
-```
+<code>0.25 each</code>
 
 Weights can be configured with:
 
-```text
-EVAL_WEIGHT_STRUCTURE
-EVAL_WEIGHT_CLARITY
-EVAL_WEIGHT_COMPLETENESS
-EVAL_WEIGHT_SPECIFICITY
-```
+<code>EVAL_WEIGHT_STRUCTURE</code> · <code>EVAL_WEIGHT_CLARITY</code> · <code>EVAL_WEIGHT_COMPLETENESS</code> · <code>EVAL_WEIGHT_SPECIFICITY</code>
 
 The final score is normalized to one decimal place.
 
@@ -717,9 +550,7 @@ The final score is normalized to one decimal place.
 
 Unparseable evaluator JSON returns:
 
-```text
-EVALUATION_PARSE_FAILED
-```
+<code>EVALUATION_PARSE_FAILED</code>
 
 > [!NOTE]
 > Evaluator scores and benchmark results are different things. Benchmarks test
@@ -727,17 +558,11 @@ EVALUATION_PARSE_FAILED
 
 ---
 
-## 12 — Providers and Models
-
-<img src="https://img.shields.io/badge/PROVIDERS-22D3EE?style=flat-square&labelColor=0D1117" alt="Providers" />
+## 12 — Providers and Models <img src="https://img.shields.io/badge/PROVIDERS-22D3EE?style=flat-square&labelColor=0D1117" alt="Providers" />
 
 Six provider adapters implement a shared contract:
 
-```text
-generate
-generateStream
-validateApiKey
-```
+<code>generate</code> · <code>generateStream</code> · <code>validateApiKey</code>
 
 The optimizer therefore does not need provider-specific generation logic.
 
@@ -754,21 +579,13 @@ The optimizer therefore does not need provider-specific generation logic.
 
 At startup, the guest provider is selected from available keys in this order:
 
-```text
-xAI
-OpenAI
-Anthropic
-Mistral
-Qwen
-```
+<code>xAI</code> · <code>OpenAI</code> · <code>Anthropic</code> · <code>Mistral</code> · <code>Qwen</code>
 
 If none is available, the console shows a provider-missing state.
 
 ### OpenAI-compatible overrides
 
-OpenAI-compatible routes support scoped model/base-URL overrides.
-
-Conceptual precedence:
+OpenAI-compatible routes support scoped model/base-URL overrides. Conceptual precedence:
 
 ```text
 per-lane
@@ -783,31 +600,19 @@ optimizer engine.
 
 ### Key resolution
 
-Provider credentials remain outside the renderer.
+Provider credentials remain outside the renderer. For guest/local execution, explicit configuration and environment values are used.
 
-For guest/local execution, explicit configuration and environment values are
-used.
-
-For signed-in account workflows, provider keys can be stored encrypted in the
-database and resolved by the main process.
-
-Stored keys use AES-256-GCM encryption.
+For signed-in account workflows, provider keys can be stored encrypted in the database and resolved by the main process. Stored keys use AES-256-GCM encryption.
 
 ---
 
-## 13 — Desktop Console
+## 13 — Desktop Console <img src="https://img.shields.io/badge/CONSOLE-8B5CF6?style=flat-square&labelColor=0D1117" alt="Console" />
 
-<img src="https://img.shields.io/badge/CONSOLE-8B5CF6?style=flat-square&labelColor=0D1117" alt="Console" />
-
-The entire UI is one terminal-style transcript under a desktop title bar.
-
-There are no application forms or navigation menus.
+The entire UI is one terminal-style transcript under a desktop title bar. There are no application forms or navigation menus.
 
 The interaction model is:
 
-```text
-sentra ~/myprompt $ <command or idea>
-```
+<code>sentra ~/myprompt $ &lt;command or idea&gt;</code>
 
 Any normal text that is not another recognized command becomes a Coding Brief.
 
@@ -854,30 +659,17 @@ Library, usage, and subscription operations require an authenticated session.
 
 After a generated result, keyboard actions can include:
 
-```text
-[c] copy
-[l] library
-[d] draft
-[b] benchmark
-[r] rerun
-[e] evaluate
-```
+<code>[c] copy</code> · <code>[l] library</code> · <code>[d] draft</code> · <code>[b] benchmark</code> · <code>[r] rerun</code> · <code>[e] evaluate</code>
 
 Benchmark rows use:
 
-```text
-[b] run
-```
+<code>[b] run</code>
 
 ---
 
-## 14 — Console Visual Contract
+## 14 — Console Visual Contract <img src="https://img.shields.io/badge/VISUAL%20SYSTEM-F43F5E?style=flat-square&labelColor=0D1117" alt="Visual System" />
 
-<img src="https://img.shields.io/badge/VISUAL%20SYSTEM-F43F5E?style=flat-square&labelColor=0D1117" alt="Visual System" />
-
-MyPrompt's visual language is intentionally terminal-native.
-
-The UI uses **JetBrains Mono** throughout.
+MyPrompt's visual language is intentionally terminal-native. The UI uses **JetBrains Mono** throughout.
 
 | <sub>Aspect</sub> | <sub>Value</sub> |
 | --- | --- |
@@ -901,11 +693,7 @@ The UI uses **JetBrains Mono** throughout.
 
 Hierarchy comes primarily from:
 
-```text
-color
-spacing
-alignment
-```
+<code>color</code> · <code>spacing</code> · <code>alignment</code>
 
 —not larger typography.
 
@@ -913,26 +701,17 @@ alignment
 
 First launch:
 
-```text
-80 columns × 20 rows
-```
+<code>80 columns × 20 rows</code>
 
-The window is measured against the renderer's real character cell and then
-persists the operator's chosen size.
+The window is measured against the renderer's real character cell and then persists the operator's chosen size. The stored window-state format is currently:
 
-The stored window-state format is currently:
-
-```text
-version: 7
-```
+<code>version: 7</code>
 
 On Windows, the surface remains opaque so ClearType rendering stays active.
 
 ---
 
-## 15 — System Architecture
-
-<img src="https://img.shields.io/badge/ARCHITECTURE-5B8CFF?style=flat-square&labelColor=0D1117" alt="Architecture" />
+## 15 — System Architecture <img src="https://img.shields.io/badge/ARCHITECTURE-5B8CFF?style=flat-square&labelColor=0D1117" alt="Architecture" />
 
 ```mermaid
 %%{init: {"flowchart": {"htmlLabels": false, "padding": 20}, "themeVariables": {"fontFamily": "monospace", "fontSize": "11px"}}}%%
@@ -973,35 +752,21 @@ flowchart LR
 
 ### Process boundary
 
-The renderer does not import `lib/`.
+The renderer does not import `lib/`. It communicates through:
 
-It communicates through:
-
-```text
-window.sentraDesktop
-```
+<code>window.sentraDesktop</code>
 
 and receives optimizer events such as:
 
-```text
-optimize:status
-optimize:chunk
-optimize:done
-optimize:error
-```
+<code>optimize:status</code> · <code>optimize:chunk</code> · <code>optimize:done</code> · <code>optimize:error</code>
 
 Electron is configured with:
 
-```text
-contextIsolation: true
-nodeIntegration: false
-```
+<code>contextIsolation: true</code> · <code>nodeIntegration: false</code>
 
 ---
 
-## 16 — IPC and Runtime
-
-<img src="https://img.shields.io/badge/RUNTIME-F59E0B?style=flat-square&labelColor=0D1117" alt="Runtime" />
+## 16 — IPC and Runtime <img src="https://img.shields.io/badge/RUNTIME-F59E0B?style=flat-square&labelColor=0D1117" alt="Runtime" />
 
 The main `desktop:command` surface handles operations including:
 
@@ -1025,25 +790,13 @@ subscription:upgrade
 
 Separate IPC families handle:
 
-```text
-workspace:*
-app:get-shell-state
-system:stats
-window:*
-auth:*
-```
+<code>workspace:*</code> · <code>app:get-shell-state</code> · <code>system:stats</code> · <code>window:*</code> · <code>auth:*</code>
 
 ### Streaming
 
-`optimize:run` returns immediately with a request identifier.
+`optimize:run` returns immediately with a request identifier. Progress then arrives through events:
 
-Progress then arrives through events:
-
-```text
-preparing
-waiting
-streaming
-```
+<code>preparing</code> · <code>waiting</code> · <code>streaming</code>
 
 During Coding Brief repair the console can also show:
 
@@ -1053,41 +806,23 @@ Correcting the Coding Brief against the validator...
 
 A run finishes through:
 
-```text
-optimize:done
-```
+<code>optimize:done</code>
 
 or:
 
-```text
-optimize:error
-```
+<code>optimize:error</code>
 
 ### Provider failure classes
 
 Optimizer failures are normalized as:
 
-```text
-PROVIDER_AUTH
-RATE_LIMIT
-NETWORK
-TIMEOUT
-UPSTREAM
-QUOTA_EXCEEDED
-MODEL_ACCESS
-UNKNOWN
-```
+<code>PROVIDER_AUTH</code> · <code>RATE_LIMIT</code> · <code>NETWORK</code> · <code>TIMEOUT</code> · <code>UPSTREAM</code> · <code>QUOTA_EXCEEDED</code> · <code>MODEL_ACCESS</code> · <code>UNKNOWN</code>
 
 ---
 
-## 17 — Data and Storage
+## 17 — Data and Storage <img src="https://img.shields.io/badge/DATA-14B8A6?style=flat-square&labelColor=0D1117" alt="Data" />
 
-<img src="https://img.shields.io/badge/DATA-14B8A6?style=flat-square&labelColor=0D1117" alt="Data" />
-
-Guest operation is local-first.
-
-Normal guest use stores workspace output in Electron's `userData` directory and
-does not require PostgreSQL.
+Guest operation is local-first. Normal guest use stores workspace output in Electron's `userData` directory and does not require PostgreSQL.
 
 ### Local files
 
@@ -1111,14 +846,7 @@ Reads and writes are parsed with Zod.
 
 PostgreSQL/Prisma is used for account features such as:
 
-```text
-user resolution
-tier / quota checks
-prompt library
-stored provider keys
-usage summaries
-subscription operations
-```
+<code>user resolution</code> · <code>tier / quota checks</code> · <code>prompt library</code> · <code>stored provider keys</code> · <code>usage summaries</code> · <code>subscription operations</code>
 
 The schema includes models for:
 
@@ -1138,9 +866,7 @@ EmailJob
 
 ---
 
-## 18 — Repository Structure
-
-<img src="https://img.shields.io/badge/REPOSITORY-64748B?style=flat-square&labelColor=0D1117" alt="Repository" />
+## 18 — Repository Structure <img src="https://img.shields.io/badge/REPOSITORY-64748B?style=flat-square&labelColor=0D1117" alt="Repository" />
 
 Key surfaces:
 
@@ -1194,9 +920,7 @@ surface and is **not part of the current standalone capsule tree**.
 
 ---
 
-## 19 — Testing and Quality Gates
-
-<img src="https://img.shields.io/badge/QUALITY-14B8A6?style=flat-square&labelColor=0D1117" alt="Quality" />
+## 19 — Testing and Quality Gates <img src="https://img.shields.io/badge/QUALITY-14B8A6?style=flat-square&labelColor=0D1117" alt="Quality" />
 
 MyPrompt separates several kinds of evidence.
 
@@ -1229,45 +953,26 @@ Coding Brief contract validation
 
 ### Standalone proof
 
-`verify:structure` enforces the capsule boundary.
-
-`verify:extraction` proves that a fresh extracted copy can perform the required
-lifecycle without depending on the containing monorepo.
+`verify:structure` enforces the capsule boundary. `verify:extraction` proves that a fresh extracted copy can perform the required lifecycle without depending on the containing monorepo.
 
 That distinction is fundamental to this repository.
 
 ---
 
-## 20 — Verified Quality Snapshot
-
-<img src="https://img.shields.io/badge/VERIFIED-14B8A6?style=flat-square&labelColor=0D1117" alt="Verified" />
+## 20 — Verified Quality Snapshot <img src="https://img.shields.io/badge/VERIFIED-14B8A6?style=flat-square&labelColor=0D1117" alt="Verified" />
 
 The latest acceptance snapshot documented for **23 September 2026** reported all
 four primary gates green:
 
-```text
-191 Vitest tests
-clean lint
-typecheck + build exit code 0
-5 Playwright Electron E2E tests
-```
+<code>191 Vitest tests</code> · <code>clean lint</code> · <code>typecheck + build exit code 0</code> · <code>5 Playwright Electron E2E tests</code>
 
 The E2E suite covered:
 
-```text
-compiler profiles in a real Electron renderer
-window overflow / extreme-output containment
-optimizer-stage provider-call isolation
-80 × 20 first-launch geometry + persisted sizing
-mechanical console color/token matching
-```
+<code>compiler profiles in a real Electron renderer</code> · <code>window overflow / extreme-output containment</code> · <code>optimizer-stage provider-call isolation</code> · <code>80 × 20 first-launch geometry + persisted sizing</code> · <code>mechanical console color/token matching</code>
 
 ### Mechanical UI verification
 
-The visual contract is not checked by subjective screenshot review alone.
-
-Computed renderer styles are compared against the canonical terminal reference
-for properties including:
+The visual contract is not checked by subjective screenshot review alone. Computed renderer styles are compared against the canonical terminal reference for properties including:
 
 ```text
 window background
@@ -1290,38 +995,19 @@ A mismatch fails the check.
 
 ---
 
-## 21 — Benchmarks
+## 21 — Benchmarks <img src="https://img.shields.io/badge/BENCHMARK-F59E0B?style=flat-square&labelColor=0D1117" alt="Benchmark" />
 
-<img src="https://img.shields.io/badge/BENCHMARK-F59E0B?style=flat-square&labelColor=0D1117" alt="Benchmark" />
+MyPrompt benchmarks are **budget checks, not quality scores**. A benchmark case passes when output:
 
-MyPrompt benchmarks are **budget checks, not quality scores**.
-
-A benchmark case passes when output:
-
-```text
-is visible
-meets latency budget
-meets expected length budget
-```
+<code>is visible</code> · <code>meets latency budget</code> · <code>meets expected length budget</code>
 
 The acceptance harness records:
 
-```text
-firstVisibleMs
-totalLatencyMs
-promptChars
-hasVisibleOutput
-```
+<code>firstVisibleMs</code> · <code>totalLatencyMs</code> · <code>promptChars</code> · <code>hasVisibleOutput</code>
 
 Failure classes include:
 
-```text
-visible-output
-first-visible
-total-latency
-prompt-too-short
-prompt-too-long
-```
+<code>visible-output</code> · <code>first-visible</code> · <code>total-latency</code> · <code>prompt-too-short</code> · <code>prompt-too-long</code>
 
 ### Lane budgets
 
@@ -1337,29 +1023,19 @@ required.
 
 ---
 
-## 22 — Security Model
-
-<img src="https://img.shields.io/badge/SECURITY-F43F5E?style=flat-square&labelColor=0D1117" alt="Security" />
+## 22 — Security Model <img src="https://img.shields.io/badge/SECURITY-F43F5E?style=flat-square&labelColor=0D1117" alt="Security" />
 
 ### Renderer isolation
 
-```text
-contextIsolation = true
-nodeIntegration  = false
-```
+<code>contextIsolation = true</code> · <code>nodeIntegration  = false</code>
 
 The renderer does not receive provider secrets.
 
 ### Secret handling
 
-```text
-.env
-.env.local
-```
+<code>.env</code> · <code>.env.local</code>
 
-are gitignored.
-
-Provider keys are not logged and are not passed into the renderer.
+are gitignored. Provider keys are not logged and are not passed into the renderer.
 
 Signed-in stored provider keys use AES-256-GCM encryption.
 
@@ -1367,61 +1043,37 @@ Signed-in stored provider keys use AES-256-GCM encryption.
 
 Current prompt and workspace boundaries use Zod validation for:
 
-```text
-OptimizeRequest
-EvaluateRequest
-TransformRequest
-template payloads
-workspace reads / writes
-```
+<code>OptimizeRequest</code> · <code>EvaluateRequest</code> · <code>TransformRequest</code> · <code>template payloads</code> · <code>workspace reads / writes</code>
 
 ### Known validation gaps
 
 The current dossier identifies several boundaries that still need tightening:
 
-```text
-DesktopCommandEnvelopeSchema exists but is not invoked
-auth:* payloads are not all schema-validated
-window:set-pos is not yet schema-validated
-desktop:toggle-mini is not yet schema-validated
-```
+<code>DesktopCommandEnvelopeSchema exists but is not invoked</code> · <code>auth:* payloads are not all schema-validated</code> · <code>window:set-pos is not yet schema-validated</code> · <code>desktop:toggle-mini is not yet schema-validated</code>
 
 These are documented gaps, not features.
 
 ---
 
-## 23 — Account vs Guest Operation
-
-<img src="https://img.shields.io/badge/SESSION-8B5CF6?style=flat-square&labelColor=0D1117" alt="Session" />
+## 23 — Account vs Guest Operation <img src="https://img.shields.io/badge/SESSION-8B5CF6?style=flat-square&labelColor=0D1117" alt="Session" />
 
 ### Guest
 
 Without a signed-in session:
 
-```text
-provider configuration comes from local environment/configuration
-database-backed account features are not required
-workspace remains local
-```
+<code>provider configuration comes from local environment/configuration</code> · <code>database-backed account features are not required</code> · <code>workspace remains local</code>
 
 ### Signed in
 
 With a Supabase session, account-backed requests can pass through:
 
-```text
-tier checks
-quota checks
-model-access checks
-stored provider-key resolution
-```
+<code>tier checks</code> · <code>quota checks</code> · <code>model-access checks</code> · <code>stored provider-key resolution</code>
 
 These controls live in the Electron/main-process side rather than the renderer.
 
 ---
 
-## 24 — Development Commands
-
-<img src="https://img.shields.io/badge/DEVELOPMENT-5B8CFF?style=flat-square&labelColor=0D1117" alt="Development" />
+## 24 — Development Commands <img src="https://img.shields.io/badge/DEVELOPMENT-5B8CFF?style=flat-square&labelColor=0D1117" alt="Development" />
 
 ### Run
 
@@ -1485,9 +1137,7 @@ pnpm db:seed
 
 ---
 
-## 25 — Environment Configuration
-
-<img src="https://img.shields.io/badge/ENVIRONMENT-22D3EE?style=flat-square&labelColor=0D1117" alt="Environment" />
+## 25 — Environment Configuration <img src="https://img.shields.io/badge/ENVIRONMENT-22D3EE?style=flat-square&labelColor=0D1117" alt="Environment" />
 
 Configure only the integrations required for the current workflow.
 
@@ -1509,41 +1159,19 @@ LOCAL_MODEL
 
 ### Database and encryption
 
-```text
-DATABASE_URL
-DIRECT_URL
-ENCRYPTION_KEY
-```
+<code>DATABASE_URL</code> · <code>DIRECT_URL</code> · <code>ENCRYPTION_KEY</code>
 
 ### Supabase
 
-```text
-NEXT_PUBLIC_SUPABASE_URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY
-SUPABASE_SERVICE_ROLE_KEY
-```
+<code>NEXT_PUBLIC_SUPABASE_URL</code> · <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> · <code>SUPABASE_SERVICE_ROLE_KEY</code>
 
 ### Optional services
 
-```text
-RESEND_API_KEY
-RESEND_FROM_EMAIL
-
-XENDIT_SECRET_KEY
-XENDIT_CALLBACK_TOKEN
-
-NEXT_PUBLIC_SENTRY_DSN
-NEXT_PUBLIC_APP_URL
-```
+<code>RESEND_API_KEY</code> · <code>RESEND_FROM_EMAIL</code> · <code>XENDIT_SECRET_KEY</code> · <code>XENDIT_CALLBACK_TOKEN</code> · <code>NEXT_PUBLIC_SENTRY_DSN</code> · <code>NEXT_PUBLIC_APP_URL</code>
 
 ### Desktop runtime
 
-```text
-SENTRA_DESKTOP_DEBUG
-SENTRA_DESKTOP_SMOKE
-SENTRA_DESKTOP_USER_DATA
-SENTRA_DESKTOP_PROVIDER
-```
+<code>SENTRA_DESKTOP_DEBUG</code> · <code>SENTRA_DESKTOP_SMOKE</code> · <code>SENTRA_DESKTOP_USER_DATA</code> · <code>SENTRA_DESKTOP_PROVIDER</code>
 
 > [!NOTE]
 > The source review found that `MISTRAL_API_KEY` and `QWEN_API_KEY` are consumed
@@ -1552,39 +1180,20 @@ SENTRA_DESKTOP_PROVIDER
 
 ---
 
-## 26 — Standalone Capsule Contract
+## 26 — Standalone Capsule Contract <img src="https://img.shields.io/badge/SAFRS-F59E0B?style=flat-square&labelColor=0D1117" alt="SAFRS" />
 
-<img src="https://img.shields.io/badge/SAFRS-F59E0B?style=flat-square&labelColor=0D1117" alt="SAFRS" />
+MyPrompt is developed as a standalone SAFRS capsule. Current repository governance status:
 
-MyPrompt is developed as a standalone SAFRS capsule.
+<code>active SAFRS capsule</code> · <code>R2 review required before integration or release</code>
 
-Current repository governance status:
-
-```text
-active SAFRS capsule
-R2 review required before integration or release
-```
-
-The current lifecycle boundary treats live database migration, provider-side actions,
-payment actions, real email delivery, and production packaging/deployment as outside
-normal capsule verification scope.
-
-The governing rule is:
+The current lifecycle boundary treats live database migration, provider-side actions, payment actions, real email delivery, and production packaging/deployment as outside normal capsule verification scope. The governing rule is:
 
 > **The project may live inside a monorepo for coordinated development, but it
 > must not depend on the monorepo to install, build, test, or run.**
 
 The repository contract therefore treats these as project-local responsibilities:
 
-```text
-install
-lint
-typecheck
-test
-build
-run
-deploy dry run
-```
+<code>install</code> · <code>lint</code> · <code>typecheck</code> · <code>test</code> · <code>build</code> · <code>run</code> · <code>deploy dry run</code>
 
 ### Publication model
 
@@ -1609,33 +1218,19 @@ repository as a substitute.
 
 ---
 
-## 27 — Publication Safety
-
-<img src="https://img.shields.io/badge/PUBLISH-F43F5E?style=flat-square&labelColor=0D1117" alt="Publish" />
+## 27 — Publication Safety <img src="https://img.shields.io/badge/PUBLISH-F43F5E?style=flat-square&labelColor=0D1117" alt="Publish" />
 
 Before publishing a capsule split, the documented workflow checks for:
 
-```text
-no committed .env files except .env.example
-no strings shaped like API keys
-no paths outside the capsule
-```
+<code>no committed .env files except .env.example</code> · <code>no strings shaped like API keys</code> · <code>no paths outside the capsule</code>
 
-The development repository's pre-push protection also prevents project capsule
-ranges from being pushed to the wrong remote without explicit operator
-authorization.
+The development repository's pre-push protection also prevents project capsule ranges from being pushed to the wrong remote without explicit operator authorization. This exists to preserve one simple boundary:
 
-This exists to preserve one simple boundary:
-
-```text
-framework repository ≠ project publication repository
-```
+<code>framework repository ≠ project publication repository</code>
 
 ---
 
-## 28 — Known Gaps and Cleanup Candidates
-
-<img src="https://img.shields.io/badge/KNOWN%20GAPS-F43F5E?style=flat-square&labelColor=0D1117" alt="Known Gaps" />
+## 28 — Known Gaps and Cleanup Candidates <img src="https://img.shields.io/badge/KNOWN%20GAPS-F43F5E?style=flat-square&labelColor=0D1117" alt="Known Gaps" />
 
 The source review intentionally records unresolved issues rather than hiding
 them behind a polished README.
@@ -1654,31 +1249,19 @@ them behind a polished README.
 | <sub>**Workspace concurrency**</sub> | <sub>`main.ts` and `core.ts` create separate stores for the same workspace file, so write queues are not shared</sub> |
 | <sub>**Legacy web dependencies**</sub> | <sub>Next.js, Radix, Sentry Next.js, Vercel Analytics, and related remnants remain although no active web surface uses them</sub> |
 
-These are backlog material.
-
-They should not be rebranded as product features.
+These are backlog material. They should not be rebranded as product features.
 
 ---
 
-## 29 — Documentation vs Runtime
+## 29 — Documentation vs Runtime <img src="https://img.shields.io/badge/AUTHORITY-F59E0B?style=flat-square&labelColor=0D1117" alt="Authority" />
 
-<img src="https://img.shields.io/badge/AUTHORITY-F59E0B?style=flat-square&labelColor=0D1117" alt="Authority" />
-
-The Coding Brief standard and validator are intended to evolve together.
-
-Where they diverge today, the repository review identified the runtime
-validator as the behavioral authority.
+The Coding Brief standard and validator are intended to evolve together. Where they diverge today, the repository review identified the runtime validator as the behavioral authority.
 
 That means contributors should verify both:
 
-```text
-docs/CODING_BRIEF_STANDARD.md
-lib/prompt-quality/contract.ts
-```
+<code>docs/CODING_BRIEF_STANDARD.md</code> · <code>lib/prompt-quality/contract.ts</code>
 
-before changing prompt-contract semantics.
-
-The same principle applies more broadly:
+before changing prompt-contract semantics. The same principle applies more broadly:
 
 ```text
 written intent
@@ -1692,9 +1275,7 @@ A README is not a substitute for executable behavior.
 
 ---
 
-## 30 — Design Principles
-
-<img src="https://img.shields.io/badge/PRINCIPLES-8B5CF6?style=flat-square&labelColor=0D1117" alt="Principles" />
+## 30 — Design Principles <img src="https://img.shields.io/badge/PRINCIPLES-8B5CF6?style=flat-square&labelColor=0D1117" alt="Principles" />
 
 MyPrompt's current implementation can be summarized with six operating
 principles:
@@ -1708,37 +1289,22 @@ P5  Ask questions only to refine an already complete brief.
 P6  When ambiguity remains, choose one interpretation and expose alternatives.
 ```
 
-These principles are why the Coding Brief flow does not begin with an
-interrogation.
-
-It begins with an attempt to be useful.
+These principles are why the Coding Brief flow does not begin with an interrogation. It begins with an attempt to be useful.
 
 ---
 
-## 31 — What MyPrompt Is Not
-
-<img src="https://img.shields.io/badge/NON--GOALS-64748B?style=flat-square&labelColor=0D1117" alt="Non Goals" />
+## 31 — What MyPrompt Is Not <img src="https://img.shields.io/badge/NON--GOALS-64748B?style=flat-square&labelColor=0D1117" alt="Non Goals" />
 
 MyPrompt is not currently:
 
-```text
-a web SaaS interface
-a generic chat client
-an autonomous coding agent
-a replacement for repository governance
-a hidden-key proxy service
-a benchmark leaderboard
-a prompt-quality oracle
-```
+<code>a web SaaS interface</code> · <code>a generic chat client</code> · <code>an autonomous coding agent</code> · <code>a replacement for repository governance</code> · <code>a hidden-key proxy service</code> · <code>a benchmark leaderboard</code> · <code>a prompt-quality oracle</code>
 
 It is a focused desktop tool for turning intent into structured prompt
 artifacts and checking that those artifacts satisfy explicit contracts.
 
 ---
 
-## 32 — Contributor Orientation
-
-<img src="https://img.shields.io/badge/CONTRIBUTOR-22D3EE?style=flat-square&labelColor=0D1117" alt="Contributor" />
+## 32 — Contributor Orientation <img src="https://img.shields.io/badge/CONTRIBUTOR-22D3EE?style=flat-square&labelColor=0D1117" alt="Contributor" />
 
 If changing prompt behavior, start with the contract.
 
@@ -1776,9 +1342,7 @@ extended without weakening the standalone boundary.
 
 ---
 
-## 33 — Verification Philosophy
-
-<img src="https://img.shields.io/badge/VERIFY-14B8A6?style=flat-square&labelColor=0D1117" alt="Verify" />
+## 33 — Verification Philosophy <img src="https://img.shields.io/badge/VERIFY-14B8A6?style=flat-square&labelColor=0D1117" alt="Verify" />
 
 MyPrompt does not treat one type of test as a universal substitute.
 
@@ -1802,22 +1366,13 @@ Coding Brief contract satisfied
 
 The system combines:
 
-```text
-static checks
-contract tests
-runtime tests
-real Electron E2E
-acceptance budgets
-deterministic validators
-```
+<code>static checks</code> · <code>contract tests</code> · <code>runtime tests</code> · <code>real Electron E2E</code> · <code>acceptance budgets</code> · <code>deterministic validators</code>
 
 Each proves something different.
 
 ---
 
-## 34 — Current Source-of-Truth Map
-
-<img src="https://img.shields.io/badge/SOURCE%20OF%20TRUTH-F59E0B?style=flat-square&labelColor=0D1117" alt="Source of Truth" />
+## 34 — Current Source-of-Truth Map <img src="https://img.shields.io/badge/SOURCE%20OF%20TRUTH-F59E0B?style=flat-square&labelColor=0D1117" alt="Source of Truth" />
 
 | <sub>Concern</sub> | <sub>Primary authority</sub> |
 | --- | --- |
@@ -1837,9 +1392,7 @@ Each proves something different.
 
 ---
 
-## 35 — Status
-
-<img src="https://img.shields.io/badge/STATUS-5B8CFF?style=flat-square&labelColor=0D1117" alt="Status" />
+## 35 — Status <img src="https://img.shields.io/badge/STATUS-5B8CFF?style=flat-square&labelColor=0D1117" alt="Status" />
 
 ```text
 Repository      drferdi/Myprompt
@@ -1856,16 +1409,11 @@ Node            >= 22
 pnpm            11.21.0
 ```
 
-The repository is active.
-
-The latest documented quality snapshot in the supplied technical dossier is
-dated **23 September 2026**.
+The repository is active. The latest documented quality snapshot in the supplied technical dossier is dated **23 September 2026**.
 
 ---
 
-## 36 — The Short Version
-
-<img src="https://img.shields.io/badge/TL%3BDR-8B5CF6?style=flat-square&labelColor=0D1117" alt="TLDR" />
+## 36 — The Short Version <img src="https://img.shields.io/badge/TL%3BDR-8B5CF6?style=flat-square&labelColor=0D1117" alt="TLDR" />
 
 ```text
 An idea enters as text.
@@ -1897,10 +1445,8 @@ The project remains capable of standing on its own outside the monorepo.
   <a href="https://tiktok.com/@drferdii"><img src="https://img.shields.io/badge/TikTok-000000?style=for-the-badge&logo=tiktok&logoColor=white" alt="TikTok" /></a>
   <a href="https://x.com/ClaudesyI81047"><img src="https://img.shields.io/badge/X-000000?style=for-the-badge&logo=x&logoColor=white" alt="X" /></a>
   <a href="mailto:drferdiiskandar@sentrahai.com"><img src="https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white" alt="Email" /></a>
----
 
 <div align="center">
-<br />
 <img src="https://i.ibb.co.com/4Z447tNw/myprompt2.png" alt="MyPrompt" width="64" />
 
 ### Built by Sentra Artificial Intelligence
@@ -1921,9 +1467,9 @@ The project remains capable of standing on its own outside the monorepo.
 MyPrompt · <code>sentra-prompt</code> · v0.1.0
 </sub>
 
-<br /><br />
+<br />
 <sub><code>TYPE AN IDEA · GET A STRUCTURE · VERIFY THE CONTRACT</code></sub>
-<br /><br />
+<br />
 
 <img src="https://img.shields.io/badge/IDEA-22D3EE?style=flat-square&labelColor=0D1117" alt="Idea" />
 <img src="https://img.shields.io/badge/STRUCTURE-8B5CF6?style=flat-square&labelColor=0D1117" alt="Structure" />
