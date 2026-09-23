@@ -25,10 +25,13 @@
 import {
   CODING_BRIEF_HEADINGS,
   CODING_BRIEF_REPORT_TEXT,
+  countScopeItems,
   countWords,
+  findNamedTechnologies,
   hasBacktickToken,
   hasTestIdentifier,
   isPathLikeToken,
+  mentionsTechnology,
   parseCodingBriefSections,
   splitSentences,
   type CodingBriefHeading,
@@ -41,43 +44,47 @@ export const PromptQualitySchema = SuperPromptSchema
 /** Canonical type for structured prompt quality (SSOT). */
 export type PromptQuality = SuperPrompt
 
-// ── Coding Brief (docs/CODING_BRIEF_STANDARD.md) ─────────────────────────
+// ── Coding Brief (docs/CODING_BRIEF_STANDARD.md v2.0) ─────────────────────
 //
 // This module is the runtime source of truth for the Coding Brief contract:
-// the canonical REPORT text (§6), the parsed shape (§3), and the deterministic
-// validator implementing V1–V9 (§4).
+// the canonical REPORT text (§7), the parsed shape (§4), and the deterministic
+// validator implementing V1–V11 (§5). v1.0 headings (WHERE, SCENARIO, FOLLOW
+// PATTERN) are accepted for one release and reported as deprecated.
 
 /**
- * Canonical `## REPORT` body from §6, without the heading line. Defined in the
+ * Canonical `## REPORT` body from §7, without the heading line. Defined in the
  * lexical layer so the engine can append it without importing this module.
  */
 export { CODING_BRIEF_REPORT_TEXT }
 
-/** Parsed Coding Brief (§3). Optional sections are absent, never empty strings. */
+/** Parsed Coding Brief (§4). Optional sections are absent, never empty strings. */
 export { CodingBriefSchema, type CodingBrief }
 
 export interface CodingBriefValidation {
   valid: boolean
   issues: string[]
+  /** V11: valid, but CONTEXT and DONE WHEN both defer to the user (§9.3). */
+  thin: boolean
+  /** v1.0 headings found and mapped, as `WHERE (use CONTEXT)`. Accepted, never an issue. */
+  deprecated: string[]
   brief?: CodingBrief
 }
 
-const REQUIRED_HEADINGS: CodingBriefHeading[] = ['GOAL', 'WHERE', 'DONE WHEN', 'REPORT']
+export interface CodingBriefValidationOptions {
+  /** The user's raw request; enables V10 (named technologies must appear in STACK). */
+  rawRequest?: string
+}
 
-/** Words that make a GOAL a fix, so §4 V5 requires a SCENARIO. */
-const FIX_WORDS = [
-  'fix',
-  'bug',
-  'error',
-  'crash',
-  'fails',
-  'broken',
-  'perbaiki',
-  'benahi',
-  'galat',
-]
+const REQUIRED_HEADINGS: CodingBriefHeading[] = ['GOAL', 'CONTEXT', 'SCOPE', 'DONE WHEN', 'REPORT']
 
-/** Outcome phrases that carry no runnable evidence (§4 V7). */
+/** CONTEXT and DONE WHEN openers that defer to the user (§6 C4, C5). */
+const EXPLORE_FIRST = 'Explore first:'
+const NEW_PROJECT = 'New project:'
+const PROPOSE_CHECK_FIRST = 'Propose a check first:'
+/** A SCOPE that is only a question to the user (§9.3); V5 defers and V11 warns instead. */
+const TODO_PLACEHOLDER = '[TODO:'
+
+/** Outcome phrases that carry no runnable evidence (§5 V7). */
 const VAGUE_PHRASES = [
   'works well',
   'works',
@@ -88,7 +95,7 @@ const VAGUE_PHRASES = [
   'sesuai harapan',
 ]
 
-/** Optimizer settings labels that must never open a line (§4 V9). */
+/** Optimizer settings labels that must never open a line (§5 V9). */
 const SETTINGS_LABELS = ['Target LLM:', 'Domain:', 'Tone:']
 
 function escapeRegExp(value: string): string {
@@ -100,15 +107,21 @@ function containsWord(haystack: string, word: string): boolean {
 }
 
 /**
- * Validate a Coding Brief against docs/CODING_BRIEF_STANDARD.md §4 (V1–V9).
+ * Validate a Coding Brief against docs/CODING_BRIEF_STANDARD.md §5 (V1–V11).
  *
  * Each issue is formatted `V<n>: <message>`. V1 is emitted at most once and lists
  * every structural problem it found. Content rules (V3–V8) are evaluated only for
  * sections that are present and non-empty, so an empty section reports V2 alone.
+ * V10 runs only when `options.rawRequest` is given. V11 (`thin`) is a warning, not
+ * an issue: the brief stays valid.
  */
-export function validateCodingBrief(markdown: string): CodingBriefValidation {
-  const { text, sections, unknownHeadings } = parseCodingBriefSections(markdown)
+export function validateCodingBrief(
+  markdown: string,
+  options: CodingBriefValidationOptions = {}
+): CodingBriefValidation {
+  const { text, sections, unknownHeadings, deprecatedHeadings } = parseCodingBriefSections(markdown)
   const issues: string[] = []
+  const deprecated = deprecatedHeadings
 
   // V9 — settings labels anywhere in the brief (checked before structure, so it
   // still fires on a brief that has no headings at all).
@@ -122,7 +135,8 @@ export function validateCodingBrief(markdown: string): CodingBriefValidation {
     )
   }
 
-  // V1 — required headings, no duplicates, no unknown headings, §3 order.
+  // V1 — required headings, no duplicates, no unknown headings, §4 order. A mapped
+  // v1.0 heading counts as its v2.0 heading here, so WHERE beside CONTEXT is a duplicate.
   const structural: string[] = []
   const seen = new Set<CodingBriefHeading>()
   const duplicates: CodingBriefHeading[] = []
@@ -173,8 +187,9 @@ export function validateCodingBrief(markdown: string): CodingBriefValidation {
   }
 
   const goal = bodies.get('GOAL') ?? ''
-  const where = bodies.get('WHERE') ?? ''
-  const scenario = bodies.get('SCENARIO')
+  const context = bodies.get('CONTEXT') ?? ''
+  const scope = bodies.get('SCOPE') ?? ''
+  const stack = bodies.get('STACK')
   const doneWhen = bodies.get('DONE WHEN') ?? ''
   const report = bodies.get('REPORT')
 
@@ -190,34 +205,34 @@ export function validateCodingBrief(markdown: string): CodingBriefValidation {
     }
   }
 
-  // V4 — WHERE names a location or defers with `Explore first:`.
-  if (where !== '') {
-    const hasPath = where.split(/\s+/).some(isPathLikeToken)
-    if (!hasPath && !where.startsWith('Explore first:')) {
+  // V4 — CONTEXT names a location, opens a new project, or defers with `Explore first:`.
+  const contextDefers = context.startsWith(EXPLORE_FIRST)
+  if (context !== '') {
+    const hasPath = context.split(/\s+/).some(isPathLikeToken)
+    if (!hasPath && !context.startsWith(NEW_PROJECT) && !contextDefers) {
       issues.push(
-        'V4: WHERE needs a path-like token or must begin with "Explore first:"'
+        `V4: CONTEXT needs a path-like token or must begin with "${NEW_PROJECT}" or "${EXPLORE_FIRST}"`
       )
     }
   }
 
-  // V5 — a fix GOAL requires a SCENARIO.
-  if (goal !== '' && FIX_WORDS.some((word) => containsWord(goal, word))) {
-    if (scenario === undefined || scenario === '') {
-      issues.push('V5: GOAL describes a fix, so SCENARIO is required')
+  // V5 — SCOPE names at least two concrete items. A SCOPE that is only a `[TODO: …]`
+  // question defers to the user (§9.3) and is left to V11.
+  if (scope !== '' && !scope.startsWith(TODO_PLACEHOLDER)) {
+    const items = countScopeItems(scope)
+    if (items < 2) {
+      issues.push(`V5: SCOPE must name at least two concrete items (found ${items})`)
     }
   }
 
+  const doneWhenDefers = doneWhen.startsWith(PROPOSE_CHECK_FIRST)
   if (doneWhen !== '') {
     const backticked = hasBacktickToken(doneWhen)
 
     // V6 — DONE WHEN carries a runnable check or defers with `Propose a check first:`.
-    if (
-      !backticked &&
-      !hasTestIdentifier(doneWhen) &&
-      !doneWhen.startsWith('Propose a check first:')
-    ) {
+    if (!backticked && !hasTestIdentifier(doneWhen) && !doneWhenDefers) {
       issues.push(
-        'V6: DONE WHEN needs a backticked command or test identifier, or must begin with "Propose a check first:"'
+        `V6: DONE WHEN needs a backticked command or test identifier, or must begin with "${PROPOSE_CHECK_FIRST}"`
       )
     }
 
@@ -228,7 +243,7 @@ export function validateCodingBrief(markdown: string): CodingBriefValidation {
     }
   }
 
-  // V8 — REPORT matches §6 verbatim (line-level trimming absorbs stray indentation).
+  // V8 — REPORT matches §7 verbatim (line-level trimming absorbs stray indentation).
   if (report !== undefined) {
     const normalised = report
       .split('\n')
@@ -236,26 +251,39 @@ export function validateCodingBrief(markdown: string): CodingBriefValidation {
       .join('\n')
       .trim()
     if (normalised !== CODING_BRIEF_REPORT_TEXT) {
-      issues.push('V8: REPORT does not match the canonical text in §6')
+      issues.push('V8: REPORT does not match the canonical text in §7')
+    }
+  }
+
+  // V10 — every technology named in the raw request appears in STACK.
+  if (options.rawRequest !== undefined) {
+    const named = findNamedTechnologies(options.rawRequest)
+    const missingTech = named.filter((name) => !mentionsTechnology(stack ?? '', name))
+    if (missingTech.length > 0) {
+      issues.push(
+        `V10: STACK is missing technology named in the request: ${missingTech.join(', ')}`
+      )
     }
   }
 
   if (issues.length > 0) {
-    return { valid: false, issues }
+    return { valid: false, issues, thin: false, deprecated }
   }
 
-  const followPattern = bodies.get('FOLLOW PATTERN')
+  // V11 — both fallbacks fired: valid, but the user owes two answers (§6 C7).
+  const thin = contextDefers && doneWhenDefers
+
   const outOfScope = bodies.get('OUT OF SCOPE')
 
   const brief = CodingBriefSchema.parse({
     goal,
-    where,
-    ...(scenario !== undefined && { scenario }),
-    ...(followPattern !== undefined && { followPattern }),
+    context,
+    scope,
+    ...(stack !== undefined && { stack }),
     ...(outOfScope !== undefined && { outOfScope }),
     doneWhen,
     report: report ?? '',
   })
 
-  return { valid: true, issues: [], brief }
+  return { valid: true, issues: [], thin, deprecated, brief }
 }

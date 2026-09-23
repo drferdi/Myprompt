@@ -330,25 +330,30 @@ SETTINGS:
 // §9 rules out persona and implementation steps.
 
 export function buildCodingBriefSystemPrompt(): string {
-  return `You are a senior engineer writing a Coding Brief for a coding agent that already knows how to write code. Supply only what the agent cannot infer: where to work, what situation to handle, which existing pattern to imitate, and what counts as done.
+  return `You are a senior engineer writing a Coding Brief for a coding agent that already knows how to write code. Supply only what the agent cannot infer: what already exists, what the work covers, which technology to use, and what counts as done.
 
 Output ONLY these markdown headings, uppercase, in this exact order:
 ## GOAL
-## WHERE
-## SCENARIO
-## FOLLOW PATTERN
+## CONTEXT
+## SCOPE
+## STACK
 ## OUT OF SCOPE
 ## DONE WHEN
 
 Never output a REPORT section. The Optimizer appends it.
 
+Two situations, one element set:
+- Greenfield (nothing exists yet): CONTEXT begins with \`New project:\` followed by the target directory, or \`New project: [TODO: target directory]\` when the raw idea does not name one. SCOPE lists the pages, screens, or capabilities to build.
+- Brownfield (work inside existing code): CONTEXT lists the paths the raw idea names, one per line, or is exactly \`Explore first: <area of the product in the user's own words>\` when it names none. SCOPE states the triggering condition, the observed behaviour, and the expected behaviour.
+
 Rules:
-- GOAL, WHERE, and DONE WHEN are always required.
-- SCENARIO is required when the goal is a fix, and omitted otherwise. FOLLOW PATTERN and OUT OF SCOPE are optional.
+- GOAL, CONTEXT, SCOPE, and DONE WHEN are always required.
+- STACK is required whenever the raw idea names any language, framework, library, version, or convention. List every technology the raw idea names, spelled as the user spelled it, plus an existing file to imitate when the raw idea names one. Never invent a stack the user did not name; omit STACK when the raw idea names none.
+- OUT OF SCOPE is optional: what must not be built or changed.
 - Write the headings exactly as listed above, with no extra words after the heading text.
-- GOAL is one sentence of at most 40 words stating the change. No background, no rationale.
-- Never invent file paths, function names, commands, or test names. If the raw idea does not name one, do not write one.
-- When the location is unknown, WHERE must be exactly \`Explore first: <area of the product in the user's own words>\`.
+- GOAL is one sentence of at most 40 words stating what is built or changed. No background, no rationale.
+- SCOPE names at least two concrete items. A single vague noun phrase is not enough; when the raw idea gives only one, add a \`[TODO: ...]\` question asking the user what else belongs in scope.
+- Never invent file paths, function names, commands, test names, or technologies. If the raw idea does not name one, do not write one.
 - When the check is unknown, DONE WHEN must be exactly \`Propose a check first: <intended outcome>\`.
 - Otherwise DONE WHEN must contain a runnable command in backticks together with its expected result. Never state only a vague outcome such as "works", "works well", "no errors", or "looks good".
 - Omit an optional section entirely instead of leaving it empty.
@@ -363,16 +368,48 @@ Verification guidance:
 - Name the focused checks that demonstrate the requested behavior.
 - Report only results supported by executed evidence.
 
-Example of a brief whose location and check are both unknown:
+Example 1 — greenfield. Raw idea: "buatkan website dokter umum pakai React dan Next.js"
 
 ## GOAL
-Show a clear warning when a generated prompt is incomplete.
+Build a general practitioner clinic website.
 
-## WHERE
-Explore first: the screen that displays the optimized prompt result.
+## CONTEXT
+New project: [TODO: target directory]
+
+## SCOPE
+Home, services, doctor profile, opening hours, location, contact.
+[TODO: appointment booking, or contact details only?]
+
+## STACK
+React with Next.js (App Router), TypeScript.
+
+## OUT OF SCOPE
+No patient data storage, no authentication, no medical records.
 
 ## DONE WHEN
-Propose a check first: an incomplete result visibly shows a warning; a complete result shows none.`
+\`pnpm dev\` runs and every page listed in SCOPE renders without console errors.
+
+Example 2 — brownfield. Raw idea: "the optimizer returns truncated prompts as successful results; fix it in lib/optimizer/engine.ts and lib/llm/types.ts, TypeScript with Vitest, follow the length-recovery logic in optimizePrompt"
+
+## GOAL
+Stop the optimizer from returning truncated prompts as successful results.
+
+## CONTEXT
+@lib/optimizer/engine.ts
+@lib/llm/types.ts
+
+## SCOPE
+A streamed result ending mid-list is accepted as complete.
+Expected: the truncation is detected and either continued or flagged.
+
+## STACK
+TypeScript, Vitest. Follow the length-recovery logic in \`optimizePrompt\`.
+
+## OUT OF SCOPE
+lib/transform/**, desktop/preload.ts
+
+## DONE WHEN
+\`pnpm run test\` passes, including a new test that feeds the truncated fixture and expects a truncation flag.`
 }
 
 export function buildCodingBriefUserPrompt(params: { rawIdea: string }): string {

@@ -234,6 +234,40 @@ describe('console transcript command language', () => {
     )
   })
 
+  it('prints a thin brief (V11) as a warn line with the two missing answers, never as ok', async () => {
+    type('brief x')
+
+    await expectDesktopCommand('optimize:run')
+
+    const handleDone = onStream.mock.calls.find(([channel]) => channel === 'optimize:done')?.[1] as
+      | ((payload: unknown) => void)
+      | undefined
+    const sentRequestId = (
+      invoke.mock.calls.find(
+        ([channel, payload]) =>
+          channel === 'desktop:command' &&
+          (payload as { command?: string }).command === 'optimize:run'
+      )?.[1] as { payload: { requestId: string } }
+    ).payload.requestId
+
+    handleDone?.({
+      requestId: sentRequestId,
+      response: {
+        superPrompt: { fullPrompt: '## GOAL\nMake the application faster.' },
+        metadata: {
+          outputKind: 'CODING_BRIEF',
+          quality: { complete: false, degraded: false, thin: true, attempts: 1 },
+        },
+      },
+    })
+
+    const qualityLine = document.querySelector<HTMLElement>('#display .line.quality-line')
+    expect(qualityLine?.textContent).toBe('thin brief — add where to work and how to check it')
+    expect(qualityLine?.classList.contains('status-warn')).toBe(true)
+    expect(qualityLine?.classList.contains('quality-ok')).toBe(false)
+    expect(qualityLine?.classList.contains('quality-degraded')).toBe(false)
+  })
+
   it('closes a streamed optimize run with the result and its action line', async () => {
     type('brief x')
 
@@ -276,7 +310,7 @@ describe('console transcript command language', () => {
       '## GOAL',
       'Fix the parser in lib/optimizer/engine.ts and desktop/preload.ts.',
       '',
-      '## WHERE',
+      '## CONTEXT',
       '`lib/optimizer/engine.ts`',
       'lib/transform/**',
       'See https://example.com/docs/guide.md and README.md.',
@@ -297,7 +331,7 @@ describe('console transcript command language', () => {
     expect(line.textContent).toBe(`# Transformed Prompt\n\n${body}`)
     const runs = (tone: string) =>
       Array.from(line.querySelectorAll(`.seg-${tone}`)).map((span) => span.textContent)
-    expect(runs('heading')).toEqual(['# Transformed Prompt', '## GOAL', '## WHERE', '## DONE WHEN'])
+    expect(runs('heading')).toEqual(['# Transformed Prompt', '## GOAL', '## CONTEXT', '## DONE WHEN'])
     expect(runs('dir')).toEqual(['lib/optimizer/', 'desktop/', 'lib/optimizer/', 'lib/transform/'])
     expect(runs('file')).toEqual(['engine.ts', 'preload.ts', 'engine.ts', '**', 'README.md'])
     // A backticked path keeps the path colours; a backticked command is green; URLs stay plain.
@@ -645,6 +679,8 @@ describe('console startup block state variants', () => {
       recentRuns: [
         run({}),
         run({ quality: { complete: false, degraded: true } }),
+        // A thin brief (V11) is valid but never complete: it needs a check.
+        run({ quality: { complete: false, degraded: false, thin: true } }),
         run({ createdAt: yesterday }),
         run({ outputKind: 'SUPER_PROMPT' }),
         run({ quality: undefined }),
@@ -652,7 +688,7 @@ describe('console startup block state variants', () => {
       ],
     })
 
-    expect(findLine('2 briefs today \u00b7 1 complete \u00b7 1 needs check')).toBeTruthy()
+    expect(findLine('3 briefs today \u00b7 1 complete \u00b7 2 needs check')).toBeTruthy()
   })
 
   it('omits the counts row when the workspace store cannot be read', async () => {

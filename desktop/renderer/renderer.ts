@@ -56,7 +56,7 @@ interface DesktopRecentRunRecord {
   sourceMode: 'transform' | 'optimize' | 'evaluate'
   createdAt?: string
   outputKind?: DesktopOutputKind
-  quality?: { complete: boolean; degraded: boolean }
+  quality?: { complete: boolean; degraded: boolean; thin?: boolean }
 }
 
 interface BriefCounts {
@@ -608,7 +608,8 @@ function countTodaysBriefs(recentRuns: DesktopRecentRunRecord[], now = new Date(
     const createdAt = new Date(record.createdAt)
     if (Number.isNaN(createdAt.getTime()) || createdAt.toDateString() !== today) continue
     counts.total += 1
-    if (record.quality.degraded) {
+    // A thin brief is valid but never complete (§6 C7): the user still owes two answers.
+    if (record.quality.degraded || record.quality.thin) {
       counts.needsCheck += 1
     } else if (record.quality.complete) {
       counts.complete += 1
@@ -675,7 +676,13 @@ function readRunOutcome(response: unknown): Pick<DesktopRecentRunRecord, 'output
       ? { outputKind: metadata.outputKind }
       : {}),
     ...(quality && typeof quality.complete === 'boolean' && typeof quality.degraded === 'boolean'
-      ? { quality: { complete: quality.complete, degraded: quality.degraded } }
+      ? {
+          quality: {
+            complete: quality.complete,
+            degraded: quality.degraded,
+            ...(quality.thin === true && { thin: true }),
+          },
+        }
       : {}),
   }
 }
@@ -2315,6 +2322,11 @@ function formatQualityLine(quality: unknown, sectionCount?: number): string | nu
     return `${strings.qualityNeedsReview} · ${reason} · ${attemptsText}`
   }
 
+  // V11: valid but thin. A warning naming the two missing answers, never an ok line.
+  if (quality.thin === true) {
+    return strings.qualityThin
+  }
+
   const sectionsText = typeof sectionCount === 'number' ? strings.sectionsCount(sectionCount) : null
   return [strings.qualityOk, sectionsText, attemptsText].filter(Boolean).join(' · ')
 }
@@ -2368,7 +2380,18 @@ function isMetaFlagLine(line: string): boolean {
 }
 
 function isQualityLine(line: string): boolean {
-  return line.startsWith(`${strings.qualityOk} · `) || line.startsWith(`${strings.qualityNeedsReview} · `)
+  return (
+    line.startsWith(`${strings.qualityOk} · `) ||
+    line.startsWith(`${strings.qualityNeedsReview} · `) ||
+    line === strings.qualityThin
+  )
+}
+
+/** Status class of a quality line: ok (green), thin (warn prefix), or degraded (red). */
+function qualityLineClass(text: string): string {
+  if (text.startsWith(`${strings.qualityOk} · `)) return 'quality-ok'
+  if (text === strings.qualityThin) return 'status-warn'
+  return 'quality-degraded'
 }
 
 function isTrailingResultLine(line: string): boolean {
@@ -2403,7 +2426,7 @@ function appendTrailingResultLines(afterLine: HTMLElement, trailing: string[]) {
   for (const text of trailing) {
     const line = document.createElement('div')
     if (isQualityLine(text)) {
-      line.className = `line type-sys quality-line ${text.startsWith(`${strings.qualityOk} · `) ? 'quality-ok' : 'quality-degraded'}`
+      line.className = `line type-sys quality-line ${qualityLineClass(text)}`
     } else {
       line.className = 'line type-sys meta-line'
     }

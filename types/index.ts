@@ -166,9 +166,9 @@ export type SuperPrompt = z.infer<typeof SuperPromptSchema>
 // the documented source of truth for prompt quality (it re-exports this schema).
 export const CodingBriefSchema = z.object({
   goal: z.string(),
-  where: z.string(),
-  scenario: z.string().optional(),
-  followPattern: z.string().optional(),
+  context: z.string(),
+  scope: z.string(),
+  stack: z.string().optional(),
   outOfScope: z.string().optional(),
   doneWhen: z.string(),
   report: z.string(),
@@ -179,6 +179,9 @@ export const OptimizeQualitySchema = z.object({
   complete: z.boolean(),
   degraded: z.boolean(),
   reason: z.enum(['parse_failed', 'invalid_brief']).optional(),
+  // Coding Brief V11: valid, but CONTEXT and DONE WHEN both defer to the user. Never
+  // presented as complete (C7).
+  thin: z.boolean().optional(),
   attempts: z.number().int().min(1),
 })
 export type OptimizeQuality = z.infer<typeof OptimizeQualitySchema>
@@ -331,6 +334,7 @@ export const DesktopRecentRunInputSchema = z.object({
     .object({
       complete: z.boolean(),
       degraded: z.boolean(),
+      thin: z.boolean().optional(),
     })
     .optional(),
 })

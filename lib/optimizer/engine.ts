@@ -134,8 +134,9 @@ async function runCodingBriefRoute(
   }
   attempts += 1
 
+  const validationOptions = { rawRequest: request.rawIdea }
   let markdown = applyCanonicalReport(raw)
-  let validation = validateCodingBrief(markdown)
+  let validation = validateCodingBrief(markdown, validationOptions)
 
   if (!validation.valid) {
     options?.onRepair?.()
@@ -150,7 +151,14 @@ async function runCodingBriefRoute(
     }
     raw = repairResponse.content
     markdown = applyCanonicalReport(raw)
-    validation = validateCodingBrief(markdown)
+    validation = validateCodingBrief(markdown, validationOptions)
+  }
+
+  if (validation.deprecated.length > 0) {
+    logger.warn(
+      { route: 'codingBrief', provider: request.provider, model, deprecated: validation.deprecated },
+      'coding brief uses deprecated v1.0 headings'
+    )
   }
 
   if (!validation.valid) {
@@ -161,9 +169,12 @@ async function runCodingBriefRoute(
   }
 
   // Two distinct failure reasons: 'parse_failed' when the (final) model output carries
-  // no brief section at all; 'invalid_brief' when it parsed but still fails V1–V9.
+  // no brief section at all; 'invalid_brief' when it parsed but still fails V1–V10.
+  // A thin brief (V11) is valid but never complete (C7).
   const quality: OptimizeQuality = validation.valid
-    ? { complete: true, degraded: false, attempts }
+    ? validation.thin
+      ? { complete: false, degraded: false, thin: true, attempts }
+      : { complete: true, degraded: false, attempts }
     : {
         complete: false,
         degraded: true,

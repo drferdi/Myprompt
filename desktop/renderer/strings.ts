@@ -249,6 +249,12 @@ export function compareReadyLine(rawInput: string): string {
 /** Verdict words that open a quality line; the renderer keys its parser on these. */
 export const qualityOk = 'ok'
 export const qualityNeedsReview = 'needs review'
+/**
+ * A thin brief (V11, docs/CODING_BRIEF_STANDARD.md §9.3): valid, but CONTEXT and DONE WHEN
+ * both defer to the user. Printed as a warn line, never as ok; the `warn` prefix comes from
+ * the status-warn style, so it is not part of this text.
+ */
+export const qualityThin = 'thin brief — add where to work and how to check it'
 
 export function sectionsCount(count: number): string {
   return `${count} sections`

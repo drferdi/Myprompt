@@ -25,16 +25,60 @@ const codingRequest: OptimizeRequest = {
   optimizerLane: 'INTERACTIVE',
 }
 
+// v2.0 headings. CONTEXT names a path so the brief is complete, not thin (V11).
 const VALID_BRIEF = [
   '## GOAL',
   'Show a clear warning when a generated prompt is incomplete.',
   '',
-  '## WHERE',
-  'Explore first: the screen that displays the optimized prompt result.',
+  '## CONTEXT',
+  'desktop/renderer/renderer.ts',
+  '',
+  '## SCOPE',
+  'An incomplete result is printed with no warning.',
+  'Expected: an incomplete result shows a warning; a complete result shows none.',
   '',
   '## DONE WHEN',
   'Propose a check first: an incomplete result visibly shows a warning; a complete result shows none.',
 ].join('\n')
+
+/** docs/CODING_BRIEF_STANDARD.md §9.3: valid, but both fallbacks fired. */
+const THIN_BRIEF = [
+  '## GOAL',
+  'Make the application faster.',
+  '',
+  '## CONTEXT',
+  'Explore first: the application, area not yet specified.',
+  '',
+  '## SCOPE',
+  '[TODO: which screens or operations feel slow?]',
+  '',
+  '## DONE WHEN',
+  'Propose a check first: the slow operation completes noticeably faster.',
+].join('\n')
+
+const STACK_REQUEST: OptimizeRequest = {
+  ...codingRequest,
+  rawIdea: 'buatkan website dokter umum pakai React dan Next.js',
+}
+
+const GREENFIELD_BRIEF_WITHOUT_STACK = [
+  '## GOAL',
+  'Build a general practitioner clinic website.',
+  '',
+  '## CONTEXT',
+  'New project: [TODO: target directory]',
+  '',
+  '## SCOPE',
+  'Home, services, doctor profile, opening hours, location, contact.',
+  '',
+  '## DONE WHEN',
+  '`pnpm dev` runs and every page listed in SCOPE renders without console errors.',
+].join('\n')
+
+const GREENFIELD_BRIEF = GREENFIELD_BRIEF_WITHOUT_STACK.replace(
+  '\n## DONE WHEN',
+  '\n## STACK\nReact with Next.js (App Router), TypeScript.\n\n## DONE WHEN'
+)
 
 const WRONG_REPORT_TEXT = '- Trust the agent and skip the evidence.'
 
@@ -44,8 +88,12 @@ const VAGUE_BRIEF = [
   '## GOAL',
   'Show a clear warning when a generated prompt is incomplete.',
   '',
-  '## WHERE',
+  '## CONTEXT',
   'Explore first: the screen that displays the optimized prompt result.',
+  '',
+  '## SCOPE',
+  'An incomplete result is printed with no warning.',
+  'Expected: an incomplete result shows a warning; a complete result shows none.',
   '',
   '## DONE WHEN',
   'Login works well.',
@@ -258,6 +306,79 @@ describe('coding brief generation', () => {
       complete: true,
       degraded: false,
       attempts: 1,
+    })
+  })
+
+  describe('V10 named technologies on the CODING_BRIEF route', () => {
+    it('repairs a brief that drops the stack the raw request named, quoting V10', async () => {
+      const provider = makeFakeProvider({
+        generateResults: [GREENFIELD_BRIEF_WITHOUT_STACK, GREENFIELD_BRIEF],
+      })
+      vi.mocked(getProvider).mockReturnValue(provider as never)
+
+      const response = await optimizePrompt(STACK_REQUEST)
+
+      expect(provider.generate).toHaveBeenCalledTimes(2)
+      expect(provider.generateRequests[1].userPrompt).toContain(
+        'V10: STACK is missing technology named in the request: React, Next.js'
+      )
+      expect(response.metadata.quality).toEqual({
+        complete: true,
+        degraded: false,
+        attempts: 2,
+      })
+      expect(response.codingBrief?.stack).toBe('React with Next.js (App Router), TypeScript.')
+    })
+
+    it('accepts a brief whose STACK carries every named technology on the first attempt', async () => {
+      const provider = makeFakeProvider({ generateResults: [GREENFIELD_BRIEF] })
+      vi.mocked(getProvider).mockReturnValue(provider as never)
+
+      const response = await optimizePrompt(STACK_REQUEST)
+
+      expect(provider.generate).toHaveBeenCalledTimes(1)
+      expect(response.metadata.quality).toEqual({
+        complete: true,
+        degraded: false,
+        attempts: 1,
+      })
+    })
+
+    it('teaches the greenfield and brownfield examples in the system prompt', () => {
+      const systemPrompt = buildCodingBriefSystemPrompt()
+
+      for (const heading of ['## GOAL', '## CONTEXT', '## SCOPE', '## STACK', '## OUT OF SCOPE', '## DONE WHEN']) {
+        expect(systemPrompt).toContain(heading)
+      }
+      for (const old of ['## WHERE', '## SCENARIO', '## FOLLOW PATTERN', '## REPORT']) {
+        expect(systemPrompt).not.toContain(old)
+      }
+      expect(systemPrompt).toContain('New project: [TODO: target directory]')
+      expect(systemPrompt).toContain('React with Next.js (App Router), TypeScript.')
+      expect(systemPrompt).toContain('@lib/optimizer/engine.ts')
+      expect(systemPrompt).toContain('TypeScript, Vitest. Follow the length-recovery logic in `optimizePrompt`.')
+    })
+  })
+
+  describe('V11 thin brief on the CODING_BRIEF route', () => {
+    it('a thin brief is valid, carries the brief, and is never complete', async () => {
+      const provider = makeFakeProvider({ generateResults: [THIN_BRIEF] })
+      vi.mocked(getProvider).mockReturnValue(provider as never)
+
+      const response = await optimizePrompt(codingRequest)
+
+      expect(provider.generate).toHaveBeenCalledTimes(1)
+      expect(response.metadata.quality).toEqual({
+        complete: false,
+        degraded: false,
+        thin: true,
+        attempts: 1,
+      })
+      expect(response.codingBrief?.context).toBe(
+        'Explore first: the application, area not yet specified.'
+      )
+      expect(response.superPrompt.fullPrompt).toContain(CODING_BRIEF_REPORT_TEXT)
+      expect(OptimizeResponseSchema.parse(response)).toBeTruthy()
     })
   })
 
