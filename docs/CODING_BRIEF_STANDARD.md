@@ -80,7 +80,7 @@ is invalid.
 | V2 | No present section is empty. |
 | V3 | `GOAL` is a single sentence of at most 40 words. |
 | V4 | `CONTEXT` contains a path-like token, **or** begins with `New project:`, **or** begins with `Explore first:`. |
-| V5 | `SCOPE` names at least two concrete items (pages, capabilities, or an observed/expected pair). A single vague noun phrase fails. |
+| V5 | `SCOPE` names at least two concrete items (pages, capabilities, or an observed/expected pair). A single vague noun phrase fails. Exempt when any line of `SCOPE` begins with `[TODO:`: the placeholder is the Optimizer admitting it lacks information, and failing it would teach the model to invent a second item. |
 | V6 | `DONE WHEN` contains at least one backticked command or test identifier, **or** begins with `Propose a check first:`. |
 | V7 | `DONE WHEN` is not made only of vague outcome phrases ("works", "works well", "no errors", "looks good", "berjalan dengan baik", "tidak error", "sesuai harapan"). |
 | V8 | `REPORT` matches the canonical text in §7 exactly. |

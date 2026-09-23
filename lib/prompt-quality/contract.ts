@@ -81,8 +81,16 @@ const REQUIRED_HEADINGS: CodingBriefHeading[] = ['GOAL', 'CONTEXT', 'SCOPE', 'DO
 const EXPLORE_FIRST = 'Explore first:'
 const NEW_PROJECT = 'New project:'
 const PROPOSE_CHECK_FIRST = 'Propose a check first:'
-/** A SCOPE that is only a question to the user (§9.3); V5 defers and V11 warns instead. */
+/**
+ * A `[TODO: …]` line in SCOPE is the engine admitting it lacks information (§9.1, §9.3).
+ * V5 does not fire on such a SCOPE: failing it would teach the model to invent a second
+ * item instead of asking.
+ */
 const TODO_PLACEHOLDER = '[TODO:'
+
+function hasTodoLine(body: string): boolean {
+  return body.split('\n').some((line) => line.trim().startsWith(TODO_PLACEHOLDER))
+}
 
 /** Outcome phrases that carry no runnable evidence (§5 V7). */
 const VAGUE_PHRASES = [
@@ -216,9 +224,9 @@ export function validateCodingBrief(
     }
   }
 
-  // V5 — SCOPE names at least two concrete items. A SCOPE that is only a `[TODO: …]`
-  // question defers to the user (§9.3) and is left to V11.
-  if (scope !== '' && !scope.startsWith(TODO_PLACEHOLDER)) {
+  // V5 — SCOPE names at least two concrete items, unless any line is a `[TODO: …]`
+  // question to the user: the placeholder already marks what is missing.
+  if (scope !== '' && !hasTodoLine(scope)) {
     const items = countScopeItems(scope)
     if (items < 2) {
       issues.push(`V5: SCOPE must name at least two concrete items (found ${items})`)

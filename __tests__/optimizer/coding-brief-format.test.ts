@@ -371,6 +371,26 @@ ${REPORT_SECTION}`)
     expect(result.valid).toBe(true)
   })
 
+  it('V5: accepts a single item followed by a [TODO: question on a later line', () => {
+    const result = validateCodingBrief(`## GOAL
+Build a login page.
+
+## CONTEXT
+New project: apps/portal
+
+## SCOPE
+Halaman login.
+[TODO: what else belongs in scope?]
+
+## DONE WHEN
+\`pnpm dev\` runs and the login page renders.
+
+${REPORT_SECTION}`)
+
+    expect(result.issues).toEqual([])
+    expect(result.valid).toBe(true)
+  })
+
   it('V5: accepts a SCOPE that is only a [TODO: question and leaves it to V11', () => {
     const result = validateCodingBrief(`## GOAL
 Make the application faster.
