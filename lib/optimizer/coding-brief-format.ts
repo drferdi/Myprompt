@@ -20,8 +20,9 @@ export const CODING_BRIEF_HEADINGS = [
 export type CodingBriefHeading = (typeof CODING_BRIEF_HEADINGS)[number]
 
 /**
- * v1.0 headings, accepted for one release and mapped to their v2.0 heading ("What
- * changed in v2.0"). A mapped section takes the v2.0 position for the order check.
+ * v1.0 headings, still accepted and mapped to their current heading (introduced by
+ * standard v2.0; v3.0 no longer documents them). A mapped section takes the current
+ * heading's position for the order check.
  */
 export const DEPRECATED_HEADINGS: Readonly<Record<string, CodingBriefHeading>> = {
   WHERE: 'CONTEXT',

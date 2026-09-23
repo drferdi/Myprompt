@@ -183,7 +183,7 @@ export function validateCodingBrief(
   }
 
   // V1 — required headings, no duplicates, no unknown headings, §4 order. A mapped
-  // v1.0 heading counts as its v2.0 heading here, so WHERE beside CONTEXT is a duplicate.
+  // v1.0 heading counts as its current heading here, so WHERE beside CONTEXT is a duplicate.
   const structural: string[] = []
   const seen = new Set<CodingBriefHeading>()
   const duplicates: CodingBriefHeading[] = []
