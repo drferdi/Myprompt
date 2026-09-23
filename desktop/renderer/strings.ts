@@ -268,6 +268,35 @@ export function attemptsCount(count: number): string {
   return `${count} ${count === 1 ? 'attempt' : 'attempts'}`
 }
 
+// ── Clarification round (docs/CODING_BRIEF_STANDARD.md §6 P5) ─────────────────
+// Questions come after a delivered brief and only refine it. While a question is pending,
+// every typed line is its answer; Enter alone keeps the proposal; `skip` ends the round.
+
+export const clarificationSkipWord = 'skip'
+
+export function clarificationHeading(index: number, total: number, line: string): string {
+  return `question ${index} of ${total}  ${line}`
+}
+
+/** The hint under each question, by the element the line comes from. */
+export const clarificationHints = {
+  ASSUMPTION: 'Correct? Type the right value, or press Enter to keep it.',
+  CONTEXT: 'Where should the agent work? Type a folder, file or screen, or press Enter to let it explore.',
+  DONE_WHEN: 'How will you check it is done? Type the check, or press Enter to leave it to the agent.',
+  SCOPE: 'Type the answer, or press Enter to leave it open.',
+} as const
+
+export const clarificationSkipHint = 'Type skip to keep the brief as it is.'
+
+export const clarificationKept = 'kept as proposed'
+
+export const clarificationSkipped = '[STATE] questions skipped — the brief above is unchanged'
+
+export const clarificationNoAnswers = '[STATE] no answers — the brief above is unchanged'
+
+export const clarificationRefineFailed =
+  '[WARN] the refined brief failed validation — the brief above is unchanged'
+
 // ── Provider keys ─────────────────────────────────────────────────────────────
 
 export function providerKeySaved(provider: string): string {

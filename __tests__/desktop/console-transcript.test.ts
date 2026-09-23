@@ -348,6 +348,172 @@ describe('console transcript command language', () => {
     expect(document.querySelector('#display .line[data-request-status-id]')).toBeNull()
   })
 
+  describe('clarification round (Coding Brief §6 P5, D1–D4)', () => {
+    const RAW_IDEA = 'buatkan portal pasien'
+    const DELIVERED_TEXT = [
+      '## GOAL',
+      'Build a patient portal.',
+      '',
+      '## ASSUMPTIONS',
+      '- Directory ./patient-portal.',
+      '- Next.js with TypeScript.',
+      'Change any line above and run again.',
+    ].join('\n')
+    const QUESTIONS = [
+      { element: 'ASSUMPTION', question: 'Directory ./patient-portal.' },
+      { element: 'ASSUMPTION', question: 'Next.js with TypeScript.' },
+    ]
+    const delivered = (clarifications: unknown[] | undefined = QUESTIONS) => ({
+      superPrompt: { fullPrompt: DELIVERED_TEXT },
+      ...(clarifications && { clarifications }),
+      metadata: {
+        outputKind: 'CODING_BRIEF',
+        quality: { complete: true, degraded: false, attempts: 1 },
+      },
+    })
+
+    function optimizeRuns() {
+      return invoke.mock.calls
+        .filter(
+          ([channel, payload]) =>
+            channel === 'desktop:command' &&
+            (payload as { command?: string }).command === 'optimize:run'
+        )
+        .map(([, payload]) => (payload as { payload: Record<string, unknown> }).payload)
+    }
+
+    /** Deliver `response` to optimize run number `index` (0-based) once it was sent. */
+    async function finishOptimizeRun(index: number, response: unknown) {
+      await vi.waitFor(() => expect(optimizeRuns()).toHaveLength(index + 1))
+      const requestId = optimizeRuns()[index].requestId
+      for (const [channel, handler] of onStream.mock.calls) {
+        if (channel === 'optimize:done') {
+          ;(handler as (payload: unknown) => void)({ requestId, response })
+        }
+      }
+    }
+
+    async function deliverBriefWithQuestions() {
+      type(`brief ${RAW_IDEA}`)
+      await finishOptimizeRun(0, delivered())
+      await vi.waitFor(() => expect(findLine('question 1 of 2')).toBeTruthy())
+    }
+
+    it('asks about the first ASSUMPTIONS line after a delivered brief (D1)', async () => {
+      await deliverBriefWithQuestions()
+
+      expect(findLine('question 1 of 2')?.textContent).toBe(
+        'question 1 of 2  Directory ./patient-portal.'
+      )
+      expect(findLine('Correct? Type the right value, or press Enter to keep it.')).toBeTruthy()
+      expect(findLine('question 2 of 2')).toBeUndefined()
+    })
+
+    it('prints no question after a brief that has none, and the next line is a new idea', async () => {
+      type(`brief ${RAW_IDEA}`)
+      await finishOptimizeRun(0, delivered(undefined))
+      await vi.waitFor(() => expect(findLine('complete · 2 sections · 1 attempt')).toBeTruthy())
+
+      type('halo')
+
+      await vi.waitFor(() => expect(optimizeRuns()).toHaveLength(2))
+      expect(findLine('question 1 of')).toBeUndefined()
+      expect(optimizeRuns()[1]).toMatchObject({ rawIdea: 'halo' })
+      expect(optimizeRuns()[1].refinement).toBeUndefined()
+    })
+
+    it('skip ends the round without a provider call; the next line is a new idea', async () => {
+      await deliverBriefWithQuestions()
+
+      type('skip')
+
+      await vi.waitFor(() => expect(findLine('questions skipped')).toBeTruthy())
+      expect(optimizeRuns()).toHaveLength(1)
+
+      type('halo')
+
+      await vi.waitFor(() => expect(optimizeRuns()).toHaveLength(2))
+      expect(optimizeRuns()[1]).toMatchObject({ rawIdea: 'halo' })
+      expect(optimizeRuns()[1].refinement).toBeUndefined()
+    })
+
+    it('Enter on every question keeps each proposal and makes no provider call', async () => {
+      await deliverBriefWithQuestions()
+
+      type('')
+      await vi.waitFor(() => expect(findLine('question 2 of 2')).toBeTruthy())
+      type('')
+
+      await vi.waitFor(() => expect(findLine('no answers')).toBeTruthy())
+      expect(optimizeRuns()).toHaveLength(1)
+    })
+
+    it('sends one refinement with the delivered brief and every answer verbatim (D2, D4)', async () => {
+      await deliverBriefWithQuestions()
+
+      type('./portal')
+      await vi.waitFor(() => expect(findLine('question 2 of 2')).toBeTruthy())
+      // D2: while a question is pending, a command word is an answer too.
+      type('help')
+
+      await vi.waitFor(() => expect(optimizeRuns()).toHaveLength(2))
+      expect(optimizeRuns()[1]).toMatchObject({
+        rawIdea: RAW_IDEA,
+        outputKind: 'CODING_BRIEF',
+        refinement: {
+          previousBrief: DELIVERED_TEXT,
+          clarifications: [
+            { element: 'ASSUMPTION', question: 'Directory ./patient-portal.', answer: './portal' },
+            { element: 'ASSUMPTION', question: 'Next.js with TypeScript.', answer: 'help' },
+          ],
+        },
+      })
+      expect(findLine('/evaluate')).toBeUndefined()
+    })
+
+    it('records Enter as a kept proposal (answer null) beside a typed answer', async () => {
+      await deliverBriefWithQuestions()
+
+      type('')
+      await vi.waitFor(() => expect(findLine('question 2 of 2')).toBeTruthy())
+      type('Vue dengan TypeScript')
+
+      await vi.waitFor(() => expect(optimizeRuns()).toHaveLength(2))
+      expect(optimizeRuns()[1].refinement).toMatchObject({
+        clarifications: [
+          { question: 'Directory ./patient-portal.', answer: null },
+          { question: 'Next.js with TypeScript.', answer: 'Vue dengan TypeScript' },
+        ],
+      })
+      expect(findLine('kept as proposed')).toBeTruthy()
+    })
+
+    it('keeps the delivered brief and warns when the refinement fails validation (D3)', async () => {
+      await deliverBriefWithQuestions()
+      type('./portal')
+      await vi.waitFor(() => expect(findLine('question 2 of 2')).toBeTruthy())
+      type('')
+
+      await finishOptimizeRun(1, {
+        superPrompt: { fullPrompt: 'FAILED REFINEMENT BODY' },
+        metadata: {
+          outputKind: 'CODING_BRIEF',
+          quality: { complete: false, degraded: true, reason: 'invalid_brief', attempts: 2 },
+        },
+      })
+
+      await vi.waitFor(() => expect(findLine('the refined brief failed validation')).toBeTruthy())
+      expect(findLine('the refined brief failed validation')?.classList.contains('status-warn')).toBe(true)
+      expect(findLine('FAILED REFINEMENT BODY')).toBeUndefined()
+
+      type('copy')
+
+      await vi.waitFor(() => expect(writeText).toHaveBeenCalled())
+      expect(writeText.mock.calls.at(-1)?.[0]).toContain('Directory ./patient-portal.')
+      expect(writeText.mock.calls.at(-1)?.[0]).not.toContain('FAILED REFINEMENT BODY')
+    })
+  })
+
   it('colours headings, paths and backticked commands in a result body without changing its text', async () => {
     const body = [
       '## GOAL',

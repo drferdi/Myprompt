@@ -287,6 +287,33 @@ let lastRunRecord: DesktopRunRecord | null = null
 let shellStateLoaded = false
 let briefCounts: BriefCounts | null = null
 let lastCopyText = ''
+
+// Clarification round (docs/CODING_BRIEF_STANDARD.md §6 P5). The main process derives the
+// questions and sends them with a delivered brief; this module cannot import lib/.
+type ClarificationElement = keyof typeof strings.clarificationHints
+
+interface ClarificationItem {
+  element: ClarificationElement
+  question: string
+}
+
+interface CodingBriefRefinementPayload {
+  previousBrief: string
+  clarifications: Array<ClarificationItem & { answer: string | null }>
+}
+
+interface ClarificationRound {
+  rawIdea: string
+  previousBrief: string
+  items: ClarificationItem[]
+  /** One entry per answered question: the typed text, or null for "keep" (Enter). */
+  answers: Array<string | null>
+}
+
+/** Set by a delivered brief; its first question prints once that run's command block closes. */
+let offeredClarificationRound: ClarificationRound | null = null
+/** While set, every typed line answers the current question (D2). */
+let pendingClarificationRound: ClarificationRound | null = null
 const activeOptimizeLines = new Map<string, HTMLElement>()
 const activeOptimizeStatusLines = new Map<string, HTMLElement>()
 let optimizerLaneStates: Partial<
@@ -808,7 +835,8 @@ function buildTransformInvocation(value: string): DesktopInvocation {
 function buildOptimizeInvocation(
   value: string,
   outputKind: DesktopOutputKind,
-  requestId?: string
+  requestId?: string,
+  refinement?: CodingBriefRefinementPayload
 ): DesktopInvocation {
   const suggestion = suggestOptimizerConfig(value)
   const provider = requireActiveDesktopProvider()
@@ -827,6 +855,7 @@ function buildOptimizeInvocation(
         optimizerLane: currentOptimizerLane,
         outputKind,
         requestId,
+        ...(refinement && { refinement }),
       },
     },
   }
@@ -1196,6 +1225,12 @@ function buildResultActions(copyText: string, runRecord?: DesktopRunRecord): Con
     handler: () => {
       if (!input || isExecuting) {
         return
+      }
+
+      // A clicked rerun is not a typed answer (D2): it ends a pending round first.
+      if (pendingClarificationRound && display) {
+        pendingClarificationRound = null
+        appendConsoleLine(display, 'sys', strings.clarificationSkipped)
       }
 
       currentProvider = runRecord.targetLlm
@@ -1866,7 +1901,8 @@ async function executeOptimizeStream(
   requestId: string,
   container: HTMLElement,
   rawInput: string,
-  headerMetaLine: HTMLElement | null = null
+  headerMetaLine: HTMLElement | null = null,
+  isRefinement = false
 ) {
   const streamLine = ensureOptimizeStreamLine(container, requestId)
   const statusLine = ensureOptimizeStatusLine(container, requestId)
@@ -2023,6 +2059,18 @@ async function executeOptimizeStream(
       }
 
       clearScramble()
+
+      // D3: a refinement still invalid after its repair replaces nothing. The delivered
+      // brief above stays the result (copy, rerun and the recent-run store keep it).
+      if (isRefinement && isDegradedResponse(payload.response)) {
+        streamLine.remove()
+        removeOptimizeStreamArtifacts(requestId, { removeStatusLine: true })
+        appendConsoleLine(container, 'sys', strings.clarificationRefineFailed)
+        cleanup()
+        resolve()
+        return
+      }
+
       const formattedText = formatDesktopResult(payload.response)
       const { body, trailing } = splitTrailingResultLines(formattedText)
       renderBodyRuns(streamLine, body)
@@ -2059,6 +2107,10 @@ async function executeOptimizeStream(
       removeOptimizeStreamArtifacts(requestId, {
         removeStatusLine: true,
       })
+      // One round only (P5): the main process sends no questions with a refinement.
+      if (!isRefinement) {
+        offeredClarificationRound = readClarificationRound(rawInput, payload.response)
+      }
       cleanup()
       resolve()
     }
@@ -2888,7 +2940,8 @@ async function runPromptCommand(
   container: HTMLElement,
   mode: DesktopPrimaryModeId,
   outputKind: DesktopOutputKind,
-  rawValue: string
+  rawValue: string,
+  refinement?: CodingBriefRefinementPayload
 ) {
   if (!rawValue) {
     appendConsoleLine(container, 'sys', strings.missingIdeaText)
@@ -2939,10 +2992,17 @@ async function runPromptCommand(
   try {
     if (mode === 'optimize') {
       const requestId = crypto.randomUUID()
-      const invocation = buildOptimizeInvocation(rawValue, outputKind, requestId)
+      const invocation = buildOptimizeInvocation(rawValue, outputKind, requestId, refinement)
 
       if (isOptimizeInvocation(invocation)) {
-        await executeOptimizeStream(invocation, requestId, container, rawValue, headerMetaLine)
+        await executeOptimizeStream(
+          invocation,
+          requestId,
+          container,
+          rawValue,
+          headerMetaLine,
+          refinement !== undefined
+        )
       }
     } else {
       const invocation = buildTransformInvocation(rawValue)
@@ -3110,23 +3170,123 @@ async function runConsoleInput(container: HTMLElement, value: string) {
   }
 }
 
+function isDegradedResponse(response: unknown): boolean {
+  if (!isObjectRecord(response) || !isObjectRecord(response.metadata)) {
+    return false
+  }
+  const quality = response.metadata.quality
+  return isObjectRecord(quality) && quality.degraded === true
+}
+
+/** The questions a delivered brief offers, or null when it offers none. */
+function readClarificationRound(rawIdea: string, response: unknown): ClarificationRound | null {
+  if (
+    !isObjectRecord(response) ||
+    !Array.isArray(response.clarifications) ||
+    !isObjectRecord(response.superPrompt) ||
+    typeof response.superPrompt.fullPrompt !== 'string'
+  ) {
+    return null
+  }
+
+  const items = response.clarifications
+    .filter(
+      (item): item is ClarificationItem =>
+        isObjectRecord(item) &&
+        typeof item.question === 'string' &&
+        item.question !== '' &&
+        typeof item.element === 'string' &&
+        Object.prototype.hasOwnProperty.call(strings.clarificationHints, item.element)
+    )
+    .slice(0, 3)
+
+  return items.length > 0
+    ? { rawIdea, previousBrief: response.superPrompt.fullPrompt, items, answers: [] }
+    : null
+}
+
+/** D1: the line itself, then how to answer it. */
+function printClarificationQuestion(container: HTMLElement, round: ClarificationRound) {
+  const index = round.answers.length
+  const item = round.items[index]
+  appendConsoleLine(
+    container,
+    'sys',
+    strings.clarificationHeading(index + 1, round.items.length, item.question)
+  )
+  appendConsoleLine(container, 'sys', strings.clarificationHints[item.element])
+  if (index === 0) {
+    appendConsoleLine(container, 'sys', strings.clarificationSkipHint)
+  }
+}
+
+/**
+ * D2: the typed line answers the current question. Enter alone keeps the proposal; `skip`
+ * ends the round. Once every question is answered, one refinement runs unless every
+ * answer kept its proposal — then nothing would change, so no provider call is made.
+ */
+async function answerClarification(container: HTMLElement, round: ClarificationRound, value: string) {
+  if (value.toLowerCase() === strings.clarificationSkipWord) {
+    pendingClarificationRound = null
+    appendConsoleLine(container, 'sys', strings.clarificationSkipped)
+    return
+  }
+
+  round.answers.push(value === '' ? null : value)
+  if (value === '') {
+    appendConsoleLine(container, 'sys', strings.clarificationKept)
+  }
+
+  if (round.answers.length < round.items.length) {
+    printClarificationQuestion(container, round)
+    return
+  }
+
+  pendingClarificationRound = null
+  if (round.answers.every((answer) => answer === null)) {
+    appendConsoleLine(container, 'sys', strings.clarificationNoAnswers)
+    return
+  }
+
+  await runPromptCommand(container, 'optimize', 'CODING_BRIEF', round.rawIdea, {
+    previousBrief: round.previousBrief,
+    clarifications: round.items.map((item, index) => ({ ...item, answer: round.answers[index] })),
+  })
+}
+
 async function execute() {
   if (!input || !display || isExecuting) {
     return
   }
 
   const value = input.value.trim()
-  if (!value) {
+  const round = pendingClarificationRound
+  // Enter on an empty line is an answer ("keep") only while a question is pending.
+  if (!value && !round) {
     return
   }
 
-  appendConsoleLine(display, 'user', value)
+  if (value) {
+    appendConsoleLine(display, 'user', value)
+  }
   input.value = ''
 
   try {
-    await runConsoleInput(display, value)
+    if (round) {
+      await answerClarification(display, round, value)
+    } else {
+      await runConsoleInput(display, value)
+    }
   } finally {
     appendBlankLine(display)
+    // A brief delivered by this command offers its questions after the command block.
+    const offered = offeredClarificationRound
+    if (offered) {
+      offeredClarificationRound = null
+      pendingClarificationRound = offered
+      printClarificationQuestion(display, offered)
+      appendBlankLine(display)
+    }
     input.focus()
   }
 }

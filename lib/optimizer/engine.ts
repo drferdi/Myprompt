@@ -12,6 +12,7 @@ import {
 } from '@/lib/llm/prompt-builder'
 import { getProvider, getScopedProviderOverrides } from '@/lib/llm/provider-registry'
 import { logger } from '@/lib/logger'
+import { deriveClarificationQuestions } from '@/lib/prompt-quality/clarification'
 import { validateCodingBrief } from '@/lib/prompt-quality/contract'
 import { getTemplateBySlug } from '@/lib/templates/loader'
 import { matchTemplateWithEmbeddings } from '@/lib/templates/matcher'
@@ -106,7 +107,10 @@ async function runCodingBriefRoute(
 ): Promise<OptimizeResponse> {
   const optimizerLane = resolveOptimizerLane(request)
   const systemPrompt = buildCodingBriefSystemPrompt()
-  const userPrompt = buildCodingBriefUserPrompt({ rawIdea: request.rawIdea })
+  const userPrompt = buildCodingBriefUserPrompt({
+    rawIdea: request.rawIdea,
+    refinement: request.refinement,
+  })
 
   const providerOverrides = getScopedProviderOverrides(request.provider, 'OPTIMIZER', optimizerLane)
   const provider = getProvider(
@@ -134,7 +138,11 @@ async function runCodingBriefRoute(
   }
   attempts += 1
 
-  const validationOptions = { rawRequest: request.rawIdea }
+  // An answer is something the user stated (P1), so V10 and V14 read it like the raw idea.
+  const answers = (request.refinement?.clarifications ?? []).flatMap((item) =>
+    item.answer !== null && item.answer.trim() !== '' ? [item.answer] : []
+  )
+  const validationOptions = { rawRequest: [request.rawIdea, ...answers].join('\n') }
   let markdown = applyCanonicalReport(raw)
   let validation = validateCodingBrief(markdown, validationOptions)
 
@@ -192,9 +200,14 @@ async function runCodingBriefRoute(
     fullPrompt: markdown,
   }
 
+  // One round only (P5): a refinement offers no further questions.
+  const clarifications =
+    validation.brief && !request.refinement ? deriveClarificationQuestions(validation.brief) : []
+
   return {
     superPrompt,
     ...(validation.brief && { codingBrief: validation.brief }),
+    ...(clarifications.length > 0 && { clarifications }),
     metadata: {
       provider: request.provider,
       model,

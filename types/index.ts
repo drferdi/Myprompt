@@ -63,6 +63,31 @@ export const TemplateCategorySchema = z.enum([
 ])
 export type TemplateCategory = z.infer<typeof TemplateCategorySchema>
 
+// ── Coding Brief clarification (docs/CODING_BRIEF_STANDARD.md §6 P5) ──────
+
+export const ClarificationElementSchema = z.enum(['CONTEXT', 'DONE_WHEN', 'SCOPE', 'ASSUMPTION'])
+export type ClarificationElement = z.infer<typeof ClarificationElementSchema>
+
+/** A question about one line of a delivered brief: `question` is that line's text. */
+export const ClarificationItemSchema = z.object({
+  element: ClarificationElementSchema,
+  question: z.string().min(1).max(500),
+})
+export type ClarificationItem = z.infer<typeof ClarificationItemSchema>
+
+/**
+ * One refinement round. `previousBrief` is renderer text, the same trust class as `rawIdea`
+ * and bounded like it. `answer` is null when the user kept the proposal ("I don't know").
+ */
+export const CodingBriefRefinementSchema = z.object({
+  previousBrief: z.string().min(1).max(10_000),
+  clarifications: z
+    .array(ClarificationItemSchema.extend({ answer: z.string().max(2_000).nullable() }))
+    .min(1)
+    .max(3),
+})
+export type CodingBriefRefinement = z.infer<typeof CodingBriefRefinementSchema>
+
 // ── Request Schemas ──────────────────────────────────────────────────────
 
 export const OptimizeRequestSchema = z.object({
@@ -77,6 +102,8 @@ export const OptimizeRequestSchema = z.object({
   outputKind: OutputKindSchema.optional(),
   templateSlug: z.string().optional(),
   apiKey: z.string().optional(),
+  // Coding Brief only: edit the delivered brief with the user's answers (P5).
+  refinement: CodingBriefRefinementSchema.optional(),
 })
 export type OptimizeRequest = z.infer<typeof OptimizeRequestSchema>
 
@@ -191,6 +218,8 @@ export type OptimizeQuality = z.infer<typeof OptimizeQualitySchema>
 export const OptimizeResponseSchema = z.object({
   superPrompt: SuperPromptSchema,
   codingBrief: CodingBriefSchema.optional(),
+  // Questions offered after a valid Coding Brief; absent after a refinement (one round).
+  clarifications: z.array(ClarificationItemSchema).max(3).optional(),
   metadata: z.object({
     provider: LLMProviderNameSchema,
     model: z.string(),

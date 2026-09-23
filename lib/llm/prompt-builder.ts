@@ -1,5 +1,12 @@
 // Drferdi Transformer Engine V2 — Prompt Builder
-import type { TaskType, PromptTone, OutputFormat, LLMProviderName, OptimizeLane } from '@/types'
+import type {
+  CodingBriefRefinement,
+  TaskType,
+  PromptTone,
+  OutputFormat,
+  LLMProviderName,
+  OptimizeLane,
+} from '@/types'
 
 interface OptimizePromptParams {
   rawIdea: string
@@ -365,6 +372,7 @@ Rules:
 - When the request is ambiguous between two ordinary readings, pick one, build the brief on it, and name the other in ASSUMPTIONS.
 - No code fences, no preamble, no trailing commentary. Begin directly with \`## GOAL\`.
 - Do not assign a persona or role, and do not prescribe implementation steps.
+- When the message carries a PREVIOUS BRIEF and ANSWERS FROM THE USER, return that brief refined: change only what an answer covers, carry each answer verbatim, remove each answered item from ASSUMPTIONS, and keep every other line unchanged.
 
 Acceptance criteria guidance:
 - Satisfy the requested behavior without unrelated changes.
@@ -426,10 +434,30 @@ lib/transform/**, desktop/preload.ts
 truncation flag.`
 }
 
-export function buildCodingBriefUserPrompt(params: { rawIdea: string }): string {
-  return `RAW IDEA: "${params.rawIdea}"
+export function buildCodingBriefUserPrompt(params: {
+  rawIdea: string
+  refinement?: CodingBriefRefinement
+}): string {
+  const { rawIdea, refinement } = params
+  if (!refinement) {
+    return `RAW IDEA: "${rawIdea}"
 
 Return the Coding Brief now.`
+  }
+
+  // "I don't know" (null) keeps the proposal, so only answered items are sent.
+  const answered = refinement.clarifications.filter(
+    (item) => item.answer !== null && item.answer.trim() !== ''
+  )
+  return `RAW IDEA: "${rawIdea}"
+
+PREVIOUS BRIEF:
+${refinement.previousBrief}
+
+ANSWERS FROM THE USER:
+${answered.map((item) => `- ${item.question}\n  Answer: "${item.answer}"`).join('\n')}
+
+Return the refined Coding Brief now.`
 }
 
 /**
