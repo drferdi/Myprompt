@@ -491,6 +491,97 @@ describe('console transcript command language', () => {
       expect(findLine('kept as proposed')).toBeTruthy()
     })
 
+    const REFINED_TEXT = ['## GOAL', 'Build a patient portal.', '', '## CONTEXT', 'New project: ./portal'].join('\n')
+    const refined = {
+      superPrompt: { fullPrompt: REFINED_TEXT },
+      metadata: {
+        outputKind: 'CODING_BRIEF',
+        provider: 'OPENAI',
+        quality: { complete: true, degraded: false, attempts: 1 },
+      },
+    }
+
+    function lastRerunButton() {
+      return Array.from(document.querySelectorAll<HTMLButtonElement>('#display button'))
+        .filter((button) => button.textContent === '[r] rerun')
+        .at(-1)
+    }
+
+    async function refineWithOneAnswer() {
+      await deliverBriefWithQuestions()
+      type('./portal')
+      await vi.waitFor(() => expect(findLine('question 2 of 2')).toBeTruthy())
+      type('')
+      await finishOptimizeRun(1, refined)
+      await vi.waitFor(() => expect(findLine('New project: ./portal')).toBeTruthy())
+      await vi.waitFor(() =>
+        expect((document.getElementById('cmdInput') as HTMLInputElement).disabled).toBe(false)
+      )
+    }
+
+    it('[r] rerun on a refined brief sends the same refinement again, answers included', async () => {
+      await refineWithOneAnswer()
+
+      lastRerunButton()?.click()
+
+      await vi.waitFor(() => expect(optimizeRuns()).toHaveLength(3))
+      expect(optimizeRuns()[2]).toMatchObject({ rawIdea: RAW_IDEA, outputKind: 'CODING_BRIEF' })
+      expect(optimizeRuns()[2].refinement).toEqual(optimizeRuns()[1].refinement)
+      expect(optimizeRuns()[2].refinement).toMatchObject({
+        clarifications: [{ answer: './portal' }, { answer: null }],
+      })
+      expect(findLine('rerun with 1 answer from the clarification round')).toBeTruthy()
+    })
+
+    it('stores a refined run with its refinement', async () => {
+      await refineWithOneAnswer()
+
+      await vi.waitFor(() =>
+        expect(invoke).toHaveBeenCalledWith(
+          'workspace:recent:append',
+          expect.objectContaining({
+            rawInput: RAW_IDEA,
+            refinement: optimizeRuns()[1].refinement,
+          })
+        )
+      )
+    })
+
+    it('rerun of a stored refined run from log carries its refinement', async () => {
+      const refinement = {
+        previousBrief: DELIVERED_TEXT,
+        clarifications: [
+          { element: 'ASSUMPTION', question: 'Directory ./patient-portal.', answer: './portal' },
+        ],
+      }
+      invoke.mockImplementation(async (_channel: string, payload: unknown) =>
+        (payload as { command?: string })?.command === 'recent:list'
+          ? {
+              recentRuns: [
+                {
+                  id: 'run-refined',
+                  sourceMode: 'optimize',
+                  rawInput: RAW_IDEA,
+                  outputText: REFINED_TEXT,
+                  outputKind: 'CODING_BRIEF',
+                  refinement,
+                },
+              ],
+            }
+          : {}
+      )
+
+      type('log')
+      await vi.waitFor(() => expect(findLine('run-refined')).toBeTruthy())
+      await vi.waitFor(() =>
+        expect((document.getElementById('cmdInput') as HTMLInputElement).disabled).toBe(false)
+      )
+      lastRerunButton()?.click()
+
+      await vi.waitFor(() => expect(optimizeRuns()).toHaveLength(1))
+      expect(optimizeRuns()[0]).toMatchObject({ rawIdea: RAW_IDEA, refinement })
+    })
+
     it('keeps the delivered brief and warns when the refinement fails validation (D3)', async () => {
       await deliverBriefWithQuestions()
       type('./portal')

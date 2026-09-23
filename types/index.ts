@@ -368,6 +368,8 @@ export const DesktopRecentRunInputSchema = z.object({
       thin: z.boolean().optional(),
     })
     .optional(),
+  // A refined Coding Brief keeps its refinement, so a rerun sends the same answers again.
+  refinement: CodingBriefRefinementSchema.optional(),
 })
 export type DesktopRecentRunInput = z.infer<typeof DesktopRecentRunInputSchema>
 

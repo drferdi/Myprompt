@@ -295,6 +295,10 @@ export const clarificationSkipped = 'questions skipped — the brief above is un
 
 export const clarificationNoAnswers = 'no answers — the brief above is unchanged'
 
+export function rerunWithAnswers(count: number): string {
+  return `rerun with ${count} ${count === 1 ? 'answer' : 'answers'} from the clarification round`
+}
+
 export const clarificationRefineFailed =
   '[WARN] the refined brief failed validation — the brief above is unchanged'
 

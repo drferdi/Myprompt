@@ -47,6 +47,8 @@ interface DesktopRunRecord {
   format: string
   targetLlm: DesktopLLMProvider
   optimizerLane?: DesktopOptimizeLane
+  /** Set on a refined Coding Brief: a rerun sends it again, answers included. */
+  refinement?: CodingBriefRefinementPayload
 }
 
 interface DesktopRecentRunRecord {
@@ -57,6 +59,7 @@ interface DesktopRecentRunRecord {
   createdAt?: string
   outputKind?: DesktopOutputKind
   quality?: { complete: boolean; degraded: boolean; thin?: boolean }
+  refinement?: CodingBriefRefinementPayload
 }
 
 interface BriefCounts {
@@ -691,6 +694,7 @@ async function appendRecentRunToWorkspace(record: DesktopRecentRunRecord) {
     outputText: record.outputText,
     ...(record.outputKind && { outputKind: record.outputKind }),
     ...(record.quality && { quality: record.quality }),
+    ...(record.refinement && { refinement: record.refinement }),
   })
 }
 
@@ -727,6 +731,12 @@ function buildRerunCommand(sourceMode: DesktopRunSourceMode, rawInput: string) {
 
 async function rerunRecentRecord(record: DesktopRecentRunRecord) {
   if (!input || isExecuting) {
+    return
+  }
+
+  endPendingClarificationRound()
+  if (record.sourceMode === 'optimize' && isRefinementPayload(record.refinement)) {
+    await rerunRefinedBrief(record.rawInput, record.refinement)
     return
   }
 
@@ -1228,14 +1238,16 @@ function buildResultActions(copyText: string, runRecord?: DesktopRunRecord): Con
       }
 
       // A clicked rerun is not a typed answer (D2): it ends a pending round first.
-      if (pendingClarificationRound && display) {
-        pendingClarificationRound = null
-        appendConsoleLine(display, 'sys', strings.clarificationSkipped)
-      }
+      endPendingClarificationRound()
 
       currentProvider = runRecord.targetLlm
       if (runRecord.sourceMode === 'optimize' && runRecord.optimizerLane) {
         updateOptimizerLane(runRecord.optimizerLane)
+      }
+
+      if (runRecord.refinement) {
+        void rerunRefinedBrief(runRecord.rawInput, runRecord.refinement)
+        return
       }
 
       input.value = buildRerunCommand(runRecord.sourceMode, runRecord.rawInput)
@@ -1902,8 +1914,9 @@ async function executeOptimizeStream(
   container: HTMLElement,
   rawInput: string,
   headerMetaLine: HTMLElement | null = null,
-  isRefinement = false
+  refinement?: CodingBriefRefinementPayload
 ) {
+  const isRefinement = refinement !== undefined
   const streamLine = ensureOptimizeStreamLine(container, requestId)
   const statusLine = ensureOptimizeStatusLine(container, requestId)
   const onStream = desktopWindow.sentraDesktop?.onStream
@@ -2088,7 +2101,8 @@ async function executeOptimizeStream(
         headerMetaLine ? verdictRows : trailing
       )
       lastCopyText = formattedText
-      const runRecord = buildRunRecord('optimize', rawInput, payload.response, requestId)
+      const builtRecord = buildRunRecord('optimize', rawInput, payload.response, requestId)
+      const runRecord = builtRecord && refinement ? { ...builtRecord, refinement } : builtRecord
       if (runRecord) {
         lastRunRecord = runRecord
       }
@@ -2103,6 +2117,7 @@ async function executeOptimizeStream(
           rawInput: runRecord.rawInput,
           outputText: runRecord.outputText,
           ...readRunOutcome(payload.response),
+          ...(runRecord.refinement && { refinement: runRecord.refinement }),
         })
       }
       removeOptimizeStreamArtifacts(requestId, {
@@ -3002,7 +3017,7 @@ async function runPromptCommand(
           container,
           rawValue,
           headerMetaLine,
-          refinement !== undefined
+          refinement
         )
       }
     } else {
@@ -3204,6 +3219,47 @@ function readClarificationRound(rawIdea: string, response: unknown): Clarificati
   return items.length > 0
     ? { rawIdea, previousBrief: response.superPrompt.fullPrompt, items, answers: [] }
     : null
+}
+
+/** A clicked rerun is not a typed answer (D2): it ends a pending round first. */
+function endPendingClarificationRound() {
+  if (pendingClarificationRound && display) {
+    pendingClarificationRound = null
+    appendConsoleLine(display, 'sys', strings.clarificationSkipped)
+  }
+}
+
+/** Shape check for a stored refinement; main validates it again with Zod before use. */
+function isRefinementPayload(value: unknown): value is CodingBriefRefinementPayload {
+  return (
+    isObjectRecord(value) &&
+    typeof value.previousBrief === 'string' &&
+    Array.isArray(value.clarifications) &&
+    value.clarifications.length > 0
+  )
+}
+
+/**
+ * Rerun a refined brief with the same previous brief and answers. Rebuilding it from the
+ * raw idea alone would silently drop the answers.
+ */
+async function rerunRefinedBrief(rawInput: string, refinement: CodingBriefRefinementPayload) {
+  if (!display || isExecuting) {
+    return
+  }
+
+  appendConsoleLine(display, 'user', `brief ${rawInput}`)
+  appendConsoleLine(
+    display,
+    'sys',
+    strings.rerunWithAnswers(refinement.clarifications.filter((item) => item.answer !== null).length)
+  )
+  try {
+    await runPromptCommand(display, 'optimize', 'CODING_BRIEF', rawInput, refinement)
+  } finally {
+    appendBlankLine(display)
+    input?.focus()
+  }
 }
 
 /** D1: the line itself, then how to answer it. */

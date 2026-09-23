@@ -8,7 +8,7 @@ vi.mock('@/lib/llm/provider-registry', () => ({
 import { getProvider } from '@/lib/llm/provider-registry'
 import { buildCodingBriefSystemPrompt } from '@/lib/llm/prompt-builder'
 import { optimizePrompt } from '@/lib/optimizer/engine'
-import { OptimizeRequestSchema, OptimizeResponseSchema } from '@/types'
+import { DesktopRecentRunInputSchema, OptimizeRequestSchema, OptimizeResponseSchema } from '@/types'
 import type { LLMRequest, OptimizeRequest } from '@/types'
 
 // docs/CODING_BRIEF_STANDARD.md §6 P5: one clarification round refines a delivered brief.
@@ -213,6 +213,30 @@ describe('Coding Brief clarification round', () => {
 
     expect(systemPrompt).toContain('PREVIOUS BRIEF')
     expect(systemPrompt).toContain('remove each answered item from ASSUMPTIONS')
+  })
+})
+
+describe('DesktopRecentRunInputSchema refinement', () => {
+  const record = {
+    id: 'run-1',
+    sourceMode: 'optimize' as const,
+    rawInput: RAW_IDEA,
+    outputText: 'refined brief',
+    outputKind: 'CODING_BRIEF' as const,
+  }
+  const refinement = { previousBrief: DELIVERED, clarifications: ANSWERS }
+
+  it('keeps the refinement of a refined run, so a rerun can carry its answers', () => {
+    expect(DesktopRecentRunInputSchema.parse({ ...record, refinement }).refinement).toEqual(refinement)
+  })
+
+  it('applies the request bounds to a stored refinement', () => {
+    expect(
+      DesktopRecentRunInputSchema.safeParse({
+        ...record,
+        refinement: { ...refinement, previousBrief: 'x'.repeat(10_001) },
+      }).success
+    ).toBe(false)
   })
 })
 
