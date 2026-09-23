@@ -63,7 +63,7 @@ Eight sections, in this order, with these exact headings.
 | 1 | `## GOAL` | Yes | One sentence: what is built or changed. |
 | 2 | `## CONTEXT` | Yes | What exists. Greenfield: `New project:` plus a proposed directory. Brownfield: real paths, or `Explore first:` plus the area in the user's words. |
 | 3 | `## SCOPE` | Yes | Greenfield: the pages or capabilities to build, proposed in full. Brownfield: trigger, observed behaviour, expected behaviour. |
-| 4 | `## STACK` | Yes | Languages, frameworks and conventions. Whatever the user named is carried verbatim; the rest is proposed. |
+| 4 | `## STACK` | Yes | Languages, frameworks and conventions. Whatever the user named is carried verbatim; the rest is proposed. In brownfield work where the user named no technology, `Explore first: the stack the repository already uses.` is allowed instead, because the existing stack is existing code (§2). |
 | 5 | `## OUT OF SCOPE` | Yes | What must not be built or changed. Proposed when the user said nothing. |
 | 6 | `## DONE WHEN` | Yes | A runnable check and its expected result, in the user's own terms. |
 | 7 | `## ASSUMPTIONS` | Yes when any element was proposed rather than stated | One line per proposal, plus a closing line telling the user to change any line and re-run. |

@@ -127,6 +127,16 @@ describe('Coding Brief v3.0 — rules', () => {
     expect(result.issues).toEqual([])
   })
 
+  it('§4 STACK: a brownfield brief may defer STACK to the repository', () => {
+    const result = validateCodingBrief(
+      brownfield({ stack: 'Explore first: the stack the repository already uses.' }),
+      { rawRequest: 'rename the truncation flag export' }
+    )
+
+    expect(result.issues).toEqual([])
+    expect(result.brief?.stack).toBe('Explore first: the stack the repository already uses.')
+  })
+
   it('V13: flags an unresolved [TODO: in a greenfield brief and names the elements', () => {
     const result = validateCodingBrief(
       brownfield({
