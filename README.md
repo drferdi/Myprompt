@@ -1,4 +1,10 @@
 <!--
+  Insert as a new section 19, after "18 — What MyPrompt isn't" and before "Let's connect".
+  Do NOT replace section 13: its benchmark table holds measured speed/size data.
+  Match the heading badge markup to the raw form used by sections 01–18.
+-->
+
+<!--
 MyPrompt — Comprehensive Repository README
 Repository: drferdi/Myprompt
 Package: sentra-prompt
@@ -21,7 +27,9 @@ and applicable SAFRS controls remain authoritative when documentation disagrees.
 
 <div align="center">
 
-<img src="https://i.ibb.co.com/4Z447tNw/myprompt2.png" alt="MyPrompt" width="260" />
+<p align="center">
+  <img src="https://i.ibb.co.com/svJSWVkb/My-Prompt-png.png" alt="MyPrompt Hero Banner" width="100%" />
+</p>
 
 ### Turn a half-baked idea into a brief your AI can actually run with.
 
@@ -599,38 +607,73 @@ terminal reference and fails on any mismatch.
 > These counts are a dated snapshot. The test count will change as the project
 > grows.
 
-Benchmarks measure speed and size, while quality belongs to the Evaluator and
-the validator.
+## 14 — How MyPrompt compares ![Compare](https://img.shields.io/badge/COMPARE-5B8CFF?style=flat-square&labelColor=0D1117)
 
-| Lane | Max first visible | Max total | Output length |
-| --- | ---: | ---: | --- |
-| INTERACTIVE | 5,000 ms | 12,000 ms | 240–2,400 characters |
-| DEEP | 15,000 ms | 45,000 ms | at least 320 characters |
+MyPrompt sits at one specific point in the prompt engineering toolchain: before a
+model generates the first line of code. The tools below often come up in the same
+conversation, but most of them solve a different problem. Read this as a
+positioning map, not a ranking.
 
-The harness records `firstVisibleMs`, `totalLatencyMs`, `promptChars`, and
-`hasVisibleOutput`, and failures are classed as `visible-output`,
-`first-visible`, `total-latency`, `prompt-too-short`, or `prompt-too-long`. In
-the 23 September live run through an OpenAI-compatible route, every output was
-a Coding Brief that passed on the first attempt without a repair call.
+| Dimension | MyPrompt | DSPy / TextGrad | Promptfoo | Langfuse / Arize | PromptBase / template libraries |
+| --- | --- | --- | --- | --- | --- |
+| Primary category | Authoring workspace: raw idea → validated brief | Programmatic optimization of prompts and model weights | Pre-deployment testing, evals, and red teaming | Production observability and tracing | Template library and marketplace |
+| Primary user | Solo architects, AI engineers, and developers briefing coding agents | ML researchers and advanced LLM developers | Developers, QA, and security engineers | Platform and operations teams | Non-technical users and content creators |
+| Interface | Terminal-style Electron desktop console | Python library | CLI plus a local web viewer | Web dashboard, managed cloud or self-hosted | Web marketplace |
+| Input → output | Raw idea → Coding Brief, Super Prompt, or deterministic scaffold | Program + metric + training inputs → optimized prompts and/or fine-tuned weights | Prompts + test cases + assertions → pass/fail matrix | Application traces → latency, cost, and quality telemetry | Search → reusable prompt template |
+| Setup overhead | Low: install and add one provider key (Transform needs none) | Medium to high: define a program, a metric, and training examples | Medium: YAML configuration and assertions | High for self-hosted Langfuse (Postgres, ClickHouse, Redis, object storage); lower on the managed cloud | Low: copy and paste |
+| Core strength | A complete, validator-checked brief on the first pass; questions only to refine | Systematic, metric-driven optimization | Regression detection and red teaming in CI | Cost, latency, and trace visibility in production | A wide range of ready-made general templates |
+| Limitation | No dataset-driven or statistical evaluation suite yet | Heavy for ad-hoc, day-to-day tasks | Tests prompts you already have; authoring is not its focus | Not an authoring tool | Generic templates, not tied to a codebase or validated against a contract |
 
-| Gate | Command | Purpose |
+### Where MyPrompt is different
+
+**Validator-backed structure instead of optimization loops.** Rather than improving
+a prompt through many model calls, MyPrompt fixes the structure up front. Every
+Coding Brief uses the same eight headings (GOAL, CONTEXT, SCOPE, STACK, OUT OF
+SCOPE, DONE WHEN, ASSUMPTIONS, REPORT) and is checked by validator rules V1–V14.
+Generation is capped at two provider calls: one draft and, only if it fails
+validation, one repair.
+
+**One window, no context switching.** The whole interface is a single
+terminal-style transcript with no forms and no menus. Type an idea, get a
+validated artifact, and copy it straight into your coding agent.
+
+**Built for coding and architecture briefs.** MyPrompt is not a generic generator
+for SEO articles or marketing email. It is designed to give a coding assistant the
+context, scope, stack, and runnable done criteria it needs, so the assistant has
+less room to ignore the system's architecture or invent code that doesn't fit.
+
+### Proposed evaluation metrics (not yet measured)
+
+The metrics below define how MyPrompt's effect on coding agents could be measured.
+They are hypotheses to test, not results. No comparative benchmark has been run
+yet, so no figures should be quoted until one has. The harness in
+[section 13](#13--tested-in-a-real-window-) measures speed and output size only.
+
+| Metric | What it measures | Hypothesis to test |
 | --- | --- | --- |
-| Unit / contract | `pnpm test` | Vitest suite |
-| Desktop subset | `pnpm test:desktop` | Desktop-focused Vitest |
-| Lint | `pnpm lint` | ESLint |
-| Typecheck | `pnpm typecheck` | Prisma generation + strict TypeScript check |
-| Build | `pnpm build` | Electron desktop build |
-| E2E | `pnpm test:e2e` | Playwright Electron |
-| Structure | `pnpm verify:structure` | Capsule boundary |
-| Extraction | `pnpm verify:extraction` | Fresh-copy standalone proof |
-| Deploy dry run | `pnpm deploy:dry-run` | Non-production deployment check |
-| Full suite | `pnpm verify` | Repository verification contract |
+| First-run pass rate | Share of tasks whose unit tests pass on the agent's first attempt | Structured briefs raise the first-run pass rate over unstructured prompts, especially on edge cases |
+| Hallucinated APIs | Imports or methods that do not exist or are deprecated | An explicit STACK and SCOPE reduce invented or deprecated APIs |
+| Debugging loops | Fix-and-retry rounds and total tokens needed to reach a passing result | Fewer debugging rounds outweigh the cost of generating the brief |
+| Architectural adherence | Whether output respects stated boundaries and separation of concerns | OUT OF SCOPE and CONTEXT keep changes inside the intended structure |
+
+A fair run uses the same tasks, the same model, and the same settings for both
+arms, an unstructured prompt versus a MyPrompt brief, and repeats each task enough
+times to show variance.
+
+MyPrompt doesn't compete with Langfuse, which watches production traffic, or with
+Promptfoo, which tests prompts you already have. It works earlier, as the
+**authoring gateway**: the tool on the developer's desk before a model writes the
+first line of code.
+
+> [!NOTE]
+> Descriptions of third-party tools reflect their public documentation as of
+> September 2026 and may change.
 
 ---
 
 <a id="standalone"></a>
 
-## 14 — Built to stand on its own <img src="https://img.shields.io/badge/SAFRS-F59E0B?style=flat-square&labelColor=0D1117" alt="SAFRS" />
+## 15 — Built to stand on its own <img src="https://img.shields.io/badge/SAFRS-F59E0B?style=flat-square&labelColor=0D1117" alt="SAFRS" />
 
 MyPrompt is a standalone SAFRS capsule under R2 review. It can be developed
 inside a monorepo, but it has to install, lint, typecheck, test, build, run,
@@ -665,7 +708,7 @@ reaching the wrong remote without explicit operator authorization.
 
 <a id="development"></a>
 
-## 15 — Development commands <img src="https://img.shields.io/badge/DEVELOPMENT-5B8CFF?style=flat-square&labelColor=0D1117" alt="Development" />
+## 16 — Development commands <img src="https://img.shields.io/badge/DEVELOPMENT-5B8CFF?style=flat-square&labelColor=0D1117" alt="Development" />
 
 ```bash
 # Run
@@ -759,7 +802,7 @@ SENTRA_DESKTOP_PROVIDER
 
 <a id="contributing"></a>
 
-## 16 — Contributor map <img src="https://img.shields.io/badge/CONTRIBUTOR-22D3EE?style=flat-square&labelColor=0D1117" alt="Contributor" />
+## 17 — Contributor map <img src="https://img.shields.io/badge/CONTRIBUTOR-22D3EE?style=flat-square&labelColor=0D1117" alt="Contributor" />
 
 If you're changing prompt behavior, start with the contract and check both
 `docs/CODING_BRIEF_STANDARD.md` and `lib/prompt-quality/contract.ts` before
@@ -807,7 +850,7 @@ surface and is not part of the current standalone capsule tree.
 
 <a id="known-gaps"></a>
 
-## 17 — Still on the to-do list <img src="https://img.shields.io/badge/KNOWN%20GAPS-F43F5E?style=flat-square&labelColor=0D1117" alt="Known Gaps" />
+## 18 — Still on the to-do list <img src="https://img.shields.io/badge/KNOWN%20GAPS-F43F5E?style=flat-square&labelColor=0D1117" alt="Known Gaps" />
 
 We'd rather tell you up front. These are backlog items, not features.
 
@@ -828,7 +871,7 @@ We'd rather tell you up front. These are backlog items, not features.
 
 <a id="non-goals"></a>
 
-## 18 — What MyPrompt isn't <img src="https://img.shields.io/badge/NON--GOALS-64748B?style=flat-square&labelColor=0D1117" alt="Non Goals" />
+## 19 — What MyPrompt isn't <img src="https://img.shields.io/badge/NON--GOALS-64748B?style=flat-square&labelColor=0D1117" alt="Non Goals" />
 
 MyPrompt isn't a web SaaS, a generic chat client, an autonomous coding agent, a
 replacement for repository governance, a hidden-key proxy, a benchmark
