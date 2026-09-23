@@ -20,7 +20,7 @@
 -->
 
 <div align="center">
-
+  
 <img src="https://i.ibb.co.com/4Z447tNw/myprompt2.png" alt="MyPrompt" width="260" />
 
 ### Raw idea → verified Coding Brief, Super Prompt, or deterministic model scaffold.
@@ -1887,20 +1887,24 @@ Account features use the database only when needed.
 The project remains capable of standing on its own outside the monorepo.
 ```
 
-That's MyPrompt.
-
+## - Lets Connect
+<p align="center">
+  <a href="https://discord.gg/1511829076313374745"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord" /></a>
+  <a href="https://linkedin.com/in/dr-ferdi-iskandar-1b620a3b5"><img src="https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn" /></a>
+  <a href="https://medium.com/@ferdiiskandarse"><img src="https://img.shields.io/badge/Medium-111111?style=for-the-badge&logo=medium&logoColor=white" alt="Medium" /></a>
+  <a href="https://quora.com/profile/drferdiiskadar@gmail.com"><img src="https://img.shields.io/badge/Quora-B92B27?style=for-the-badge&logo=quora&logoColor=white" alt="Quora" /></a>
+  <a href="https://reddit.com/user/SixCupaCoffee"><img src="https://img.shields.io/badge/Reddit-FF4500?style=for-the-badge&logo=reddit&logoColor=white" alt="Reddit" /></a>
+  <a href="https://tiktok.com/@drferdii"><img src="https://img.shields.io/badge/TikTok-000000?style=for-the-badge&logo=tiktok&logoColor=white" alt="TikTok" /></a>
+  <a href="https://x.com/ClaudesyI81047"><img src="https://img.shields.io/badge/X-000000?style=for-the-badge&logo=x&logoColor=white" alt="X" /></a>
+  <a href="mailto:drferdiiskandar@sentrahai.com"><img src="https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white" alt="Email" /></a>
 ---
 
 <div align="center">
-
 <br />
-
 <img src="https://i.ibb.co.com/4Z447tNw/myprompt2.png" alt="MyPrompt" width="64" />
 
 ### Built by Sentra Artificial Intelligence
-
 **Prompt Engineering · Multi-LLM Optimization · AI-Native Tooling**
-
 <br />
 
 [Sentra Artificial Intelligence](https://sentrahai.com)
@@ -1918,9 +1922,7 @@ MyPrompt · <code>sentra-prompt</code> · v0.1.0
 </sub>
 
 <br /><br />
-
 <sub><code>TYPE AN IDEA · GET A STRUCTURE · VERIFY THE CONTRACT</code></sub>
-
 <br /><br />
 
 <img src="https://img.shields.io/badge/IDEA-22D3EE?style=flat-square&labelColor=0D1117" alt="Idea" />
