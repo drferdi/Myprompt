@@ -342,11 +342,12 @@ describe('console transcript command language', () => {
       expect(line).toBeTruthy()
       return line as HTMLElement
     })
-    const [firstRow, secondRow] = (modeLine.textContent ?? '').split('\n')
+    // Two pairs per row: the window is 84 columns, so a third column would not fit.
+    const [firstRow, secondRow, thirdRow] = (modeLine.textContent ?? '').split('\n')
     expect(firstRow.indexOf('lane=')).toBe(38)
-    expect(firstRow.indexOf('profile=')).toBe(76)
-    expect(secondRow.indexOf('effort=')).toBe(0)
-    expect(secondRow.indexOf('output=')).toBe(38)
+    expect(secondRow.indexOf('profile=')).toBe(0)
+    expect(secondRow.indexOf('effort=')).toBe(38)
+    expect(thirdRow.indexOf('output=')).toBe(0)
 
     type('help')
     const helpLine = await vi.waitFor(() => {

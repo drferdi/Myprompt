@@ -28,6 +28,7 @@ describe('Sentra console visual contract', () => {
       /\.line\.status-ok,\s*\.line\.status-warn,\s*\.line\.status-error\s*\{[\s\S]*?padding-left:\s*var\(--console-prefix\);[\s\S]*?text-indent:\s*calc\(-1 \* var\(--console-prefix\)\)/
     )
     expect(rendererCss).toMatch(/\.prompt-line\s*\{[\s\S]*?padding-left:\s*var\(--console-margin\)/)
+    expect(rendererCss).toMatch(/\.title\s*\{[\s\S]*?position:\s*relative;[\s\S]*?top:\s*1px/)
     expect(rendererCss).not.toMatch(/font-size:\s*1[0-2]px/)
   })
 

@@ -63,7 +63,8 @@
   .dot-close { background: #ff5f57; }
   .dot-min   { background: #febc2e; }
   .dot-zoom  { background: #28c840; }
-  .title { font-size: 13px; line-height: 1.2; color: var(--term-dim); }
+  /* Title text sits one pixel lower for optical centring (Chief, 2026-09-23). */
+  .title { position: relative; top: 1px; font-size: 13px; line-height: 1.2; color: var(--term-dim); }
 
   .transcript {
     flex: 1 1 auto;

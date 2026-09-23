@@ -2257,11 +2257,11 @@ function tryParseStructuredDesktopResult(value: string): unknown {
 
 /**
  * Screen columns (0-based, from the window edge) where label/value pairs sit: content
- * starts at column 2 (two-space margin), the second pair at column 40, the third at 78,
- * as in reference-console-startup.html. A line holds three pairs; more pairs continue on
- * the next row at the same columns.
+ * starts at column 2 (two-space margin), the second pair at column 40, as in
+ * reference-console-startup.html. A line holds two pairs (the window is 84 columns);
+ * more pairs continue on the next row at the same columns.
  */
-const LABEL_COLUMNS = [2, 40, 78]
+const LABEL_COLUMNS = [2, 40]
 
 /** Text after a six-character status prefix starts at screen column 6. */
 const STATUS_TEXT_COLUMN = 6

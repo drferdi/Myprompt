@@ -85,7 +85,8 @@ describe('system telemetry', () => {
     // pair (column 40) sits at text index 34 and the fourth pair opens the second row.
     const [firstRow, secondRow] = (line.textContent ?? '').split('\n')
     expect(firstRow.indexOf('cpu=')).toBe(34)
-    expect(secondRow.indexOf('uptime=')).toBe(0)
+    expect(secondRow.indexOf('mem=')).toBe(0)
+    expect(secondRow.indexOf('uptime=')).toBe(34)
   })
 
   it('invokes system:stats exactly once per stat command', async () => {
