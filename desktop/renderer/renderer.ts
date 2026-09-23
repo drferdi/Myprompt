@@ -2258,7 +2258,7 @@ function tryParseStructuredDesktopResult(value: string): unknown {
 /**
  * Screen columns (0-based, from the window edge) where label/value pairs sit: content
  * starts at column 2 (two-space margin), the second pair at column 40, as in
- * reference-console-startup.html. A line holds two pairs (the window is 84 columns);
+ * reference-console-startup.html. A line holds two pairs (the window is 80 columns);
  * more pairs continue on the next row at the same columns.
  */
 const LABEL_COLUMNS = [2, 40]

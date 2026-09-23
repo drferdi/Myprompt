@@ -17,9 +17,9 @@ const REFERENCE = path.resolve(
 )
 
 // Chrome offsets of the shell, mirrored from index.css / main.ts: title bar 30px, transcript
-// padding 10px 14px. Grid targets: 84 × 21 on first run, 80 × 20 minimum.
+// padding 10px 14px. Grid targets: 80 × 20 on first run, which is also the minimum.
 const CHROME = { titleBar: 30, padX: 14, padY: 10 }
-const GRID_TARGET = { columns: 84, rows: 21 }
+const GRID_TARGET = { columns: 80, rows: 20 }
 const GRID_MIN = { columns: 80, rows: 20 }
 
 function gridToContentSize(cell: { width: number; height: number }, grid: { columns: number; rows: number }) {
@@ -337,7 +337,7 @@ test('Optimizer stage selection is contained and does not invoke a provider', as
   }
 })
 
-test('The window is sized in columns and rows: 84×21 on first run, the user’s size afterwards', async ({}, testInfo: TestInfo) => {
+test('The window is sized in columns and rows: 80×20 on first run, the user’s size afterwards', async ({}, testInfo: TestInfo) => {
   const first = await launchShell()
   let userSize: number[] = []
 

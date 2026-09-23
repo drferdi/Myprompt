@@ -287,12 +287,12 @@ function appendDesktopEnvWarning() {
 // measures the real character cell once its fonts are loaded and reports it over
 // 'window:fit-grid'; the chrome offsets below mirror index.css (title bar 30px, transcript
 // padding 10px 14px) so that columns × cell width + padding is the content width.
-// 84 × 21 keeps the 4:1 shape of the earlier 120 × 30 at half its area (49%); prose (72)
-// plus the margin (2) still fits with room for a scrollbar.
-const GRID_TARGET = { columns: 84, rows: 21 }
+// The target sits on the floor Chief set (80 × 20): prose (72) plus the margin (2) still
+// fits with room for a scrollbar. Smaller than this needs a new minimum and prose width.
+const GRID_TARGET = { columns: 80, rows: 20 }
 const GRID_MIN = { columns: 80, rows: 20 }
 const CHROME = { titleBar: 30, padX: 14, padY: 10 }
-// JetBrains Mono at 13px / 1.45 measures 7.8 × 18.85; used when measurement fails (684×446).
+// JetBrains Mono at 13px / 1.45 measures 7.8 × 18.85; used when measurement fails (652×427).
 const FALLBACK_CELL = { width: 7.8, height: 18.85 }
 
 interface GridCell {
@@ -315,7 +315,8 @@ const FALLBACK_MIN_SIZE = gridToContentSize(FALLBACK_CELL, GRID_MIN)
 // layout is discarded instead of pinning the window to the previous dimensions.
 // v4: the stored 1280×860 from the pixel-sized era is discarded for the grid fit.
 // v5: the grid target halved to 84 × 21; the stored 964×616 is discarded.
-const WINDOW_STATE_VERSION = 5
+// v6: the grid target is the 80 × 20 floor; the stored 684×446 is discarded.
+const WINDOW_STATE_VERSION = 6
 
 // The grid fit runs once, on the first launch with no persisted state at the current
 // version. After that the user's own size always wins.
