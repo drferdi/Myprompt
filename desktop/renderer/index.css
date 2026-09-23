@@ -238,6 +238,8 @@ button, input {
 /* Meta line is settings, not a verdict; the quality line is the verdict, printed in
    the status column (ok / warn / error prefix) with the text in body colour. */
 .line.meta-line { color: var(--console-accent); }
+/* help rows: the command column is a green seg-cmd run, the summary stays body text. */
+.line.help-row { color: var(--console-text); }
 .line.quality-line { color: var(--console-text); }
 
 .line.scramble-line {

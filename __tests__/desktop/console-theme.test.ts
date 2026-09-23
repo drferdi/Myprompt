@@ -79,6 +79,7 @@ describe('Sentra console visual contract', () => {
       'status-warn',
       'status-error',
       'meta-line',
+      'help-row',
       'quality-line',
       'tx-action',
       'tx-actions',

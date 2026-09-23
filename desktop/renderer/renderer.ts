@@ -2642,13 +2642,25 @@ function stripQuotes(value: string) {
   return trimmed
 }
 
+/** One help row: the command run is green, the summary is body text; the text is the same label-column row. */
+function appendHelpRow(container: HTMLElement, usage: string, summary: string) {
+  const line = document.createElement('div')
+  line.className = 'line help-row'
+  const command = document.createElement('span')
+  command.className = 'seg-cmd'
+  command.textContent = usage
+  line.append(command, formatLabelColumns([usage, summary]).slice(usage.length))
+  insertBeforePrompt(container, line)
+  container.scrollTop = container.scrollHeight
+}
+
 function printHelp(container: HTMLElement) {
   for (const entry of strings.bareCommandCatalog) {
-    appendConsoleLine(container, 'sys', formatLabelColumns([entry.usage, entry.summary]))
+    appendHelpRow(container, entry.usage, entry.summary)
   }
 
   for (const entry of COMMAND_CATALOG) {
-    appendConsoleLine(container, 'sys', formatLabelColumns([entry.slash, entry.summary]))
+    appendHelpRow(container, entry.slash, entry.summary)
   }
 }
 

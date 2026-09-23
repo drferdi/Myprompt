@@ -159,6 +159,20 @@ describe('console transcript command language', () => {
     await vi.waitFor(() => expect(findLine('/evaluate')).toBeTruthy())
   })
 
+  it('colours the command column of help green and keeps the row text unchanged', async () => {
+    type('help')
+
+    const helpLine = await vi.waitFor(() => {
+      const line = findLine('Build a Coding Brief from a raw idea')
+      expect(line).toBeTruthy()
+      return line as HTMLElement
+    })
+    const command = helpLine.querySelector('.seg-cmd')
+    expect(command?.textContent).toBe((helpLine.textContent ?? '').slice(0, 38).trimEnd())
+    expect(helpLine.classList.contains('help-row')).toBe(true)
+    expect((helpLine.textContent ?? '').indexOf('Build a Coding Brief')).toBe(38)
+  })
+
   it('lists recent runs and benchmarks from log', async () => {
     type('log')
 
