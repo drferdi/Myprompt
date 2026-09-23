@@ -148,6 +148,19 @@ describe('Coding Brief v3.0 — rules', () => {
     expect(result.issues).toEqual(['V13: unresolved [TODO: in a greenfield brief: SCOPE'])
   })
 
+  it.each([
+    ['GOAL', { goal: 'Build the [TODO: which portal] portal.' }],
+    ['CONTEXT', { context: 'New project: ./portal\n[TODO: which host]' }],
+    ['SCOPE', { scope: 'Login page, dashboard.\n[TODO: which reports]' }],
+    ['STACK', { stack: 'TypeScript, Vitest.\n[TODO: which database]' }],
+    ['OUT OF SCOPE', { outOfScope: 'lib/transform/**\n[TODO: which modules]' }],
+    ['DONE WHEN', { doneWhen: '`pnpm run test` passes.\n[TODO: which browser]' }],
+  ] as const)('V13: flags an unresolved [TODO: in greenfield %s', (heading, parts) => {
+    const result = validateCodingBrief(brownfield({ context: 'New project: ./portal', ...parts }))
+
+    expect(result.issues).toEqual([`V13: unresolved [TODO: in a greenfield brief: ${heading}`])
+  })
+
   it('V13: leaves a [TODO: in a brownfield brief alone', () => {
     const result = validateCodingBrief(
       brownfield({ scope: 'The rename.\n[TODO: which callers are affected?]' })

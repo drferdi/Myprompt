@@ -104,6 +104,24 @@ Homepage with sky-blue visual design.
 ## DONE WHEN
 Propose a check first: the intended outcome for verifying the website design.`
 
+/**
+ * §8.4 as a complete brief: every heading present, the defects only in the three sections the
+ * standard shows, and no ASSUMPTIONS although STACK is proposed, so V1 cannot fire.
+ */
+const EXAMPLE_8_4_COMPLETE = `## GOAL
+Build a general practitioner clinic website with a sky-blue visual theme.
+
+${EXAMPLE_8_4}`.replace(
+  '## DONE WHEN',
+  `## STACK
+Next.js (App Router), React, TypeScript, Tailwind CSS.
+
+## OUT OF SCOPE
+No patient records, no authentication, no online appointment booking, no payments.
+
+## DONE WHEN`
+) + `\n\n${REPORT_SECTION}`
+
 /** A raw request that names two technologies, for the V10 cases. */
 const RAW_REQUEST_V10 = 'buatkan website dokter umum pakai React dan Next.js'
 
@@ -201,6 +219,14 @@ describe('validateCodingBrief — standard examples', () => {
     expect(result.thin).toBe(false)
     expect(result.brief).toBeUndefined()
     expect(ruleIds(result.issues)).toEqual(['V1', 'V12', 'V13', 'V14'])
+  })
+
+  it('rejects a complete §8.4 brief with exactly V12, V13 and V14', () => {
+    const result = validateCodingBrief(EXAMPLE_8_4_COMPLETE, { rawRequest: RAW_REQUEST_8_1 })
+
+    expect(result.valid).toBe(false)
+    expect(ruleIds(result.issues)).toEqual(['V12', 'V13', 'V14'])
+    expect(result.issues).toContain('V13: unresolved [TODO: in a greenfield brief: CONTEXT, SCOPE')
   })
 })
 
