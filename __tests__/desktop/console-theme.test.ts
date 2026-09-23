@@ -18,8 +18,8 @@ describe('Sentra console visual contract', () => {
   })
 
   it('lays text out in character cells: one font size, a two-space margin, a six-character prefix column, 72-character prose', () => {
-    expect(rendererCss).toContain('--console-size-body: 13px;')
-    expect(rendererCss).toContain('--console-size-chrome: 13px;')
+    expect(rendererCss).toContain('--console-size-body: 11px;')
+    expect(rendererCss).toContain('--console-size-chrome: 11px;')
     expect(rendererCss).toContain('--console-margin: 2ch;')
     expect(rendererCss).toContain('--console-prefix: 6ch;')
     expect(rendererCss).toContain('--console-prose: 72ch;')
@@ -34,7 +34,7 @@ describe('Sentra console visual contract', () => {
 
   it('keeps the font token and never drops a size token below 11px', () => {
     // Guard: an edit that removes --console-font or shrinks a size token breaks the
-    // locked contract (JetBrains Mono, one 13px size), whatever else it changes.
+    // locked contract (JetBrains Mono, one 11px size), whatever else it changes.
     expect(rendererCss).toMatch(/--console-font:\s*'JetBrains Mono'/)
     const sizeTokens = Array.from(rendererCss.matchAll(/--console-size-[\w-]+:\s*([\d.]+)px;/g))
     expect(sizeTokens.length).toBeGreaterThan(0)
@@ -44,8 +44,8 @@ describe('Sentra console visual contract', () => {
   })
 
   it('uses the approved console palette tokens', () => {
-    expect(rendererCss).toContain('--console-bg-app: #1e2227;')
-    expect(rendererCss).toContain('--console-bg-window: #1e2227;')
+    expect(rendererCss).toContain('--console-bg-app: #16191d;')
+    expect(rendererCss).toContain('--console-bg-window: #16191d;')
     expect(rendererCss).toContain('--console-text: #c5cad3;')
     expect(rendererCss).toContain('--console-text-strong: #ffffff;')
     expect(rendererCss).toContain('--console-text-dim: #8a929e;')

@@ -285,15 +285,15 @@ function appendDesktopEnvWarning() {
 
 // The window is sized in transcript columns and rows, never in fixed pixels. The renderer
 // measures the real character cell once its fonts are loaded and reports it over
-// 'window:fit-grid'; the chrome offsets below mirror index.css (title bar 30px, transcript
+// 'window:fit-grid'; the chrome offsets below mirror index.css (title bar 28px, transcript
 // padding 10px 14px) so that columns × cell width + padding is the content width.
 // The target sits on the floor Chief set (80 × 20): prose (72) plus the margin (2) still
 // fits with room for a scrollbar. Smaller than this needs a new minimum and prose width.
 const GRID_TARGET = { columns: 80, rows: 20 }
 const GRID_MIN = { columns: 80, rows: 20 }
-const CHROME = { titleBar: 30, padX: 14, padY: 10 }
-// JetBrains Mono at 13px / 1.45 measures 7.8 × 18.85; used when measurement fails (652×427).
-const FALLBACK_CELL = { width: 7.8, height: 18.85 }
+const CHROME = { titleBar: 28, padX: 14, padY: 10 }
+// JetBrains Mono at 11px / 1.45 measures 6.6 × 15.95; used when measurement fails (556×367).
+const FALLBACK_CELL = { width: 6.6, height: 15.95 }
 
 interface GridCell {
   width: number
@@ -316,7 +316,8 @@ const FALLBACK_MIN_SIZE = gridToContentSize(FALLBACK_CELL, GRID_MIN)
 // v4: the stored 1280×860 from the pixel-sized era is discarded for the grid fit.
 // v5: the grid target halved to 84 × 21; the stored 964×616 is discarded.
 // v6: the grid target is the 80 × 20 floor; the stored 684×446 is discarded.
-const WINDOW_STATE_VERSION = 6
+// v7: the face shrank from 13px to 11px; the 13px-era fit is discarded and measured again.
+const WINDOW_STATE_VERSION = 7
 
 // The grid fit runs once, on the first launch with no persisted state at the current
 // version. After that the user's own size always wins.
@@ -328,7 +329,7 @@ function parseGridCell(payload: unknown): GridCell | null {
   const { cellWidth, cellHeight } = payload as { cellWidth?: unknown; cellHeight?: unknown }
   if (typeof cellWidth !== 'number' || typeof cellHeight !== 'number') return null
   if (!Number.isFinite(cellWidth) || !Number.isFinite(cellHeight)) return null
-  // Sane monospace cells only: a 13px face is roughly 6–9px wide and 15–22px tall.
+  // Sane monospace cells only: an 11px face is roughly 5–8px wide and 13–19px tall.
   if (cellWidth < 3 || cellWidth > 30 || cellHeight < 6 || cellHeight > 60) return null
   return { width: cellWidth, height: cellHeight }
 }
@@ -404,12 +405,13 @@ function createWindow() {
     minWidth: FALLBACK_MIN_SIZE.width,
     minHeight: FALLBACK_MIN_SIZE.height,
     frame: false,
-    // On Windows a transparent window disables ClearType (sub-pixel antialiasing), so 13px
+    // On Windows a transparent window disables ClearType (sub-pixel antialiasing), so small
     // text rendered greyscale and soft: measured 0% sub-pixel edge pixels transparent vs
-    // 82% opaque. The window is opaque there in the console colour; Windows 11 still
-    // rounds frameless corners natively. Elsewhere it stays transparent for the CSS radius.
+    // 82% opaque. The window is opaque there in the console colour (--console-bg-window);
+    // Windows 11 still rounds frameless corners natively. Elsewhere it stays transparent
+    // for the CSS radius and the window shadow.
     transparent: !isWindows,
-    backgroundColor: isWindows ? '#1e2227' : '#00000000',
+    backgroundColor: isWindows ? '#16191d' : '#00000000',
     roundedCorners: true,
     show: !isSmokeMode,
     webPreferences: {
