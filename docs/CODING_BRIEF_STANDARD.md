@@ -88,7 +88,8 @@ is invalid.
 | V10 | Every technology named in the raw request appears in `STACK`. A named stack is never silently dropped. |
 | V11 | A brief in which both `Explore first:` and `Propose a check first:` fire is flagged `thin`: valid, but returned with a warning telling the user which two answers would make it useful. |
 
-Validator output is `{ valid, issues[], thin }`. Rules V4, V5, V6 and V7 are heuristics,
+Validator output is `{ valid, issues[], thin, deprecated[] }`; `deprecated` lists any v1.0
+headings that were accepted and mapped. Rules V4, V5, V6 and V7 are heuristics,
 scheduled for calibration with Phase 4 evaluation data.
 
 ## 6. Missing information and clarification
