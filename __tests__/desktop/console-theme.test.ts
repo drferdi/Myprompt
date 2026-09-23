@@ -44,12 +44,12 @@ describe('Sentra console visual contract', () => {
   })
 
   it('uses the approved console palette tokens', () => {
-    expect(rendererCss).toContain('--console-bg-app: #282c34;')
-    expect(rendererCss).toContain('--console-bg-window: #282c34;')
-    expect(rendererCss).toContain('--console-text: #abb2bf;')
+    expect(rendererCss).toContain('--console-bg-app: #1e2227;')
+    expect(rendererCss).toContain('--console-bg-window: #1e2227;')
+    expect(rendererCss).toContain('--console-text: #c5cad3;')
     expect(rendererCss).toContain('--console-text-strong: #ffffff;')
-    expect(rendererCss).toContain('--console-text-dim: #7f8792;')
-    expect(rendererCss).toContain('--console-accent: #56b6c2;')
+    expect(rendererCss).toContain('--console-text-dim: #8a929e;')
+    expect(rendererCss).toContain('--console-accent: #2bbac5;')
   })
 
   it('renders one window with a title bar and a transcript', () => {

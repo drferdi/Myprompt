@@ -10,19 +10,19 @@
   /* Console palette and measurements: every value below is copied from
      desktop/renderer/reference/reference-console-sentra.html (the pixel
      reference). Change the reference first, then this block; never the reverse. */
-  --console-bg-window: #282c34;
-  --console-bg-chrome: #21252b;
-  --console-bg-app: #282c34;
-  --console-text: #abb2bf;
+  --console-bg-window: #1e2227;
+  --console-bg-chrome: #181b1f;
+  --console-bg-app: #1e2227;
+  --console-text: #c5cad3;
   --console-text-strong: #ffffff;
-  --console-text-dim: #7f8792;
-  --console-prompt: #98c379;
-  --console-success: #98c379;
+  --console-text-dim: #8a929e;
+  --console-prompt: #89ca78;
+  --console-success: #89ca78;
   --console-path: #61afef;
-  --console-heading: #c678dd;
-  --console-error: #e06c75;
+  --console-heading: #d55fde;
+  --console-error: #ef596f;
   --console-warn: #d19a66;
-  --console-accent: #56b6c2;
+  --console-accent: #2bbac5;
   --console-yellow: #e5c07b;
   --console-rule: rgba(255, 255, 255, 0.08);
 
@@ -54,6 +54,8 @@ html, body {
   font-family: var(--console-font);
   font-size: var(--console-size-body);
   line-height: var(--console-leading-body);
+  /* 500 is a loaded weight (index.html); it keeps 13px text crisp on the dark background. */
+  font-weight: 500;
   letter-spacing: 0;
   color: var(--console-text);
   user-select: none;
@@ -196,9 +198,9 @@ button, input {
   pointer-events: none;
 }
 
-.line.type-sys { color: var(--console-text-dim); }
-/* The echoed command is body text; only the prompt in front of it is green. */
-.line.type-user { color: var(--console-text); }
+.line.type-sys { color: var(--console-accent); }
+/* The echoed command is yellow; the prompt in front of it stays green. */
+.line.type-user { color: var(--console-yellow); }
 .line.type-agent { color: var(--console-text); }
 
 /* Echo of the typed command keeps the prompt in front of it. */
@@ -235,7 +237,7 @@ button, input {
 
 /* Meta line is settings, not a verdict; the quality line is the verdict, printed in
    the status column (ok / warn / error prefix) with the text in body colour. */
-.line.meta-line { color: var(--console-text-dim); }
+.line.meta-line { color: var(--console-accent); }
 .line.quality-line { color: var(--console-text); }
 
 .line.scramble-line {
@@ -245,11 +247,11 @@ button, input {
 
 /* ═══ BOOT BANNER ═══ */
 /* Printed once at boot, never through the status-prefix path: title in strong text,
-   subtitle and rule dimmed, the instruction line in body text, then one blank line. */
+   subtitle dimmed, rule in the heading colour, hint in the path colour, then one blank line. */
 .line.banner-title { color: var(--console-text-strong); }
 .line.banner-subtitle { color: var(--console-text-dim); }
-.line.banner-rule { color: var(--console-text-dim); }
-.line.banner-hint { color: var(--console-text-dim); }
+.line.banner-rule { color: var(--console-heading); }
+.line.banner-hint { color: var(--console-path); }
 .line.banner-blank { min-height: calc(var(--console-size-body) * var(--console-leading-body)); }
 /* Startup block rows (reference-console-startup.html): session labels cyan, commands
    green, descriptions dim; the rows are label tables, so they use the full width. */
@@ -279,7 +281,7 @@ button, input {
   all: unset;
   display: inline;
   cursor: pointer;
-  color: var(--console-text-dim);
+  color: var(--console-path);
   font: inherit;
   margin-right: 12px;
   white-space: nowrap;

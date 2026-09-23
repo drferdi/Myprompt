@@ -409,7 +409,7 @@ function createWindow() {
     // 82% opaque. The window is opaque there in the console colour; Windows 11 still
     // rounds frameless corners natively. Elsewhere it stays transparent for the CSS radius.
     transparent: !isWindows,
-    backgroundColor: isWindows ? '#282c34' : '#00000000',
+    backgroundColor: isWindows ? '#1e2227' : '#00000000',
     roundedCorners: true,
     show: !isSmokeMode,
     webPreferences: {

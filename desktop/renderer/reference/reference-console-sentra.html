@@ -10,16 +10,16 @@
      The renderer must copy these, not reinterpret them.
      ============================================================ */
   :root {
-    --term-bg:        #282c34;  /* window body            */
-    --term-chrome:    #21252b;  /* title bar              */
+    --term-bg:        #1e2227;  /* window body            */
+    --term-chrome:    #181b1f;  /* title bar              */
     --term-page:      #ffffff;  /* area outside the window */
-    --term-text:      #abb2bf;  /* default output          */
+    --term-text:      #c5cad3;  /* default output          */
     --term-bright:    #ffffff;  /* emphasised output       */
-    --term-dim:       #7f8792;  /* title, secondary chrome */
+    --term-dim:       #8a929e;  /* title, secondary chrome */
     --term-dir:       #61afef;  /* directory names, bold   */
-    --term-green:     #98c379;  /* prompt segments, ok     */
+    --term-green:     #89ca78;  /* prompt segments, ok     */
     --term-yellow:    #e5c07b;  /* git branch              */
-    --term-cyan:      #56b6c2;  /* path segment            */
+    --term-cyan:      #2bbac5;  /* path segment            */
     --term-radius:    10px;
     --term-pad-x:     14px;
     --term-pad-y:     10px;
@@ -69,8 +69,8 @@
   /* ---- Status prefixes: same palette, content-zone meaning ---- */
   .ok    { color: var(--term-green);  font-weight: 700; }
   .warn  { color: #d19a66;            font-weight: 700; }
-  .err   { color: #e06c75;            font-weight: 700; }
-  .head  { color: #c678dd; }
+  .err   { color: #ef596f;            font-weight: 700; }
+  .head  { color: #d55fde; }
   .dim   { color: var(--term-dim); }
 
   /* ---- Transcript -------------------------------------------- */
@@ -80,6 +80,7 @@
     font-family: inherit;
     font-size: var(--term-font-size);
     line-height: var(--term-line);
+    font-weight: 500;
     color: var(--term-text);
     white-space: pre;
     overflow-x: auto;
