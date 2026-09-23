@@ -23,8 +23,6 @@
 
 <img src="https://i.ibb.co.com/4Z447tNw/myprompt2.png" alt="MyPrompt" width="260" />
 
-# MyPrompt
-
 ### Raw idea → verified Coding Brief, Super Prompt, or deterministic model scaffold.
 
 **A terminal-native prompt engineering workspace by Sentra Artificial Intelligence.**
