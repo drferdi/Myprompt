@@ -32,6 +32,17 @@ describe('Sentra console visual contract', () => {
     expect(rendererCss).not.toMatch(/font-size:\s*1[0-2]px/)
   })
 
+  it('keeps the font token and never drops a size token below 11px', () => {
+    // Guard: an edit that removes --console-font or shrinks a size token breaks the
+    // locked contract (JetBrains Mono, one 13px size), whatever else it changes.
+    expect(rendererCss).toMatch(/--console-font:\s*'JetBrains Mono'/)
+    const sizeTokens = Array.from(rendererCss.matchAll(/--console-size-[\w-]+:\s*([\d.]+)px;/g))
+    expect(sizeTokens.length).toBeGreaterThan(0)
+    for (const match of sizeTokens) {
+      expect(Number(match[1])).toBeGreaterThanOrEqual(11)
+    }
+  })
+
   it('uses the approved console palette tokens', () => {
     expect(rendererCss).toContain('--console-bg-app: #282c34;')
     expect(rendererCss).toContain('--console-bg-window: #282c34;')
