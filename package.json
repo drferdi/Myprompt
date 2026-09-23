@@ -2,6 +2,15 @@
   "name": "sentra-prompt",
   "version": "0.1.0",
   "private": true,
+  "//repository": "This capsule's own public repository. It is NOT the Monorepo that may contain this folder: wikis, pull requests and pushes for this project go to drferdi/Myprompt only.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/drferdi/Myprompt.git"
+  },
+  "homepage": "https://github.com/drferdi/Myprompt#readme",
+  "bugs": {
+    "url": "https://github.com/drferdi/Myprompt/issues"
+  },
   "main": "dist-electron/desktop/bootstrap.js",
   "//packageManager": "Pinned so this app resolves deterministically after being copied out of the ABYSS monorepo — App Independence promises 'clone and run', which an arbitrary local pnpm version does not deliver. Matches the ABYSS root toolchain today; once independent this app may move ahead of root on its own schedule.",
   "packageManager": "pnpm@11.21.0",
