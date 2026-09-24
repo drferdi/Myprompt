@@ -34,7 +34,7 @@
     "test:e2e": "pnpm run desktop:build && playwright test",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "db:generate": "node -e \"process.env.DATABASE_URL ||= 'postgresql://placeholder:placeholder@127.0.0.1:5432/placeholder?schema=public'; process.env.DIRECT_URL ||= process.env.DATABASE_URL; const { spawnSync } = require('node:child_process'); const result = spawnSync(process.execPath, ['./node_modules/prisma/build/index.js', 'generate'], { stdio: 'inherit', env: process.env }); process.exit(result.status ?? 1);\"",
+    "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:migrate:resolve:init": "prisma migrate resolve --applied 20260322000000_init",

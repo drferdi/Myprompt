@@ -14,8 +14,21 @@
     "run": { "program": "pnpm", "args": ["run", "start"] },
     "deployDryRun": { "program": "pnpm", "args": ["run", "deploy:dry-run"] }
   },
-  "smoke": { "kind": "desktop-build", "command": { "program": "pnpm", "args": ["run", "desktop:smoke"] } },
+  "smoke": {
+    "kind": "none",
+    "notApplicableReason": "Desktop Electron app; the contract schema has no desktop probe. desktop:smoke is Windows-only (PowerShell)."
+  },
   "artifacts": ["dist-electron/desktop/bootstrap.js", "dist-electron/desktop/renderer/index.html"],
-  "externalDependencies": ["npm registry", "PostgreSQL", "optional LLM providers", "Supabase", "Resend", "Xendit"],
-  "mutableStatePaths": ["Prisma-managed PostgreSQL database", "operator-managed provider credentials"]
+  "externalDependencies": [
+    { "kind": "registry", "name": "npm registry", "locator": "https://registry.npmjs.org", "required": true },
+    { "kind": "database", "name": "PostgreSQL", "locator": "DATABASE_URL", "required": true },
+    { "kind": "service", "name": "OpenAI", "locator": "OPENAI_API_KEY", "required": false },
+    { "kind": "service", "name": "Anthropic", "locator": "ANTHROPIC_API_KEY", "required": false },
+    { "kind": "service", "name": "xAI", "locator": "XAI_API_KEY", "required": false },
+    { "kind": "service", "name": "Local Ollama model", "locator": "OLLAMA_MODEL", "required": false },
+    { "kind": "service", "name": "Supabase", "locator": "NEXT_PUBLIC_SUPABASE_URL", "required": true },
+    { "kind": "service", "name": "Resend", "locator": "RESEND_API_KEY", "required": true },
+    { "kind": "service", "name": "Xendit", "locator": "XENDIT_SECRET_KEY", "required": true }
+  ],
+  "mutableStatePaths": []
 }
