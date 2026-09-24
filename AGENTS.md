@@ -1,5 +1,7 @@
 # Sentra Prompt Capsule Router
 
+Read `.agents/HANDOFF.md` first, then `.agents/CONTEXT.md`.
+
 ## Objective and ownership
 
 - Project: Sentra Prompt (domain: internal)
