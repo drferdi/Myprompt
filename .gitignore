@@ -9,3 +9,8 @@ build/
 .env
 .env.local
 *.tsbuildinfo
+
+# Local working material, never part of the capsule history
+docs/plans/
+droid-wiki/
+extension/
