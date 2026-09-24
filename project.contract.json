@@ -11,12 +11,12 @@
     "typecheck": { "program": "pnpm", "args": ["run", "typecheck"] },
     "test": { "program": "pnpm", "args": ["run", "test"] },
     "build": { "program": "pnpm", "args": ["run", "build"] },
-    "run": { "program": "pnpm", "args": ["run", "start"] },
+    "run": { "program": "pnpm", "args": ["exec", "electron", "./dist-electron/desktop/bootstrap.js", "--smoke"] },
     "deployDryRun": { "program": "pnpm", "args": ["run", "deploy:dry-run"] }
   },
   "smoke": {
     "kind": "none",
-    "notApplicableReason": "Desktop Electron app; the contract schema has no desktop probe. desktop:smoke is Windows-only (PowerShell)."
+    "notApplicableReason": "Desktop Electron app; the contract schema has no desktop probe. run starts the built app with --smoke (hidden window, exits 0 after the renderer loads)."
   },
   "artifacts": ["dist-electron/desktop/bootstrap.js", "dist-electron/desktop/renderer/index.html"],
   "externalDependencies": [
