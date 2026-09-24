@@ -26,4 +26,4 @@ Sentra Prompt is the daily desktop workspace for prompt development, optimisatio
 
 ## Local proof
 
-`db:generate` assigns a process-local placeholder PostgreSQL URL only when neither database URL is set; it does not connect to a database. `verify:structure` enforces capsule-local boundaries. `verify:extraction` proves installation, checks, generation, build, and deploy dry-run from a fresh extracted copy.
+`db:generate` runs `prisma generate`, which reads the schema's `env("DATABASE_URL")` and `env("DIRECT_URL")` references without requiring either variable and without connecting to a database. `verify:structure` enforces capsule-local boundaries. `verify:extraction` proves installation, checks, generation, build, and deploy dry-run from a fresh extracted copy.

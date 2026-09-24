@@ -12,6 +12,8 @@ to `DECISIONS.md`.
 - ADR 0007 WP-B (merged 2026-09-25): `project.contract.json` passes the validator and
   `db:generate` is plain `prisma generate`. `project-standalone verify` stops after install on
   Windows because pnpm creates links under `node_modules/.pnpm` (tracked as WP-C backlog).
+- `README.md` "Local proof" and `docs/data.md` now describe `db:generate` as plain `prisma generate` (Codex review
+  of ADR 0007 WP-G).
 
 ## Work in flight
 
