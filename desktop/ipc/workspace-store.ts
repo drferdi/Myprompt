@@ -31,6 +31,20 @@ function upsertById<T extends { id: string }>(items: T[], nextItem: T) {
   return [nextItem, ...items.filter((item) => item.id !== nextItem.id)]
 }
 
+const workspaceStores = new Map<string, ReturnType<typeof createWorkspaceStore>>()
+
+/** One store instance per file path so IPC handlers share the same mutation chain. */
+export function getWorkspaceStore(filePath: string) {
+  const existing = workspaceStores.get(filePath)
+  if (existing) {
+    return existing
+  }
+
+  const store = createWorkspaceStore(filePath)
+  workspaceStores.set(filePath, store)
+  return store
+}
+
 export function createWorkspaceStore(filePath: string) {
   let mutationChain = Promise.resolve()
 
