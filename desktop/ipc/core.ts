@@ -40,7 +40,7 @@ import { listDesktopBenchmarks, runDesktopBenchmark, saveDesktopBenchmark } from
 import { createDesktopPrompt, listDesktopPrompts, listDesktopTemplates } from './library'
 import { handleProviderCommand } from './provider-keys'
 import { handleSubscriptionCommand } from './subscription'
-import { createWorkspaceStore } from './workspace-store'
+import { getWorkspaceStore } from './workspace-store'
 
 type DesktopGuestProvider = DesktopRemoteProvider
 type DesktopOptimizeLane = 'INTERACTIVE' | 'DEEP'
@@ -93,7 +93,7 @@ function resolveDesktopWorkspaceFilePath() {
   return path.join(baseDir, 'sentra-desktop-workspace.json')
 }
 
-const desktopWorkspaceStore = createWorkspaceStore(resolveDesktopWorkspaceFilePath())
+const desktopWorkspaceStore = getWorkspaceStore(resolveDesktopWorkspaceFilePath())
 
 function buildModelRestrictedResponse() {
   return {
