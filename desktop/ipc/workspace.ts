@@ -1,11 +1,11 @@
 import { ipcMain } from 'electron'
 
-import { createWorkspaceStore } from './workspace-store'
+import { getWorkspaceStore } from './workspace-store'
 
 import { DesktopDraftInputSchema, DesktopRecentRunInputSchema } from '@/types'
 
 export function registerWorkspaceIpc(filePath: string) {
-  const store = createWorkspaceStore(filePath)
+  const store = getWorkspaceStore(filePath)
 
   ipcMain.handle('workspace:draft:list', async () => store.listDrafts())
   ipcMain.handle('workspace:draft:save', async (_event, payload: unknown) =>
