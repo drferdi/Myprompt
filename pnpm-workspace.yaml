@@ -13,8 +13,10 @@ overrides:
   'undici@<6.24.0': 6.24.0
   'shell-quote@<1.10.0': 1.10.0
   'vitest@>=3.0.0 <3.2.6': 3.2.6
-  'sharp@<0.35.4': 0.35.4
+  'sharp@<0.35.5': 0.35.5
   'postcss@<=8.5.22': 8.5.28
+  'source-map-js@<1.2.2': 1.2.2
+  'postcss-selector-parser@<7.1.6': 7.1.6
   xlsx: npm:@e965/xlsx@0.20.3
 allowBuilds:
   '@prisma/client': true
