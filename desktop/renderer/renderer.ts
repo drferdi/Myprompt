@@ -3329,7 +3329,10 @@ async function execute() {
   input.value = ''
 
   try {
-    if (round) {
+    if (round && value.startsWith('/')) {
+      pendingClarificationRound = null
+      await runConsoleInput(display, value)
+    } else if (round) {
       await answerClarification(display, round, value)
     } else {
       await runConsoleInput(display, value)
