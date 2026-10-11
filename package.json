@@ -18,20 +18,20 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "pnpm run desktop:build",
-    "dev": "pnpm run desktop:dev",
-    "start": "pnpm run desktop:dev",
-    "desktop:build": "powershell -NoProfile -Command \"Remove-Item -Recurse -Force dist-electron -ErrorAction SilentlyContinue; New-Item -ItemType Directory -Force dist-electron/desktop/renderer | Out-Null\" && pnpm run db:generate && pnpm exec tsc -p tsconfig.desktop.json && powershell -NoProfile -Command \"$v = (Get-Content package.json -Raw | ConvertFrom-Json).version; $src = Join-Path (Get-Location) 'desktop/renderer/index.html'; $dst = Join-Path (Get-Location) 'dist-electron/desktop/renderer/index.html'; [IO.File]::WriteAllText($dst, [IO.File]::ReadAllText($src).Replace('__SENTRA_VERSION__', $v)); Copy-Item desktop/renderer/index.css dist-electron/desktop/renderer/index.css -Force\"",
+    "build": "node --run desktop:build",
+    "dev": "node --run desktop:dev",
+    "start": "node --run desktop:dev",
+    "desktop:build": "powershell -NoProfile -Command \"Remove-Item -Recurse -Force dist-electron -ErrorAction SilentlyContinue; New-Item -ItemType Directory -Force dist-electron/desktop/renderer | Out-Null\" && node --run db:generate && tsc -p tsconfig.desktop.json && powershell -NoProfile -Command \"$v = (Get-Content package.json -Raw | ConvertFrom-Json).version; $src = Join-Path (Get-Location) 'desktop/renderer/index.html'; $dst = Join-Path (Get-Location) 'dist-electron/desktop/renderer/index.html'; [IO.File]::WriteAllText($dst, [IO.File]::ReadAllText($src).Replace('__SENTRA_VERSION__', $v)); Copy-Item desktop/renderer/index.css dist-electron/desktop/renderer/index.css -Force\"",
     "desktop:benchmark": "tsx scripts/optimizer-acceptance.ts --json",
-    "desktop:dev": "pnpm run desktop:build && electron ./dist-electron/desktop/bootstrap.js",
-    "desktop:smoke": "pnpm run desktop:build && powershell -NoProfile -Command \"$env:SENTRA_DESKTOP_SMOKE='1'; & .\\node_modules\\.bin\\electron.cmd .\\dist-electron\\desktop\\bootstrap.js\"",
+    "desktop:dev": "node --run desktop:build && electron ./dist-electron/desktop/bootstrap.js",
+    "desktop:smoke": "node --run desktop:build && powershell -NoProfile -Command \"$env:SENTRA_DESKTOP_SMOKE='1'; & .\\node_modules\\.bin\\electron.cmd .\\dist-electron\\desktop\\bootstrap.js; exit $LASTEXITCODE\"",
     "lint": "eslint .",
     "optimizer:acceptance": "tsx scripts/optimizer-acceptance.ts",
-    "typecheck": "pnpm run db:generate && tsc --noEmit",
+    "typecheck": "node --run db:generate && tsc --noEmit",
     "pretest": "tsx scripts/optimizer-acceptance.ts --dry-run",
     "test": "vitest run",
     "test:desktop": "vitest run __tests__/desktop",
-    "test:e2e": "pnpm run desktop:build && playwright test",
+    "test:e2e": "node --run desktop:build && playwright test",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "db:generate": "prisma generate",
@@ -43,7 +43,7 @@
     "deploy:dry-run": "node scripts/deploy-dry-run.mjs",
     "verify:structure": "node scripts/verify-structure.mjs",
     "verify:extraction": "node scripts/verify-extraction.mjs",
-    "verify": "pnpm run verify:structure && pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build && pnpm run desktop:smoke && pnpm run deploy:dry-run"
+    "verify": "node --run verify:structure && node --run lint && node --run typecheck && node --run pretest && node --run test && node --run build && node --run desktop:smoke && node --run deploy:dry-run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",

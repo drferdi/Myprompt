@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "internal/prompt",
+  "id": "tools/prompt",
   "owner": "Chief",
   "risk": "R2",
   "runtime": { "name": "node", "version": "24.18.0" },

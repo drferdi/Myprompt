@@ -677,10 +677,15 @@ isolation. Live database migrations, provider-side actions, payments, real
 email delivery, and production packaging sit outside normal capsule
 verification.
 
+Its current folder is `tools/prompt` and lifecycle contract ID is `tools/prompt`.
+The enclosing framework excludes it from its pnpm workspace; installs and commands use the local manifest, lockfile, Prisma schema, source, and tests.
+Optional framework discovery supports `pnpm project:status tools/prompt` and `pnpm project:verify tools/prompt` from the framework root; those commands are not required for local operation.
+The lifecycle `run` is the built Electron app with `--smoke`, while `pnpm start` rebuilds and opens the interactive app. Provider inference, payment, and database mutations are outside offline verification.
+
 Code is published only to its own repository:
 
 ```text
-projects/internal/prompt
+tools/prompt
         ↓
 git subtree split
         ↓
