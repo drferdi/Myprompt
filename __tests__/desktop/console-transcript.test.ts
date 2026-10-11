@@ -451,6 +451,15 @@ describe('console transcript command language', () => {
       expect(optimizeRuns()).toHaveLength(1)
     })
 
+    it('routes slash commands to console handlers during clarification', async () => {
+      await deliverBriefWithQuestions()
+
+      type('/help')
+
+      await vi.waitFor(() => expect(findLine('/evaluate')).toBeTruthy())
+      expect(optimizeRuns()).toHaveLength(1)
+    })
+
     it('sends one refinement with the delivered brief and every answer verbatim (D2, D4)', async () => {
       await deliverBriefWithQuestions()
 
