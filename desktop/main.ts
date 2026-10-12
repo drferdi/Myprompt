@@ -288,12 +288,13 @@ function appendDesktopEnvWarning() {
 // measures the real character cell once its fonts are loaded and reports it over
 // 'window:fit-grid'; the chrome offsets below mirror index.css (title bar 28px, transcript
 // padding 10px 14px) so that columns × cell width + padding is the content width.
-// The target sits on the floor Chief set (80 × 20): prose (72) plus the margin (2) still
-// fits with room for a scrollbar. Smaller than this needs a new minimum and prose width.
-const GRID_TARGET = { columns: 80, rows: 20 }
+// The floor Chief set (80 × 20): prose (72) plus the margin (2) still fits with room for a
+// scrollbar. Smaller than this needs a new minimum and prose width. The first-run target
+// sits a little above the floor (96 × 24) so the console opens with some breathing room.
+const GRID_TARGET = { columns: 96, rows: 24 }
 const GRID_MIN = { columns: 80, rows: 20 }
 const CHROME = { titleBar: 28, padX: 14, padY: 10 }
-// JetBrains Mono at 11px / 1.45 measures 6.6 × 15.95; used when measurement fails (556×367).
+// JetBrains Mono at 11px / 1.45 measures 6.6 × 15.95; used when measurement fails (662×431).
 const FALLBACK_CELL = { width: 6.6, height: 15.95 }
 
 interface GridCell {
@@ -318,7 +319,8 @@ const FALLBACK_MIN_SIZE = gridToContentSize(FALLBACK_CELL, GRID_MIN)
 // v5: the grid target halved to 84 × 21; the stored 964×616 is discarded.
 // v6: the grid target is the 80 × 20 floor; the stored 684×446 is discarded.
 // v7: the face shrank from 13px to 11px; the 13px-era fit is discarded and measured again.
-const WINDOW_STATE_VERSION = 7
+// v8: the first-run target grew from 80 × 20 to 96 × 24; the stored 556×367 is discarded.
+const WINDOW_STATE_VERSION = 8
 
 // The grid fit runs once, on the first launch with no persisted state at the current
 // version. After that the user's own size always wins.
@@ -524,7 +526,7 @@ app.whenReady().then(() => {
   })
   ipcMain.handle('window:get-pos', () => mainWindow?.getPosition())
   // Renderer-measured character cell → window size in columns and rows. The minimum
-  // (80 × 20) is applied on every launch; the target (120 × 30) only on the first launch
+  // (80 × 20) is applied on every launch; the target (96 × 24) only on the first launch
   // without persisted state, and it is persisted at once so later launches keep the user's
   // own size. Only the shell's own renderer may call this, and only with a sane cell.
   ipcMain.handle('window:fit-grid', (event, payload) => {
