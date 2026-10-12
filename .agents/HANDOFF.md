@@ -1,5 +1,10 @@
 # HANDOFF
 
+## 2026-10-13 - workspace-store race test made deterministic on Windows (Claude Code)
+
+- `__tests__/desktop/workspace-store.test.ts` "separate createWorkspaceStore instances can drop concurrent writes" failed 17/25 isolated runs on Windows with EPERM: both stores read the empty file in the same tick (lost update is certain), and on Windows the losing `rename` onto the same target can reject instead of landing silently. Fix: `Promise.all` -> `Promise.allSettled`; the assertion (one run persisted) is unchanged. After: 25/25 isolated, full Vitest 215 passed, ESLint and `tsc --noEmit` exit 0.
+- Risk noted, not changed: the shared store serializes mutations but `read()` can overlap a later mutation's `rename`; on Windows that could surface as EPERM in the app. Not observed in use.
+
 ## 2026-10-13 - Console opens larger again: 112 x 28 (Claude Code)
 
 - Gaffer: "tambah lagi". `GRID_TARGET` 96 x 24 -> 112 x 28 (about 768x495 px); `GRID_MIN` 80 x 20 unchanged; `WINDOW_STATE_VERSION` 8 -> 9. e2e grid test and baseline (768x495, LFS) updated.

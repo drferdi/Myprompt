@@ -56,7 +56,9 @@ describe('workspace store', () => {
       const storeA = createWorkspaceStore(filePath)
       const storeB = createWorkspaceStore(filePath)
 
-      await Promise.all([
+      // Both stores read the empty file before either writes, so one write is always lost.
+      // On Windows the loser's rename may also reject with EPERM instead of landing silently.
+      await Promise.allSettled([
         storeA.appendRecentRun({
           id: 'run-a',
           sourceMode: 'optimize',
