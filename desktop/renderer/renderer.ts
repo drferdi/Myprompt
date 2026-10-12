@@ -49,6 +49,7 @@ interface DesktopRunRecord {
   optimizerLane?: DesktopOptimizeLane
   /** Set on a refined Coding Brief: a rerun sends it again, answers included. */
   refinement?: CodingBriefRefinementPayload
+  outputKind?: DesktopOutputKind
 }
 
 interface DesktopRecentRunRecord {
@@ -87,7 +88,7 @@ interface DesktopCommandCatalogEntry {
   transportCommand: string
 }
 
-type DesktopOutputKind = 'SUPER_PROMPT' | 'CODING_BRIEF'
+type DesktopOutputKind = 'SUPER_PROMPT' | 'CODING_BRIEF' | 'PROMPT_TEMPLATE'
 
 interface DesktopOptimizerSuggestion {
   taskType: string
@@ -703,7 +704,9 @@ function readRunOutcome(response: unknown): Pick<DesktopRecentRunRecord, 'output
   const metadata = isObjectRecord(response) && isObjectRecord(response.metadata) ? response.metadata : null
   const quality = metadata && isObjectRecord(metadata.quality) ? metadata.quality : null
   return {
-    ...(metadata?.outputKind === 'SUPER_PROMPT' || metadata?.outputKind === 'CODING_BRIEF'
+    ...(metadata?.outputKind === 'SUPER_PROMPT' ||
+    metadata?.outputKind === 'CODING_BRIEF' ||
+    metadata?.outputKind === 'PROMPT_TEMPLATE'
       ? { outputKind: metadata.outputKind }
       : {}),
     ...(quality && typeof quality.complete === 'boolean' && typeof quality.degraded === 'boolean'
@@ -719,9 +722,17 @@ function readRunOutcome(response: unknown): Pick<DesktopRecentRunRecord, 'output
 }
 
 /** Re-issue a stored run as the console command that would have produced it. */
-function buildRerunCommand(sourceMode: DesktopRunSourceMode, rawInput: string) {
+function buildRerunCommand(
+  sourceMode: DesktopRunSourceMode,
+  rawInput: string,
+  outputKind?: DesktopOutputKind
+) {
   if (sourceMode === 'transform') {
     return `transform ${rawInput}`
+  }
+
+  if (outputKind === 'PROMPT_TEMPLATE') {
+    return `template ${rawInput}`
   }
 
   return suggestOptimizerConfig(rawInput).outputKind === 'CODING_BRIEF'
@@ -743,7 +754,7 @@ async function rerunRecentRecord(record: DesktopRecentRunRecord) {
   input.value =
     record.sourceMode === 'evaluate'
       ? `/evaluate ${record.rawInput}`
-      : buildRerunCommand(record.sourceMode, record.rawInput)
+      : buildRerunCommand(record.sourceMode, record.rawInput, record.outputKind)
 
   input.focus()
   await execute()
@@ -1115,6 +1126,7 @@ function buildCommandInvocation(
 function extractCopyableText(formattedText: string): string {
   let text = formattedText
   text = text.replace(/^# (?:Optimized|Transformed) Prompt\n\n/, '')
+  text = text.replace(PROMPT_TEMPLATE_HEADER_PATTERN, '')
   // The meta flag line and the quality line close the result; neither is part of the prompt.
   const lines = text.trimEnd().split('\n')
   while (lines.length > 1 && isTrailingResultLine(lines[lines.length - 1])) {
@@ -1250,7 +1262,7 @@ function buildResultActions(copyText: string, runRecord?: DesktopRunRecord): Con
         return
       }
 
-      input.value = buildRerunCommand(runRecord.sourceMode, runRecord.rawInput)
+      input.value = buildRerunCommand(runRecord.sourceMode, runRecord.rawInput, runRecord.outputKind)
       input.focus()
       void execute()
     },
@@ -1325,6 +1337,30 @@ function buildResultActions(copyText: string, runRecord?: DesktopRunRecord): Con
     }),
   })
   return actions
+}
+
+// A Prompt Template prints the way the Metaprompt notebook prints it: the variables, then the
+// template. extractCopyableText strips this header, so a copy holds the template alone.
+const PROMPT_TEMPLATE_HEADER_PATTERN = /^Variables:\n\n.*\n\n\*{24}\n\nPrompt:\n/
+
+function formatPromptTemplateBody(result: Record<string, unknown>, promptBody: string) {
+  const variables =
+    isObjectRecord(result.promptTemplate) && Array.isArray(result.promptTemplate.variables)
+      ? result.promptTemplate.variables.filter((name): name is string => typeof name === 'string')
+      : null
+  if (!variables || !promptBody) {
+    return promptBody
+  }
+  return [
+    'Variables:',
+    '',
+    variables.map((name) => `{${name}}`).join(', '),
+    '',
+    '*'.repeat(24),
+    '',
+    'Prompt:',
+    promptBody,
+  ].join('\n')
 }
 
 function buildOptimizePromptText(superPrompt: Record<string, unknown>) {
@@ -1413,6 +1449,7 @@ function buildRunRecord(
       format: typeof metadata.format === 'string' ? metadata.format : 'STRUCTURED',
       targetLlm,
       optimizerLane: currentOptimizerLane,
+      outputKind: readRunOutcome(result).outputKind,
     }
   }
 
@@ -2575,7 +2612,7 @@ function formatDesktopResult(result: unknown): string {
   }
 
   if (superPrompt && typeof superPrompt.fullPrompt === 'string') {
-    const promptBody = buildOptimizePromptText(superPrompt)
+    const promptBody = formatPromptTemplateBody(result, buildOptimizePromptText(superPrompt))
 
     const lines = [promptBody || '[No visible prompt content returned by provider.]']
     const metaFlags = metadata ? formatMetaFlags(metadata, currentOptimizerLane) : ''
@@ -3177,12 +3214,15 @@ async function runConsoleInput(container: HTMLElement, value: string) {
     case 'super':
       await runPromptCommand(container, 'optimize', 'SUPER_PROMPT', stripQuotes(rest))
       return
+    case 'template':
+      await runPromptCommand(container, 'optimize', 'PROMPT_TEMPLATE', stripQuotes(rest))
+      return
     case 'transform':
       await runPromptCommand(container, 'transform', currentOutputKind, stripQuotes(rest))
       return
     default:
-      // Anything the console does not recognise is a raw idea for a Coding Brief.
-      await runPromptCommand(container, 'optimize', 'CODING_BRIEF', stripQuotes(value))
+      // Anything the console does not recognise is a task for a Prompt Template (Metaprompt).
+      await runPromptCommand(container, 'optimize', 'PROMPT_TEMPLATE', stripQuotes(value))
   }
 }
 

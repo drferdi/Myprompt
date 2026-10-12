@@ -7,6 +7,8 @@ import type {
   LLMProviderName,
   OptimizeLane,
 } from '@/types'
+import { METAPROMPT } from '@/lib/optimizer/metaprompt-text'
+import { splitTemplateVariables } from '@/lib/optimizer/prompt-template-format'
 
 interface OptimizePromptParams {
   rawIdea: string
@@ -458,6 +460,24 @@ ANSWERS FROM THE USER:
 ${answered.map((item) => `- ${item.question}\n  Answer: "${item.answer}"`).join('\n')}
 
 Return the refined Coding Brief now.`
+}
+
+// ── Prompt Template (Anthropic Metaprompt) ───────────────────────────────
+//
+// The Metaprompt carries its own few-shot structure, so like the Coding Brief this builder
+// takes no Optimizer settings. Like the notebook, it is sent with no system prompt. The closing
+// steering replaces the notebook's former assistant prefill, which current Claude models reject.
+
+export function buildPromptTemplateUserPrompt(params: { rawIdea: string }): string {
+  const { task, variables } = splitTemplateVariables(params.rawIdea)
+  let steering =
+    'Start your response directly with the <Inputs> block. Do not include any preamble, commentary, or text before it.'
+  if (variables.length > 0) {
+    steering += `\nYour <Inputs> block, and the prompt template you write in <Instructions>, must use exactly these input variables and no others: ${variables.map((name) => `{$${name}}`).join(', ')}.`
+  }
+  return `${METAPROMPT.replace('{{TASK}}', () => task)}
+
+${steering}`
 }
 
 /**

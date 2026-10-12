@@ -86,7 +86,8 @@ export class OpenAIProvider implements LLMProviderAdapter {
       max_tokens: request.maxTokens,
       temperature: request.temperature,
       messages: [
-        { role: 'system', content: request.systemPrompt },
+        // An empty system prompt (Prompt Template route) is omitted, not sent blank.
+        ...(request.systemPrompt ? [{ role: 'system' as const, content: request.systemPrompt }] : []),
         { role: 'user', content: request.userPrompt },
       ],
     })
@@ -107,7 +108,8 @@ export class OpenAIProvider implements LLMProviderAdapter {
       temperature: request.temperature,
       stream: true,
       messages: [
-        { role: 'system', content: request.systemPrompt },
+        // An empty system prompt (Prompt Template route) is omitted, not sent blank.
+        ...(request.systemPrompt ? [{ role: 'system' as const, content: request.systemPrompt }] : []),
         { role: 'user', content: request.userPrompt },
       ],
     })

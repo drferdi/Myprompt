@@ -48,7 +48,7 @@ export type OutputFormat = z.infer<typeof OutputFormatSchema>
 export const OptimizeLaneSchema = z.enum(['INTERACTIVE', 'DEEP'])
 export type OptimizeLane = z.infer<typeof OptimizeLaneSchema>
 
-export const OutputKindSchema = z.enum(['SUPER_PROMPT', 'CODING_BRIEF'])
+export const OutputKindSchema = z.enum(['SUPER_PROMPT', 'CODING_BRIEF', 'PROMPT_TEMPLATE'])
 export type OutputKind = z.infer<typeof OutputKindSchema>
 
 export const TemplateCategorySchema = z.enum([
@@ -218,6 +218,8 @@ export type OptimizeQuality = z.infer<typeof OptimizeQualitySchema>
 export const OptimizeResponseSchema = z.object({
   superPrompt: SuperPromptSchema,
   codingBrief: CodingBriefSchema.optional(),
+  // Prompt Template only: the reusable template's {{VAR}} names (Metaprompt route).
+  promptTemplate: z.object({ variables: z.array(z.string()) }).optional(),
   // Questions offered after a valid Coding Brief; absent after a refinement (one round).
   clarifications: z.array(ClarificationItemSchema).max(3).optional(),
   metadata: z.object({
@@ -360,7 +362,7 @@ export const DesktopRecentRunInputSchema = z.object({
   outputText: z.string().trim().min(1),
   // Optional, additive: lets the console count today's briefs by outcome. Older
   // records without these fields still parse and are simply not counted.
-  outputKind: z.enum(['SUPER_PROMPT', 'CODING_BRIEF']).optional(),
+  outputKind: OutputKindSchema.optional(),
   quality: z
     .object({
       complete: z.boolean(),

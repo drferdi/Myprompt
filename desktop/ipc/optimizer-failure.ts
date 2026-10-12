@@ -7,6 +7,7 @@ export type OptimizerFailureCode =
   | 'UNKNOWN'
   | 'QUOTA_EXCEEDED'
   | 'MODEL_ACCESS'
+  | 'TEMPLATE_INCOMPLETE'
 
 export interface OptimizerFailure {
   code: OptimizerFailureCode
@@ -24,6 +25,16 @@ export function classifyOptimizerFailure(
   stage: OptimizerFailure['stage'] = 'stream'
 ): OptimizerFailure {
   const message = errorMessage(error)
+
+  // Prompt Template (Metaprompt) failures carry their own user-facing message, as the notebook does.
+  if (error instanceof Error && error.name === 'PromptTemplateError') {
+    return {
+      code: 'TEMPLATE_INCOMPLETE',
+      stage,
+      retryable: true,
+      publicMessage: error.message,
+    }
+  }
 
   if (/401|403|invalid api key|authentication/.test(message)) {
     return {

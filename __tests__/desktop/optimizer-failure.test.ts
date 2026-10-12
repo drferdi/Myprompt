@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { classifyOptimizerFailure } from '../../desktop/ipc/optimizer-failure'
+import { PromptTemplateError } from '../../lib/optimizer/prompt-template-format'
 
 describe('optimizer IPC failure contract', () => {
   it('classifies provider authentication failures without returning the provider message', () => {
@@ -27,6 +28,17 @@ describe('optimizer IPC failure contract', () => {
       code: 'TIMEOUT',
       stage: 'stream',
       retryable: true,
+    })
+  })
+
+  it('passes an incomplete Prompt Template error through with its own message', () => {
+    const error = new PromptTemplateError('No <Instructions> block found in the response.')
+
+    expect(classifyOptimizerFailure(error)).toEqual({
+      code: 'TEMPLATE_INCOMPLETE',
+      stage: 'stream',
+      retryable: true,
+      publicMessage: 'No <Instructions> block found in the response.',
     })
   })
 })

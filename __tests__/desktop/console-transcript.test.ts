@@ -126,12 +126,114 @@ describe('console transcript command language', () => {
     )
   })
 
-  it('treats an unknown bare word as a Coding Brief idea', async () => {
+  it('routes template to an optimize run that asks for a Prompt Template', async () => {
+    type('template "x"')
+
+    await expectDesktopCommand(
+      'optimize:run',
+      expect.objectContaining({ rawIdea: 'x', outputKind: 'PROMPT_TEMPLATE' })
+    )
+  })
+
+  it('treats an unknown bare word as a Prompt Template task', async () => {
     type('halo')
 
     await expectDesktopCommand(
       'optimize:run',
-      expect.objectContaining({ rawIdea: 'halo', outputKind: 'CODING_BRIEF' })
+      expect.objectContaining({ rawIdea: 'halo', outputKind: 'PROMPT_TEMPLATE' })
+    )
+  })
+
+  it('passes a leading [VARIABLES] list through in the raw idea', async () => {
+    type('[EMAIL, NAMA] Balas email keluhan')
+
+    await expectDesktopCommand(
+      'optimize:run',
+      expect.objectContaining({
+        rawIdea: '[EMAIL, NAMA] Balas email keluhan',
+        outputKind: 'PROMPT_TEMPLATE',
+      })
+    )
+  })
+
+  it('prints a Prompt Template the way the notebook does, and copies only the template', async () => {
+    type('balas email keluhan')
+    await expectDesktopCommand('optimize:run')
+
+    const handleDone = onStream.mock.calls.find(([channel]) => channel === 'optimize:done')?.[1] as
+      | ((payload: unknown) => void)
+      | undefined
+    const sentRequestId = (
+      invoke.mock.calls.find(
+        ([channel, payload]) =>
+          channel === 'desktop:command' &&
+          (payload as { command?: string }).command === 'optimize:run'
+      )?.[1] as { payload: { requestId: string } }
+    ).payload.requestId
+    handleDone?.({
+      requestId: sentRequestId,
+      response: {
+        superPrompt: { fullPrompt: 'Reply to {$EMAIL} for {$COMPANY}' },
+        promptTemplate: { variables: ['$COMPANY', '$EMAIL'] },
+        metadata: {
+          outputKind: 'PROMPT_TEMPLATE',
+          quality: { complete: true, degraded: false, attempts: 1 },
+        },
+      },
+    })
+
+    const streamLine = document.querySelector<HTMLElement>(
+      `#display .line[data-request-id="${sentRequestId}"]`
+    )
+    expect(streamLine?.textContent).toContain(
+      'Variables:\n\n{$COMPANY}, {$EMAIL}\n\n************************\n\nPrompt:\nReply to {$EMAIL} for {$COMPANY}'
+    )
+
+    Array.from(document.querySelectorAll<HTMLButtonElement>('#display button'))
+      .find((button) => button.textContent === '[c] copy')
+      ?.click()
+    await vi.waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith('Reply to {$EMAIL} for {$COMPANY}')
+    )
+  })
+
+  it('[r] rerun on a Prompt Template run asks for a Prompt Template again', async () => {
+    type('balas email keluhan')
+    await expectDesktopCommand('optimize:run')
+
+    const handleDone = onStream.mock.calls.find(([channel]) => channel === 'optimize:done')?.[1] as
+      | ((payload: unknown) => void)
+      | undefined
+    const sentRequestId = (
+      invoke.mock.calls.find(
+        ([channel, payload]) =>
+          channel === 'desktop:command' &&
+          (payload as { command?: string }).command === 'optimize:run'
+      )?.[1] as { payload: { requestId: string } }
+    ).payload.requestId
+    handleDone?.({
+      requestId: sentRequestId,
+      response: {
+        superPrompt: { fullPrompt: 'Reply to {{EMAIL}}' },
+        metadata: {
+          outputKind: 'PROMPT_TEMPLATE',
+          quality: { complete: true, degraded: false, attempts: 1 },
+        },
+      },
+    })
+    await vi.waitFor(() =>
+      expect((document.getElementById('cmdInput') as HTMLInputElement).disabled).toBe(false)
+    )
+    invoke.mockClear()
+
+    Array.from(document.querySelectorAll<HTMLButtonElement>('#display button'))
+      .filter((button) => button.textContent === '[r] rerun')
+      .at(-1)
+      ?.click()
+
+    await expectDesktopCommand(
+      'optimize:run',
+      expect.objectContaining({ rawIdea: 'balas email keluhan', outputKind: 'PROMPT_TEMPLATE' })
     )
   })
 
@@ -785,7 +887,7 @@ describe('console transcript command language', () => {
       expect(Array.from(line.querySelectorAll('.seg-label')).length).toBeGreaterThan(0)
     }
 
-    expect(findLine('Type an idea and press Enter. It becomes a Coding Brief.')).toBeTruthy()
+    expect(findLine('Type a task and press Enter. It becomes a prompt template.')).toBeTruthy()
     const examples = transcriptLines().filter((line) => line.classList.contains('banner-example'))
     expect(examples[0].querySelector('.seg-cmd')?.textContent).toBe('brief')
     expect(examples[1].querySelector('.seg-cmd')?.textContent).toBe('super')

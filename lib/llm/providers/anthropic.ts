@@ -26,7 +26,8 @@ export class AnthropicProvider implements LLMProviderAdapter {
       model: this.model,
       max_tokens: request.maxTokens,
       temperature: request.temperature,
-      system: request.systemPrompt,
+      // An empty system prompt (Prompt Template route) is omitted, not sent blank.
+      ...(request.systemPrompt && { system: request.systemPrompt }),
       messages: [{ role: 'user', content: request.userPrompt }],
     })
 
@@ -44,7 +45,8 @@ export class AnthropicProvider implements LLMProviderAdapter {
       model: this.model,
       max_tokens: request.maxTokens,
       temperature: request.temperature,
-      system: request.systemPrompt,
+      // An empty system prompt (Prompt Template route) is omitted, not sent blank.
+      ...(request.systemPrompt && { system: request.systemPrompt }),
       messages: [{ role: 'user', content: request.userPrompt }],
     })
 

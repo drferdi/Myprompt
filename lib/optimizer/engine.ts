@@ -1,6 +1,7 @@
 // Drferdi Transformer Engine V2 — Optimizer Engine
 import { getStrategyHints } from './strategies'
 import { applyCanonicalReport, parseCodingBriefSections } from './coding-brief-format'
+import { parsePromptTemplate, PromptTemplateError } from './prompt-template-format'
 import { collectProviderStream } from './provider-stream'
 import { parseSuperPromptMarkdown } from './super-prompt-format'
 
@@ -9,6 +10,7 @@ import {
   buildCodingBriefUserPrompt,
   buildOptimizeSystemPrompt,
   buildOptimizeUserPrompt,
+  buildPromptTemplateUserPrompt,
 } from '@/lib/llm/prompt-builder'
 import { getProvider, getScopedProviderOverrides } from '@/lib/llm/provider-registry'
 import { logger } from '@/lib/logger'
@@ -222,6 +224,86 @@ async function runCodingBriefRoute(
   }
 }
 
+// ── Prompt Template route (Anthropic Metaprompt) ─────────────────────────
+
+const PROMPT_TEMPLATE_MAX_TOKENS = 4096
+const PROMPT_TEMPLATE_TEMPERATURE = 0
+// Anthropic reports 'max_tokens', OpenAI-compatible providers 'length'.
+const TOKEN_LIMIT_FINISH_REASONS = new Set(['max_tokens', 'length'])
+
+/**
+ * Generate a reusable prompt template with the Metaprompt, called like the notebook: the
+ * Metaprompt as the only (user) message, no system prompt, temperature 0. Always uses the DEEP
+ * provider scope: the few-shot prompt plus up to 4K output tokens exceeds the INTERACTIVE
+ * latency budget. Like the notebook it fails fast, with a PromptTemplateError, when the
+ * response hit the token limit or holds no closed <Instructions> block.
+ */
+async function runPromptTemplateRoute(
+  request: OptimizeRequest,
+  startTime: number,
+  onChunk?: (delta: string) => void
+): Promise<OptimizeResponse> {
+  const providerOverrides = getScopedProviderOverrides(request.provider, 'OPTIMIZER', 'DEEP')
+  const provider = getProvider(
+    request.provider,
+    request.apiKey,
+    providerOverrides.model,
+    providerOverrides.baseUrl
+  )
+  const llmRequest = {
+    systemPrompt: '',
+    userPrompt: buildPromptTemplateUserPrompt({ rawIdea: request.rawIdea }),
+    maxTokens: PROMPT_TEMPLATE_MAX_TOKENS,
+    temperature: PROMPT_TEMPLATE_TEMPERATURE,
+  }
+
+  let raw: string
+  let model: string
+  let tokensUsed: number | undefined
+  if (onChunk) {
+    raw = await collectProviderStream(provider, llmRequest, onChunk)
+    model = provider.activeModel
+  } else {
+    const response = await provider.generate(llmRequest)
+    raw = response.content
+    model = response.model
+    tokensUsed = response.tokensUsed
+    if (response.finishReason !== undefined && TOKEN_LIMIT_FINISH_REASONS.has(response.finishReason)) {
+      throw new PromptTemplateError(
+        'The response hit MAX_TOKENS before the prompt template was complete. Run the same request again.'
+      )
+    }
+  }
+
+  const parsed = parsePromptTemplate(raw)
+
+  const superPrompt: SuperPrompt = {
+    role: '',
+    task: request.rawIdea,
+    context: '',
+    chainOfThought: '',
+    constraints: [],
+    formatSpec: '',
+    fullPrompt: parsed.template,
+  }
+
+  return {
+    superPrompt,
+    promptTemplate: { variables: parsed.variables },
+    metadata: {
+      provider: request.provider,
+      model,
+      taskType: request.taskType,
+      tone: request.tone,
+      format: request.format,
+      ...(tokensUsed !== undefined && { tokensUsed }),
+      latencyMs: Date.now() - startTime,
+      quality: { complete: true, degraded: false, attempts: 1 },
+      outputKind: 'PROMPT_TEMPLATE',
+    },
+  }
+}
+
 async function resolveTemplateContext(request: OptimizeRequest, optimizerLane: OptimizeLane) {
   const template = request.templateSlug
     ? getTemplateBySlug(request.templateSlug)
@@ -264,8 +346,12 @@ async function resolveTemplateContext(request: OptimizeRequest, optimizerLane: O
 export async function optimizePrompt(request: OptimizeRequest): Promise<OptimizeResponse> {
   const startTime = Date.now()
 
-  if (resolveOutputKind(request) === 'CODING_BRIEF') {
+  const outputKind = resolveOutputKind(request)
+  if (outputKind === 'CODING_BRIEF') {
     return runCodingBriefRoute(request, startTime)
+  }
+  if (outputKind === 'PROMPT_TEMPLATE') {
+    return runPromptTemplateRoute(request, startTime)
   }
 
   const optimizerLane = resolveOptimizerLane(request)
@@ -369,8 +455,12 @@ export async function optimizePromptStreaming(
 ): Promise<OptimizeResponse> {
   const startTime = Date.now()
 
-  if (resolveOutputKind(request) === 'CODING_BRIEF') {
+  const outputKind = resolveOutputKind(request)
+  if (outputKind === 'CODING_BRIEF') {
     return runCodingBriefRoute(request, startTime, onChunk, options)
+  }
+  if (outputKind === 'PROMPT_TEMPLATE') {
+    return runPromptTemplateRoute(request, startTime, onChunk)
   }
 
   const optimizerLane = resolveOptimizerLane(request)

@@ -27,7 +27,8 @@ export class LocalProvider implements LLMProviderAdapter {
         model: this.model,
         stream: false,
         messages: [
-          { role: 'system', content: request.systemPrompt },
+          // An empty system prompt (Prompt Template route) is omitted, not sent blank.
+          ...(request.systemPrompt ? [{ role: 'system' as const, content: request.systemPrompt }] : []),
           { role: 'user', content: request.userPrompt },
         ],
         options: {
@@ -58,7 +59,8 @@ export class LocalProvider implements LLMProviderAdapter {
         model: this.model,
         stream: true,
         messages: [
-          { role: 'system', content: request.systemPrompt },
+          // An empty system prompt (Prompt Template route) is omitted, not sent blank.
+          ...(request.systemPrompt ? [{ role: 'system' as const, content: request.systemPrompt }] : []),
           { role: 'user', content: request.userPrompt },
         ],
         options: {

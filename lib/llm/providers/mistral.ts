@@ -27,7 +27,8 @@ export class MistralProvider implements LLMProviderAdapter {
       maxTokens: request.maxTokens,
       temperature: request.temperature,
       messages: [
-        { role: 'system', content: request.systemPrompt },
+        // An empty system prompt (Prompt Template route) is omitted, not sent blank.
+        ...(request.systemPrompt ? [{ role: 'system' as const, content: request.systemPrompt }] : []),
         { role: 'user', content: request.userPrompt },
       ],
     })
@@ -49,7 +50,8 @@ export class MistralProvider implements LLMProviderAdapter {
       maxTokens: request.maxTokens,
       temperature: request.temperature,
       messages: [
-        { role: 'system', content: request.systemPrompt },
+        // An empty system prompt (Prompt Template route) is omitted, not sent blank.
+        ...(request.systemPrompt ? [{ role: 'system' as const, content: request.systemPrompt }] : []),
         { role: 'user', content: request.userPrompt },
       ],
     })

@@ -32,7 +32,7 @@ export const sessionLabelLane = 'lane'
 export const sessionLabelProfile = 'profile'
 export const sessionLabelEffort = 'effort'
 
-export const startupInstruction = 'Type an idea and press Enter. It becomes a Coding Brief.'
+export const startupInstruction = 'Type a task and press Enter. It becomes a prompt template.'
 
 export const startupExamples: Array<{ command: string; argument: string }> = [
   { command: 'brief', argument: '"the optimizer returns truncated prompts as successful results"' },
@@ -66,6 +66,7 @@ export const readyLine = '[DONE] ready'
 export const bareCommandCatalog: Array<{ usage: string; summary: string }> = [
   { usage: 'brief <text>', summary: 'Build a Coding Brief from a raw idea' },
   { usage: 'super <text>', summary: 'Build a Super Prompt from a raw idea' },
+  { usage: 'template [VARS] <task>', summary: 'Build a reusable {{VAR}} prompt template (Metaprompt)' },
   { usage: 'transform <text>', summary: 'Wrap a raw prompt in a deterministic scaffold' },
   { usage: 'lane <interactive|deep>', summary: 'Choose the optimizer lane' },
   { usage: 'profile <default|claude|codex|gemini|grok>', summary: 'Choose the compiler profile' },
