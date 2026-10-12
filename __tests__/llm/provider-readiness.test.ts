@@ -14,6 +14,19 @@ describe('desktop provider readiness', () => {
     })
   })
 
+  it('falls back to Claude first when it is configured (Claude-first)', () => {
+    expect(resolveGuestProvider('GROK', ['OPENAI', 'CLAUDE'])).toEqual({
+      status: 'ready',
+      provider: 'CLAUDE',
+      usedFallback: true,
+    })
+    expect(resolveGuestProvider(undefined, ['MISTRAL', 'OPENAI', 'CLAUDE'])).toEqual({
+      status: 'ready',
+      provider: 'CLAUDE',
+      usedFallback: false,
+    })
+  })
+
   it('keeps an explicitly requested provider when that provider is available', () => {
     expect(resolveGuestProvider('CLAUDE', ['OPENAI', 'CLAUDE'])).toEqual({
       status: 'ready',

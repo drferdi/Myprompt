@@ -157,9 +157,10 @@ function buildOpenAiLaneState(lane: DesktopOptimizerLane) {
 }
 
 function getPreferredLoadedProvider(): DesktopProviderName | null {
+  // Claude-first: Anthropic wins whenever its key is loaded.
+  if (process.env.ANTHROPIC_API_KEY?.trim()) return 'CLAUDE'
   if (process.env.XAI_API_KEY?.trim()) return 'GROK'
   if (process.env.OPENAI_API_KEY?.trim()) return 'OPENAI'
-  if (process.env.ANTHROPIC_API_KEY?.trim()) return 'CLAUDE'
   if (process.env.MISTRAL_API_KEY?.trim()) return 'MISTRAL'
   if (process.env.QWEN_API_KEY?.trim()) return 'QWEN'
   return null

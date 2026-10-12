@@ -1,5 +1,11 @@
 # HANDOFF
 
+## 2026-10-13 - README completed, Claude-first provider order (Claude Code)
+
+- Gaffer chose "README + Claude priority". Code: `desktop/main.ts` `getPreferredLoadedProvider` now Anthropic -> xAI -> OpenAI -> Mistral -> Qwen; `lib/llm/provider-readiness.ts` fallback now Claude -> OpenAI -> first available (test added). README: Claude-first positioning, new section 04 (Metaprompt, notebook parity table, deliberate deviations), sections renumbered 05-20, console/routing/providers/error classes/contributor map/known gaps/verification snapshot updated.
+- PASS / exit 0: typecheck, ESLint on touched TS, full Vitest suite (18 files, 211 tests), `node --run test:e2e` (5 Playwright Electron tests, isolated userData, provider keys stripped), desktop:build, verify-structure, Electron --smoke (temp profile). README has no linter in this capsule; Mermaid edits not rendered.
+- Uncommitted on Monorepo branch `feat/prompt-template-metaprompt`; not pushed (needs Gaffer approval). Claude model has no env override (`DEFAULT_MODEL_MAP.CLAUDE`).
+
 ## 2026-10-13 - Metaprompt (Prompt Template) implemented per Metaprompt.md (Claude Code)
 
 - Monorepo branch `feat/prompt-template-metaprompt` (commit `f29fd12e`). Published to `myprompt` as branch `feat/prompt-template-metaprompt` (`24c81832`, cherry-picked onto `myprompt/main` because the fresh subtree split shared no history with it; 18 test files + `tsc --noEmit` passed on that tree). Not merged into Myprompt `main` (needs Gaffer approval). Source of truth: `D:/DEV/gafferverse/metaprompt/Metaprompt.md` (identical to Gaffer's Downloads copy).

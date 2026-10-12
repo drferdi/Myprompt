@@ -52,7 +52,12 @@ export function resolveGuestProvider(
     return { status: 'ready', provider: requested, usedFallback: false }
   }
 
-  const fallback = available.includes('OPENAI') ? 'OPENAI' : available[0]
+  // Claude-first: Claude when configured, then OpenAI, then whichever provider is available.
+  const fallback = available.includes('CLAUDE')
+    ? 'CLAUDE'
+    : available.includes('OPENAI')
+      ? 'OPENAI'
+      : available[0]
   if (!fallback) {
     return { status: 'missing', provider: null, usedFallback: false }
   }

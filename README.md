@@ -7,6 +7,7 @@ Source basis:
   - MyPrompt technical/product dossier — 23 Sep 2026
   - Current repository main/package contract — cross-checked 24 Sep 2026
   - Prose rewritten for readability — 24 Sep 2026 (facts unchanged)
+  - Metaprompt Prompt Template + Claude-first provider order — 13 Oct 2026
   - Historical comprehensive README — visual/reference only, not authority
 
 README DESIGN — "GAFFER"
@@ -25,14 +26,16 @@ and applicable SAFRS controls remain authoritative when documentation disagrees.
   <img src="https://i.ibb.co.com/svJSWVkb/My-Prompt-png.png" alt="MyPrompt Hero Banner" width="100%" />
 </p>
 
-### Turn a half-baked idea into a brief your AI can actually run with.
+### Turn a half-baked idea into a prompt Claude can actually run with.
 
-**A terminal-native prompt engineering workspace by Sentra Artificial Intelligence.**
+**A terminal-native, Claude-first prompt engineering workspace by Sentra Artificial Intelligence.**
 
 <br />
 
 [![Package](https://img.shields.io/badge/PACKAGE-sentra--prompt-111827?style=flat-square)](#identity)
 [![Version](https://img.shields.io/badge/VERSION-0.1.0-5B8CFF?style=flat-square)](#identity)
+[![Claude](https://img.shields.io/badge/CLAUDE-FIRST-D97757?style=flat-square)](#providers)
+[![Metaprompt](https://img.shields.io/badge/ANTHROPIC-METAPROMPT-D97757?style=flat-square)](#metaprompt)
 [![Desktop](https://img.shields.io/badge/SURFACE-ELECTRON%20DESKTOP-47848F?style=flat-square)](#desktop-console)
 [![Coding Brief](https://img.shields.io/badge/CODING%20BRIEF-v3.0-8B5CF6?style=flat-square)](#coding-brief)
 [![Providers](https://img.shields.io/badge/LLM%20ADAPTERS-6-22D3EE?style=flat-square)](#providers)
@@ -41,7 +44,7 @@ and applicable SAFRS controls remain authoritative when documentation disagrees.
 
 <br />
 
-<img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&size=14&duration=2300&pause=850&color=22D3EE&center=true&vCenter=true&width=920&height=32&lines=type+an+idea+%E2%86%92+get+a+structured+brief+%E2%86%92+refine+only+when+needed;fill+by+default+%C2%B7+ask+only+to+refine;provider-flexible+%C2%B7+validator-backed+%C2%B7+terminal-native" alt="MyPrompt operating signal" />
+<img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&size=14&duration=2300&pause=850&color=22D3EE&center=true&vCenter=true&width=920&height=32&lines=type+a+task+%E2%86%92+get+a+reusable+Claude+prompt+template;Anthropic+Metaprompt+%C2%B7+Claude-first+%C2%B7+terminal-native;fill+by+default+%C2%B7+ask+only+to+refine" alt="MyPrompt operating signal" />
 
 <br />
 
@@ -49,6 +52,7 @@ and applicable SAFRS controls remain authoritative when documentation disagrees.
 
 <br />
 
+<img src="https://img.shields.io/badge/TEMPLATE-D97757?style=for-the-badge&labelColor=0D1117" alt="Template" />
 <img src="https://img.shields.io/badge/BRIEF-8B5CF6?style=for-the-badge&labelColor=0D1117" alt="Brief" />
 <img src="https://img.shields.io/badge/SUPER-22D3EE?style=for-the-badge&labelColor=0D1117" alt="Super" />
 <img src="https://img.shields.io/badge/TRANSFORM-5B8CFF?style=for-the-badge&labelColor=0D1117" alt="Transform" />
@@ -60,6 +64,7 @@ and applicable SAFRS controls remain authoritative when documentation disagrees.
 
 [Overview](#overview) ·
 [Quick Start](#quick-start) ·
+[Metaprompt](#metaprompt) ·
 [Coding Brief](#coding-brief) ·
 [Validator](#validator) ·
 [Console](#desktop-console) ·
@@ -94,24 +99,32 @@ order. Its house rule is *fill by default, ask only to refine*. You type a raw
 idea, you get back a complete, validated artifact, and questions show up
 afterward only if something still needs your call.
 
-MyPrompt is a terminal-native prompt engineering workspace built by Sentra
-Artificial Intelligence. It runs as an Electron desktop app and turns rough
-intent into one of three things:
+MyPrompt is a terminal-native, Claude-first prompt engineering workspace built
+by Sentra Artificial Intelligence. It runs as an Electron desktop app and turns
+rough intent into one of four things:
 
 ```text
 RAW IDEA
    │
-   ├── brief      → validated Coding Brief
+   ├── (just type) / template → reusable prompt template (Anthropic Metaprompt)
    │
-   ├── super      → structured Super Prompt
+   ├── brief                  → validated Coding Brief
    │
-   └── transform  → deterministic model-specific scaffold
+   ├── super                  → structured Super Prompt
+   │
+   └── transform              → deterministic model-specific scaffold
 ```
 
-Day to day, the loop is short: type an idea, get a complete artifact, let the
-validator check it, answer a question or two if anything is still open, then
-copy, save, evaluate, or rerun. It is built for a single operator preparing
-briefs for coding agents and structured prompts for language models.
+Claude is the first-class target. The default outcome is a port of
+Anthropic's own Metaprompt, Claude is the provider picked first whenever its key
+is loaded, and the `claude` transform profile writes the XML-tagged structure
+Claude follows best. The other providers still work through the same contract.
+
+Day to day, the loop is short: type a task, get a complete artifact, copy it,
+then save, evaluate, or rerun. Coding Briefs add a validator check and, if
+anything is still open, a question or two. It is built for a single operator
+preparing prompt templates and structured prompts for Claude, and briefs for
+coding agents.
 
 ---
 
@@ -127,9 +140,10 @@ briefs for coding agents and structured prompts for language models.
 | Repository | `drferdi/Myprompt` |
 | Primary surface | Electron desktop console |
 | Renderer | Framework-free text console |
-| Default prompt outcome | Coding Brief |
-| Other outcomes | Super Prompt · deterministic Transform |
-| Language model mode | Bring-your-own-provider |
+| Default prompt outcome | Prompt Template (Anthropic Metaprompt) |
+| Other outcomes | Coding Brief · Super Prompt · deterministic Transform |
+| Language model mode | Claude-first · bring-your-own-provider |
+| Preferred provider | Claude (`ANTHROPIC_API_KEY`) |
 | Node.js | 22 or later |
 | Package manager | `pnpm@11.21.0` |
 | Development model | Standalone SAFRS capsule |
@@ -149,17 +163,23 @@ the npm package is `sentra-prompt`, the desktop prompt reads
 
 You'll need Node.js 22 or later, pnpm 11.21.0, and, for now, Windows with
 PowerShell for the desktop build scripts. The console opens without a provider
-key, but `brief`, `super`, and `/evaluate` need one. A database is only needed
-for account-backed features.
+key, but typing a task, `template`, `brief`, `super`, and `/evaluate` need one.
+Use an Anthropic key: Claude is picked first whenever it is loaded. A database
+is only needed for account-backed features.
 
 ```bash
 git clone https://github.com/drferdi/Myprompt.git
 cd Myprompt
 pnpm install --frozen-lockfile
-# Optional: configure only the integrations you need.
 cp .env.example .env.local
+# Set ANTHROPIC_API_KEY in .env.local (other providers are optional).
 pnpm start
 ```
+
+Then type a task at the prompt, for example
+`[PATIENT_MESSAGE, CLINIC_INFO] Reply to a clinic patient on WhatsApp`, and
+press Enter. You can also save the key from inside the console with
+`key CLAUDE <apiKey>`.
 
 To run the full verification contract for the standalone capsule:
 
@@ -169,12 +189,76 @@ pnpm verify
 
 ---
 
+<a id="metaprompt"></a>
+
+## 04 — Prompt Template: Anthropic's Metaprompt <img src="https://img.shields.io/badge/METAPROMPT-D97757?style=flat-square&labelColor=0D1117" alt="Metaprompt" />
+
+Anything you type that isn't another command becomes a **prompt template**, and
+you can also ask for one explicitly with `template <task>`. The engine is a
+faithful port of Anthropic's
+[Metaprompt](https://platform.claude.com/cookbook/misc-metaprompt): a long
+few-shot prompt that shows Claude half a dozen well-built prompts and then asks
+it to write one for your task. You describe a task once; you get back reusable
+instructions with input slots that you fill every time you run it. An
+illustrative run (output shortened):
+
+```text
+sentra ~/myprompt $ [PATIENT_MESSAGE, CLINIC_INFO] Reply to a clinic patient on WhatsApp
+
+Variables:
+
+{$CLINIC_INFO}, {$PATIENT_MESSAGE}
+
+************************
+
+Prompt:
+You are the front-desk assistant of a general practice clinic ...
+<clinic_info>
+{$CLINIC_INFO}
+</clinic_info>
+...
+```
+
+It follows the notebook's call exactly, so results match what Anthropic
+documents:
+
+| Notebook behaviour | MyPrompt |
+| --- | --- |
+| Metaprompt text | Word for word (`lib/optimizer/metaprompt-text.ts`) |
+| Request | One user message, **no system prompt**, temperature 0, 4,096 max tokens |
+| No-prefill steering | "Start your response directly with the `<Inputs>` block…" appended verbatim |
+| Optional `VARIABLES` | Leading `[A, B]` list, normalised like the notebook (`strip`, drop `$`, upper-case), plus its "must use exactly these input variables and no others" line |
+| `extract_prompt` | First `<Instructions>` block, trailing empty tags removed twice |
+| `extract_variables` | Every `{...}` in the template, sorted; placeholders stay `{$NAME}` |
+| Output | `Variables:` → `****` → `Prompt:`; `[c] copy` copies the template only |
+| Cut-off guard | A `max_tokens` / `length` stop or a missing `<Instructions>` block fails fast with `TEMPLATE_INCOMPLETE` and the notebook's message, instead of a half template |
+
+Square-bracket placeholders such as `[Your Name]` are left for a person to fill,
+as in the notebook. Leave out the `[A, B]` list and Claude chooses the variables
+itself; rarely more than two or three.
+
+Three differences from the notebook are deliberate:
+
+- The function-calling example is removed from the few-shot text. Its
+  pre-tool-use XML call format is obsolete and roughly doubled the token cost.
+- The notebook's last step (filling the variables with example values and
+  test-driving the template on a second model) is not built. Use `/evaluate` or
+  run the template yourself.
+- The model is the console's active provider rather than a pinned
+  `claude-sonnet-4-6`. The Metaprompt is written for Claude; other providers
+  run it, but their template quality is unverified.
+
+The route always uses the DEEP provider scope, because the few-shot prompt plus
+up to 4,096 output tokens is beyond the INTERACTIVE latency budget. Templates
+are saved in recent runs and `[r]` reruns them as templates.
+
+---
+
 <a id="coding-brief"></a>
 
-## 04 — Coding Brief: the draft comes first <img src="https://img.shields.io/badge/CODING%20BRIEF-8B5CF6?style=flat-square&labelColor=0D1117" alt="Coding Brief" />
+## 05 — Coding Brief: the draft comes first <img src="https://img.shields.io/badge/CODING%20BRIEF-8B5CF6?style=flat-square&labelColor=0D1117" alt="Coding Brief" />
 
-Anything you type that isn't another command becomes a Coding Brief, and you
-can also ask for one explicitly with `brief <idea>`. Every brief follows Coding
+Ask for a Coding Brief with `brief <idea>`. Every brief follows Coding
 Brief Standard v3.0 (currently a draft; see `docs/CODING_BRIEF_STANDARD.md`)
 and always uses the same order:
 
@@ -210,6 +294,9 @@ attempt follows. While the repair runs, the console shows
 flowchart TD
     A["RAW IDEA"]
     B{"outputKind / taskType"}
+    P["PROMPT TEMPLATE<br/>Anthropic Metaprompt"]
+    Q["CLAUDE-FIRST LLM<br/>4096 tokens · temp 0 · no system prompt"]
+    R["extract_prompt · extract_variables<br/>or fail fast: TEMPLATE_INCOMPLETE"]
     C["CODING BRIEF<br/>7 authored headings + canonical REPORT"]
     D["LLM<br/>1200 tokens · temp 0.3"]
     E["applyCanonicalReport<br/>validate V1–V14"]
@@ -224,6 +311,7 @@ flowchart TD
     N["NO LLM CALL"]
 
     A --> B
+    B -->|PROMPT_TEMPLATE · console default| P --> Q --> R
     B -->|CODING_BRIEF or CODING| C --> D --> E
     E -->|valid| F
     E -->|invalid| G --> H
@@ -240,16 +328,19 @@ flowchart TD
     classDef transform fill:#172554,stroke:#60A5FA,color:#EFF6FF,stroke-width:2px;
 
     class A,B input;
-    class C,D,J,K,L brief;
+    class C,D,J,K,L,P,Q brief;
+    class R verify;
     class E,F,H verify;
     class G warn;
     class I fail;
     class M,N transform;
 ```
 
-`lib/optimizer/engine.ts` picks the `CODING_BRIEF` route when it is requested
-explicitly or when `taskType = CODING`, and `SUPER_PROMPT` otherwise. The
-`transform` command bypasses the optimizer engine entirely.
+`lib/optimizer/engine.ts` honours the requested `outputKind`: the console sends
+`PROMPT_TEMPLATE` for plain text and `template`, `CODING_BRIEF` for `brief`, and
+`SUPER_PROMPT` for `super`. Without an explicit kind it picks `CODING_BRIEF`
+when `taskType = CODING` and `SUPER_PROMPT` otherwise. The `transform` command
+bypasses the optimizer engine entirely.
 
 The whole flow rests on six principles, which is why it opens with an attempt
 to be useful instead of an interrogation:
@@ -267,7 +358,7 @@ P6  When ambiguity remains, choose one interpretation and expose alternatives.
 
 <a id="validator"></a>
 
-## 05 — Checked by a validator <img src="https://img.shields.io/badge/VALIDATOR-14B8A6?style=flat-square&labelColor=0D1117" alt="Validator" />
+## 06 — Checked by a validator <img src="https://img.shields.io/badge/VALIDATOR-14B8A6?style=flat-square&labelColor=0D1117" alt="Validator" />
 
 Every Coding Brief goes through a validator defined in
 `lib/prompt-quality/contract.ts`. Fourteen rules, V1 to V14, check that
@@ -292,7 +383,7 @@ brief stays on screen.
 
 <a id="clarification"></a>
 
-## 06 — Questions come last <img src="https://img.shields.io/badge/REFINE-F59E0B?style=flat-square&labelColor=0D1117" alt="Refine" />
+## 07 — Questions come last <img src="https://img.shields.io/badge/REFINE-F59E0B?style=flat-square&labelColor=0D1117" alt="Refine" />
 
 Once a valid brief exists, MyPrompt may offer one clarification round of up to
 three questions. They are picked mechanically, with no extra LLM call, in this
@@ -316,7 +407,7 @@ brief reuses the same answers, so you never repeat yourself.
 
 <a id="super-prompt"></a>
 
-## 07 — Super Prompt <img src="https://img.shields.io/badge/SUPER%20PROMPT-22D3EE?style=flat-square&labelColor=0D1117" alt="Super Prompt" />
+## 08 — Super Prompt <img src="https://img.shields.io/badge/SUPER%20PROMPT-22D3EE?style=flat-square&labelColor=0D1117" alt="Super Prompt" />
 
 For general prompt engineering, `super <idea>` builds a Super Prompt under six
 anchors: ROLE, TASK, CONTEXT, APPROACH (optional), CONSTRAINTS, and OUTPUT
@@ -337,7 +428,7 @@ anchors stay in English so the parser can always find them.
 
 <a id="transform"></a>
 
-## 08 — Transform <img src="https://img.shields.io/badge/TRANSFORM-5B8CFF?style=flat-square&labelColor=0D1117" alt="Transform" />
+## 09 — Transform <img src="https://img.shields.io/badge/TRANSFORM-5B8CFF?style=flat-square&labelColor=0D1117" alt="Transform" />
 
 `transform <text>` is the odd one out on purpose, because it never calls an
 LLM. It is a pure string-building path that detects your intent (translation,
@@ -364,7 +455,7 @@ Indonesian (`id`) locale, and the `general` target.
 
 <a id="evaluator"></a>
 
-## 09 — Evaluator <img src="https://img.shields.io/badge/EVALUATOR-F59E0B?style=flat-square&labelColor=0D1117" alt="Evaluator" />
+## 10 — Evaluator <img src="https://img.shields.io/badge/EVALUATOR-F59E0B?style=flat-square&labelColor=0D1117" alt="Evaluator" />
 
 `/evaluate <text>` puts an LLM in the judge's chair. It scores structure,
 clarity, completeness, and specificity from 0 to 10, weighted 0.25 each by
@@ -381,10 +472,17 @@ instead of a made-up number.
 
 <a id="providers"></a>
 
-## 10 — Bring your own provider <img src="https://img.shields.io/badge/PROVIDERS-22D3EE?style=flat-square&labelColor=0D1117" alt="Providers" />
+## 11 — Claude first, other providers welcome <img src="https://img.shields.io/badge/PROVIDERS-D97757?style=flat-square&labelColor=0D1117" alt="Providers" />
+
+MyPrompt is tuned for Claude. The default Prompt Template route runs
+Anthropic's Metaprompt, which was written for Claude; the `claude` transform
+profile emits the XML-tagged sections Claude follows best; and Claude is the
+provider picked first whenever an Anthropic key is loaded. Load
+`ANTHROPIC_API_KEY` (or `key CLAUDE <apiKey>` in the console) and everything
+runs on Claude.
 
 Six adapters share one contract (`generate`, `generateStream`, and
-`validateApiKey`), so the optimizer works the same with any of them:
+`validateApiKey`), so the other providers keep working when you want them:
 
 | Provider code | Adapter | Default model | Credential |
 | --- | --- | --- | --- |
@@ -396,26 +494,39 @@ Six adapters share one contract (`generate`, `generateStream`, and
 | `LOCAL` | Ollama `/api/chat` | `llama3` | no key required |
 
 Without a signed-in session, MyPrompt picks a guest provider from whichever
-keys you have, in this order: xAI, OpenAI, Anthropic, Mistral, Qwen. If none is
-available, it shows a provider-missing state. OpenAI-compatible routes accept
-model and base-URL overrides, resolved per lane first, then per scope, then
-globally.
+keys you have, in this order: **Anthropic**, xAI, OpenAI, Mistral, Qwen. When a
+request names a provider whose key is missing, it falls back to Claude if
+available, then OpenAI, then any configured provider. If none is available, it
+shows a provider-missing state. OpenAI-compatible routes accept model and
+base-URL overrides, resolved per lane first, then per scope, then globally.
+When a route sends no system prompt (the Prompt Template route), every adapter
+omits the system message instead of sending it blank.
+
+> [!WARNING]
+> The Prompt Template route uses temperature 0, as the Metaprompt notebook does.
+> The notebook warns that `claude-sonnet-5` rejects that request. The default
+> `claude-sonnet-4-20250514` accepts it. The Claude model has no environment
+> override; it is set by `DEFAULT_MODEL_MAP.CLAUDE` in `lib/constants.ts`, so
+> check this before changing it.
 
 When something fails, the error lands in a clear class: `PROVIDER_AUTH`,
 `RATE_LIMIT`, `NETWORK`, `TIMEOUT`, `UPSTREAM`, `QUOTA_EXCEEDED`,
-`MODEL_ACCESS`, or `UNKNOWN`.
+`MODEL_ACCESS`, `TEMPLATE_INCOMPLETE` (a cut-off or unparseable Metaprompt
+response), or `UNKNOWN`.
 
 ---
 
 <a id="desktop-console"></a>
 
-## 11 — One window, one prompt <img src="https://img.shields.io/badge/CONSOLE-8B5CF6?style=flat-square&labelColor=0D1117" alt="Console" />
+## 12 — One window, one prompt <img src="https://img.shields.io/badge/CONSOLE-8B5CF6?style=flat-square&labelColor=0D1117" alt="Console" />
 
 The whole interface is a single terminal-style transcript at the
 `sentra ~/myprompt $` prompt, with no forms and no menus.
 
 | Command | Function |
 | --- | --- |
+| `<task>` (plain text) | Build a prompt template with the Metaprompt |
+| `template [VARS] <task>` | Same, explicitly; `[A, B]` fixes the variable names |
 | `brief <text>` | Build a Coding Brief |
 | `super <text>` | Build a Super Prompt |
 | `transform <text>` | Build a deterministic scaffold |
@@ -487,7 +598,7 @@ ClearType text stays crisp.
 
 <a id="architecture"></a>
 
-## 12 — Under the hood <img src="https://img.shields.io/badge/ARCHITECTURE-5B8CFF?style=flat-square&labelColor=0D1117" alt="Architecture" />
+## 13 — Under the hood <img src="https://img.shields.io/badge/ARCHITECTURE-5B8CFF?style=flat-square&labelColor=0D1117" alt="Architecture" />
 
 ```mermaid
 %%{init: {"flowchart": {"htmlLabels": false, "padding": 20}, "themeVariables": {"fontFamily": "monospace", "fontSize": "11px"}}}%%
@@ -495,7 +606,7 @@ flowchart LR
     R["Renderer<br/>terminal console"]
     P["Preload<br/>window.sentraDesktop"]
     I["IPC Main<br/>desktop:command + optimize:*"]
-    O["lib/optimizer<br/>brief · super"]
+    O["lib/optimizer<br/>template · brief · super"]
     T["lib/transform<br/>compiler profiles"]
     E["lib/evaluator"]
     Q["lib/prompt-quality<br/>validator + clarification"]
@@ -587,7 +698,7 @@ logged.
 
 <a id="quality"></a>
 
-## 13 — Tested in a real window <img src="https://img.shields.io/badge/VERIFIED-14B8A6?style=flat-square&labelColor=0D1117" alt="Verified" />
+## 14 — Tested in a real window <img src="https://img.shields.io/badge/VERIFIED-14B8A6?style=flat-square&labelColor=0D1117" alt="Verified" />
 
 The acceptance snapshot from 23 September 2026 had all four primary gates
 green: 191 Vitest tests, clean lint, typecheck and build exiting with code 0,
@@ -597,11 +708,17 @@ extreme output, provider-call isolation, the 80 × 20 first-launch geometry, and
 a mechanical color check that compares computed renderer styles against the
 terminal reference and fails on any mismatch.
 
+After the Metaprompt and Claude-first work on 13 October 2026: typecheck, lint
+on the touched files, the full Vitest suite (211 tests), the 5 Playwright
+Electron end-to-end tests, the desktop build, the structure check, and the
+Electron `--smoke` run all exited with code 0. One live Claude template run was
+checked by hand.
+
 > [!IMPORTANT]
 > These counts are a dated snapshot. The test count will change as the project
 > grows.
 
-## 14 — How MyPrompt compares ![Compare](https://img.shields.io/badge/COMPARE-5B8CFF?style=flat-square&labelColor=0D1117)
+## 15 — How MyPrompt compares ![Compare](https://img.shields.io/badge/COMPARE-5B8CFF?style=flat-square&labelColor=0D1117)
 
 MyPrompt sits at one specific point in the prompt engineering toolchain: before a
 model generates the first line of code. The tools below often come up in the same
@@ -613,12 +730,17 @@ positioning map, not a ranking.
 | Primary category | Authoring workspace: raw idea → validated brief | Programmatic optimization of prompts and model weights | Pre-deployment testing, evals, and red teaming | Production observability and tracing | Template library and marketplace |
 | Primary user | Solo architects, AI engineers, and developers briefing coding agents | ML researchers and advanced LLM developers | Developers, QA, and security engineers | Platform and operations teams | Non-technical users and content creators |
 | Interface | Terminal-style Electron desktop console | Python library | CLI plus a local web viewer | Web dashboard, managed cloud or self-hosted | Web marketplace |
-| Input → output | Raw idea → Coding Brief, Super Prompt, or deterministic scaffold | Program + metric + training inputs → optimized prompts and/or fine-tuned weights | Prompts + test cases + assertions → pass/fail matrix | Application traces → latency, cost, and quality telemetry | Search → reusable prompt template |
+| Input → output | Raw task → Claude prompt template (Metaprompt), Coding Brief, Super Prompt, or deterministic scaffold | Program + metric + training inputs → optimized prompts and/or fine-tuned weights | Prompts + test cases + assertions → pass/fail matrix | Application traces → latency, cost, and quality telemetry | Search → reusable prompt template |
 | Setup overhead | Low: install and add one provider key (Transform needs none) | Medium to high: define a program, a metric, and training examples | Medium: YAML configuration and assertions | High for self-hosted Langfuse (Postgres, ClickHouse, Redis, object storage); lower on the managed cloud | Low: copy and paste |
 | Core strength | A complete, validator-checked brief on the first pass; questions only to refine | Systematic, metric-driven optimization | Regression detection and red teaming in CI | Cost, latency, and trace visibility in production | A wide range of ready-made general templates |
 | Limitation | No dataset-driven or statistical evaluation suite yet | Heavy for ad-hoc, day-to-day tasks | Tests prompts you already have; authoring is not its focus | Not an authoring tool | Generic templates, not tied to a codebase or validated against a contract |
 
 ### Where MyPrompt is different
+
+**Claude-first, with Anthropic's own method.** The default route runs
+Anthropic's Metaprompt word for word, called the way the notebook calls it, so a
+plain task becomes a reusable Claude prompt template in one provider call.
+Claude is picked first whenever its key is loaded.
 
 **Validator-backed structure instead of optimization loops.** Rather than improving
 a prompt through many model calls, MyPrompt fixes the structure up front. Every
@@ -631,8 +753,8 @@ validation, one repair.
 terminal-style transcript with no forms and no menus. Type an idea, get a
 validated artifact, and copy it straight into your coding agent.
 
-**Built for coding and architecture briefs.** MyPrompt is not a generic generator
-for SEO articles or marketing email. It is designed to give a coding assistant the
+**Coding Briefs built for coding and architecture work.** The `brief` route is not
+a generic generator for SEO articles or marketing email. It is designed to give a coding assistant the
 context, scope, stack, and runnable done criteria it needs, so the assistant has
 less room to ignore the system's architecture or invent code that doesn't fit.
 
@@ -641,7 +763,7 @@ less room to ignore the system's architecture or invent code that doesn't fit.
 The metrics below define how MyPrompt's effect on coding agents could be measured.
 They are hypotheses to test, not results. No comparative benchmark has been run
 yet, so no figures should be quoted until one has. The harness in
-[section 13](#13--tested-in-a-real-window-) measures speed and output size only.
+[section 14](#14--tested-in-a-real-window-) measures speed and output size only.
 
 | Metric | What it measures | Hypothesis to test |
 | --- | --- | --- |
@@ -667,7 +789,7 @@ first line of code.
 
 <a id="standalone"></a>
 
-## 15 — Built to stand on its own <img src="https://img.shields.io/badge/SAFRS-F59E0B?style=flat-square&labelColor=0D1117" alt="SAFRS" />
+## 16 — Built to stand on its own <img src="https://img.shields.io/badge/SAFRS-F59E0B?style=flat-square&labelColor=0D1117" alt="SAFRS" />
 
 MyPrompt is a standalone SAFRS capsule under R2 review. It can be developed
 inside a monorepo, but it has to install, lint, typecheck, test, build, run,
@@ -707,7 +829,7 @@ reaching the wrong remote without explicit operator authorization.
 
 <a id="development"></a>
 
-## 16 — Development commands <img src="https://img.shields.io/badge/DEVELOPMENT-5B8CFF?style=flat-square&labelColor=0D1117" alt="Development" />
+## 17 — Development commands <img src="https://img.shields.io/badge/DEVELOPMENT-5B8CFF?style=flat-square&labelColor=0D1117" alt="Development" />
 
 ```bash
 # Run
@@ -801,7 +923,7 @@ SENTRA_DESKTOP_PROVIDER
 
 <a id="contributing"></a>
 
-## 17 — Contributor map <img src="https://img.shields.io/badge/CONTRIBUTOR-22D3EE?style=flat-square&labelColor=0D1117" alt="Contributor" />
+## 18 — Contributor map <img src="https://img.shields.io/badge/CONTRIBUTOR-22D3EE?style=flat-square&labelColor=0D1117" alt="Contributor" />
 
 If you're changing prompt behavior, start with the contract and check both
 `docs/CODING_BRIEF_STANDARD.md` and `lib/prompt-quality/contract.ts` before
@@ -836,7 +958,11 @@ surface and is not part of the current standalone capsule tree.
 | Coding Brief prose standard | `docs/CODING_BRIEF_STANDARD.md` |
 | Coding Brief executable validation | `lib/prompt-quality/contract.ts` |
 | Optimizer routing | `lib/optimizer/engine.ts` |
+| Metaprompt reference | Anthropic cookbook `misc-metaprompt` (the port must match it) |
+| Metaprompt text | `lib/optimizer/metaprompt-text.ts` |
+| Prompt Template parsing / VARIABLES | `lib/optimizer/prompt-template-format.ts` |
 | Super Prompt parsing | `lib/optimizer/super-prompt-format.ts` |
+| Provider priority (Claude-first) | `desktop/main.ts` · `lib/llm/provider-readiness.ts` |
 | Transform behavior | `lib/transform/` |
 | Provider adapters | `lib/llm/providers/` |
 | Desktop IPC | `desktop/ipc/` |
@@ -849,7 +975,7 @@ surface and is not part of the current standalone capsule tree.
 
 <a id="known-gaps"></a>
 
-## 18 — Still on the to-do list <img src="https://img.shields.io/badge/KNOWN%20GAPS-F43F5E?style=flat-square&labelColor=0D1117" alt="Known Gaps" />
+## 19 — Still on the to-do list <img src="https://img.shields.io/badge/KNOWN%20GAPS-F43F5E?style=flat-square&labelColor=0D1117" alt="Known Gaps" />
 
 We'd rather tell you up front. These are backlog items, not features.
 
@@ -861,6 +987,10 @@ We'd rather tell you up front. These are backlog items, not features.
 | Stale doc reference | A historical prompt-quality document is referenced from docs but missing from the capsule |
 | Window comments | Some comments still say 120×30; the runtime target is 80×20 |
 | Benchmark fixture | `deep-architecture-review` routes as a Coding Brief, although its budget was designed for a Super Prompt |
+| Metaprompt test-drive | The notebook's last step (fill the variables with example values and run the template) is not built |
+| Metaprompt streaming | A streamed response has no finish reason, so a cut-off stream is caught only by its missing `</Instructions>` |
+| Metaprompt `[...]` prefix | A task that itself starts with `[...]` followed by a space is read as a variable list |
+| Metaprompt on other providers | Template quality on non-Claude providers is unverified |
 | Database seed | `db:seed` references a missing `prisma/seed.ts` |
 | Generated Prisma client | Committed to the repo without an explicit reason in the schema output config |
 | Workspace concurrency | `main.ts` and `core.ts` create separate stores for the same workspace file, so their write queues aren't shared |
@@ -870,7 +1000,7 @@ We'd rather tell you up front. These are backlog items, not features.
 
 <a id="non-goals"></a>
 
-## 19 — What MyPrompt isn't <img src="https://img.shields.io/badge/NON--GOALS-64748B?style=flat-square&labelColor=0D1117" alt="Non Goals" />
+## 20 — What MyPrompt isn't <img src="https://img.shields.io/badge/NON--GOALS-64748B?style=flat-square&labelColor=0D1117" alt="Non Goals" />
 
 MyPrompt isn't a web SaaS, a generic chat client, an autonomous coding agent, a
 replacement for repository governance, a hidden-key proxy, a benchmark
@@ -897,7 +1027,7 @@ contract.
 <img src="https://i.ibb.co.com/4Z447tNw/myprompt2.png" alt="MyPrompt" width="64" />
 
 ### Built by Sentra Artificial Intelligence
-**Prompt Engineering · Multi-LLM Optimization · AI-Native Tooling**
+**Prompt Engineering · Claude-First · AI-Native Tooling**
 <br />
 
 [Sentra Artificial Intelligence](https://sentrahai.com)
@@ -915,7 +1045,7 @@ MyPrompt · <code>sentra-prompt</code> · v0.1.0
 </sub>
 
 <br />
-<sub><code>TYPE AN IDEA · GET A STRUCTURE · VERIFY THE CONTRACT</code></sub>
+<sub><code>TYPE A TASK · GET A CLAUDE PROMPT · VERIFY THE CONTRACT</code></sub>
 <br />
 
 <img src="https://img.shields.io/badge/IDEA-22D3EE?style=flat-square&labelColor=0D1117" alt="Idea" />
