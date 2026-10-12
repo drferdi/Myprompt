@@ -1,5 +1,13 @@
 # HANDOFF
 
+## 2026-10-13 - Dependabot #128 (braces) resolved on Myprompt main (Claude Code)
+
+- `braces` <= 3.0.3 (GHSA-vfj7-8cjw-p6xm, high) has no patched release. Removed the unused `tailwindcss-animate` (dependencies) and `tailwindcss` (devDependencies) on top of `myprompt/main` in a worktree: `postcss.config.mjs` has no plugins and neither package is imported. Lockfile change is removals only (320 lines). `braces` now has no production path; it remains via `eslint-config-next` (dev lint only).
+- Myprompt `main` fast-forwarded `8e29149f..93229ce5` from the Monorepo checkout (gate ran, `CHIEF_PUSH_OK=1` once, approved by Gaffer; range scanned clean). Dependabot re-scoped #128 to development and auto-dismissed it; 0 open alerts.
+- PASS on the Myprompt tree after `pnpm install --frozen-lockfile`: lint, typecheck, 215 tests, desktop:build, Electron --smoke (exit 0 via PowerShell; Git Bash cannot exec the pnpm-symlinked binary, exit 127). e2e 4/5 with the committed baseline: Myprompt stores `e2e/.../transform-controls-contained-win32.png` as a raw Git LFS pointer (no LFS attributes there), so the screenshot test cannot decode it; with the real PNG from this capsule 5/5 passed. Pre-existing Myprompt issue, not fixed.
+- Process note: the first local commit used `--no-verify` by mistake; it was reset (soft, unpushed) and recommitted without it.
+- Open: this Monorepo capsule copy is behind Myprompt `main` (dependency removal, #49-#54 changes); syncing it is a separate, approval-gated merge.
+
 ## 2026-10-13 - Merged into Myprompt main; publish-gate incident (Claude Code)
 
 - Myprompt `main` fast-forwarded `eb350601..8e29149f` (3 commits: Metaprompt feature, HANDOFF, Claude-first + README) on Gaffer's "merge it", with `CHIEF_PUSH_OK=1` set once after Gaffer explicitly approved opening the gate.
