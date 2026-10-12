@@ -1,5 +1,12 @@
 # HANDOFF
 
+## 2026-10-13 - Console opens larger again: 112 x 28 (Claude Code)
+
+- Gaffer: "tambah lagi". `GRID_TARGET` 96 x 24 -> 112 x 28 (about 768x495 px); `GRID_MIN` 80 x 20 unchanged; `WINDOW_STATE_VERSION` 8 -> 9. e2e grid test and baseline (768x495, LFS) updated.
+- PASS: ESLint, `tsc --noEmit`, desktop tsc build, Playwright 5/5, Vitest 215 on rerun. One full run hit EPERM in `workspace-store.test.ts` ("separate createWorkspaceStore instances can drop concurrent writes", Windows temp-file rename race); the file passed 3/3 alone and the full suite passed on rerun. Pre-existing flake from #49, not touched.
+- Prose still wraps near 72 columns by design, so extra width shows as right margin.
+- Still unpublished to Myprompt (needs LFS object upload + gated push).
+
 ## 2026-10-13 - Console opens a little larger: 96 x 24 (Claude Code)
 
 - Gaffer asked for a slightly wider and taller UI. `desktop/main.ts`: first-run `GRID_TARGET` 80 x 20 -> 96 x 24 (about 556x367 -> 662x431 px at the 11px face); `GRID_MIN` stays 80 x 20 (Chief's floor). `WINDOW_STATE_VERSION` 7 -> 8 so the stored 80 x 20 fit is replaced once; later user resizes persist as before. e2e grid test and the screenshot baseline (`transform-controls-contained-win32.png`, now 662x431, LFS) updated.
