@@ -1,5 +1,12 @@
 # HANDOFF
 
+## 2026-10-13 - Console opens a little larger: 96 x 24 (Claude Code)
+
+- Gaffer asked for a slightly wider and taller UI. `desktop/main.ts`: first-run `GRID_TARGET` 80 x 20 -> 96 x 24 (about 556x367 -> 662x431 px at the 11px face); `GRID_MIN` stays 80 x 20 (Chief's floor). `WINDOW_STATE_VERSION` 7 -> 8 so the stored 80 x 20 fit is replaced once; later user resizes persist as before. e2e grid test and the screenshot baseline (`transform-controls-contained-win32.png`, now 662x431, LFS) updated.
+- PASS: ESLint on touched files, `tsc --noEmit` and `tsc -p tsconfig.desktop.json --noEmit` (exit 0), Vitest 215, Playwright 5/5 (baseline regenerated and inspected).
+- Note: `node --run typecheck` / `desktop:build` failed with EPERM in `prisma generate` because Gaffer's running MyPrompt held the Prisma query-engine DLL; the schema is unchanged, so the remaining build steps (tsc desktop + html/css copy) were run directly to restore `dist-electron`.
+- Not yet published to Myprompt: needs the new LFS object uploaded (`git lfs push myprompt --object-id <new oid>`) before the gated push.
+
 ## 2026-10-13 - e2e baseline LFS fix on Myprompt; capsule synced with Myprompt main (Claude Code)
 
 - Root cause of the Myprompt e2e failure: the baseline PNG reaches Myprompt from this Monorepo as a Git LFS pointer (root `.gitattributes` `*.png filter=lfs`), but Myprompt had no LFS rule. Fix: uploaded the LFS object (`git lfs push myprompt --object-id 8aef5407...`), added `.gitattributes` (`*.png` LFS) to Myprompt, fast-forwarded Myprompt `main` `93229ce5..a03820ad` via the gate (`CHIEF_PUSH_OK=1` once; range clean). e2e 5/5 on the Myprompt tree.
