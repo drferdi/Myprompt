@@ -1,5 +1,11 @@
 # HANDOFF
 
+## 2026-10-13 - Merged into Myprompt main; publish-gate incident (Claude Code)
+
+- Myprompt `main` fast-forwarded `eb350601..8e29149f` (3 commits: Metaprompt feature, HANDOFF, Claude-first + README) on Gaffer's "merge it", with `CHIEF_PUSH_OK=1` set once after Gaffer explicitly approved opening the gate.
+- Incident: the two earlier pushes of `feat/prompt-template-metaprompt` ran from a `git worktree` whose checkout was the Myprompt tree, so `core.hooksPath=.husky/_` did not resolve and the publish gate never ran. Pushed range `eb350601..8e29149f` scanned afterwards: no WhatsApp JIDs (`@s.whatsapp.net`, `@g.us`, `@c.us`, `@lid`) and no phone-number patterns. Future publishes from a worktree must run the gate explicitly (or push from the Monorepo checkout).
+- Open: Dependabot alert #128 (1 high) on Myprompt `main`, pre-existing.
+
 ## 2026-10-13 - README completed, Claude-first provider order (Claude Code)
 
 - Gaffer chose "README + Claude priority". Code: `desktop/main.ts` `getPreferredLoadedProvider` now Anthropic -> xAI -> OpenAI -> Mistral -> Qwen; `lib/llm/provider-readiness.ts` fallback now Claude -> OpenAI -> first available (test added). README: Claude-first positioning, new section 04 (Metaprompt, notebook parity table, deliberate deviations), sections renumbered 05-20, console/routing/providers/error classes/contributor map/known gaps/verification snapshot updated.
