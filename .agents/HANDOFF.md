@@ -1,5 +1,12 @@
 # HANDOFF
 
+## 2026-10-13 - e2e baseline LFS fix on Myprompt; capsule synced with Myprompt main (Claude Code)
+
+- Root cause of the Myprompt e2e failure: the baseline PNG reaches Myprompt from this Monorepo as a Git LFS pointer (root `.gitattributes` `*.png filter=lfs`), but Myprompt had no LFS rule. Fix: uploaded the LFS object (`git lfs push myprompt --object-id 8aef5407...`), added `.gitattributes` (`*.png` LFS) to Myprompt, fast-forwarded Myprompt `main` `93229ce5..a03820ad` via the gate (`CHIEF_PUSH_OK=1` once; range clean). e2e 5/5 on the Myprompt tree.
+- Synced this capsule with Myprompt `main`: applied `git diff --binary 05f0a6d7:tools/prompt myprompt/main` (3-way, clean). Brought in #49-#54 (workspace store sharing, clarification slash guard, dependabot config, next/vitest/electron bumps), the unused-Tailwind removal, and `.gitattributes`. The capsule tree now equals Myprompt `main` except this HANDOFF. `pnpm install --frozen-lockfile` (vitest 3 -> 4, electron 44.4.4, tailwindcss removed).
+- PASS / exit 0: lint, typecheck, full Vitest (19 files, 215 tests), `test:e2e` (5/5, includes desktop:build), verify-structure, Electron --smoke (temp profile).
+- Not merged into Monorepo `main`, not pushed to `origin` (capsule rule). Branch: `feat/prompt-template-metaprompt`.
+
 ## 2026-10-13 - Dependabot #128 (braces) resolved on Myprompt main (Claude Code)
 
 - `braces` <= 3.0.3 (GHSA-vfj7-8cjw-p6xm, high) has no patched release. Removed the unused `tailwindcss-animate` (dependencies) and `tailwindcss` (devDependencies) on top of `myprompt/main` in a worktree: `postcss.config.mjs` has no plugins and neither package is imported. Lockfile change is removals only (320 lines). `braces` now has no production path; it remains via `eslint-config-next` (dev lint only).
