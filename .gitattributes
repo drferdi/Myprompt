@@ -1,0 +1,2 @@
+# Binary test baselines are stored in Git LFS (same rule as the development monorepo).
+*.png filter=lfs diff=lfs merge=lfs -text
