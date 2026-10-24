@@ -25,7 +25,9 @@ export class AnthropicProvider implements LLMProviderAdapter {
     const response = await this.client.messages.create({
       model: this.model,
       max_tokens: request.maxTokens,
-      temperature: request.temperature,
+      // Sonnet 5.5 rejects a non-default temperature; between_tools keeps thinking off so
+      // the lane max_tokens budgets go to the answer.
+      thinking: { type: 'between_tools' },
       // An empty system prompt (Prompt Template route) is omitted, not sent blank.
       ...(request.systemPrompt && { system: request.systemPrompt }),
       messages: [{ role: 'user', content: request.userPrompt }],
@@ -44,7 +46,9 @@ export class AnthropicProvider implements LLMProviderAdapter {
     const stream = this.client.messages.stream({
       model: this.model,
       max_tokens: request.maxTokens,
-      temperature: request.temperature,
+      // Sonnet 5.5 rejects a non-default temperature; between_tools keeps thinking off so
+      // the lane max_tokens budgets go to the answer.
+      thinking: { type: 'between_tools' },
       // An empty system prompt (Prompt Template route) is omitted, not sent blank.
       ...(request.systemPrompt && { system: request.systemPrompt }),
       messages: [{ role: 'user', content: request.userPrompt }],

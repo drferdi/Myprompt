@@ -486,7 +486,7 @@ Six adapters share one contract (`generate`, `generateStream`, and
 
 | Provider code | Adapter | Default model | Credential |
 | --- | --- | --- | --- |
-| `CLAUDE` | Anthropic | `claude-sonnet-4-20250514` | `ANTHROPIC_API_KEY` |
+| `CLAUDE` | Anthropic | `claude-sonnet-5-5` | `ANTHROPIC_API_KEY` |
 | `OPENAI` | OpenAI | `gpt-4o` | `OPENAI_API_KEY` |
 | `GROK` | OpenAI-compatible xAI | `grok-3-fast` | `XAI_API_KEY` |
 | `MISTRAL` | Mistral | `mistral-large-latest` | `MISTRAL_API_KEY` |
@@ -503,11 +503,16 @@ When a route sends no system prompt (the Prompt Template route), every adapter
 omits the system message instead of sending it blank.
 
 > [!WARNING]
-> The Prompt Template route uses temperature 0, as the Metaprompt notebook does.
-> The notebook warns that `claude-sonnet-5` rejects that request. The default
-> `claude-sonnet-4-20250514` accepts it. The Claude model has no environment
-> override; it is set by `DEFAULT_MODEL_MAP.CLAUDE` in `lib/constants.ts`, so
-> check this before changing it.
+> The Prompt Template route still asks for temperature 0, as the Metaprompt
+> notebook does (`PROMPT_TEMPLATE_TEMPERATURE` in `lib/optimizer/engine.ts`), but
+> the Anthropic adapter no longer forwards it: the default `claude-sonnet-5-5`
+> rejects a non-default temperature, so the adapter omits `temperature` and sends
+> `thinking: { type: 'between_tools' }`, which leaves thinking off on a tool-free
+> request. Every other adapter still forwards the temperature, so the Optimizer
+> lanes keep their 0.4 / 0.7 there and lose them on Claude. The Claude model has
+> no environment override; it is set by `DEFAULT_MODEL_MAP.CLAUDE` in
+> `lib/constants.ts`, and `between_tools` is a Sonnet 5.5 setting, so check both
+> before changing it.
 
 When something fails, the error lands in a clear class: `PROVIDER_AUTH`,
 `RATE_LIMIT`, `NETWORK`, `TIMEOUT`, `UPSTREAM`, `QUOTA_EXCEEDED`,

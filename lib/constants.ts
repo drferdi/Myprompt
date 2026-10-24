@@ -6,7 +6,7 @@ export const APP_VERSION = '0.1.0'
 
 export const DEFAULT_PROVIDER = 'GROK' as const
 export const DEFAULT_MODEL_MAP = {
-  CLAUDE: 'claude-sonnet-4-20250514',
+  CLAUDE: 'claude-sonnet-5-5',
   OPENAI: 'gpt-4o',
   MISTRAL: 'mistral-large-latest',
   QWEN: 'qwen-plus',

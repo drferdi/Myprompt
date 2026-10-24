@@ -46,7 +46,7 @@
     "verify": "node --run verify:structure && node --run lint && node --run typecheck && node --run pretest && node --run test && node --run build && node --run desktop:smoke && node --run deploy:dry-run"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.39.0",
+    "@anthropic-ai/sdk": "^0.135.0",
     "@hookform/resolvers": "^3.9.0",
     "@mistralai/mistralai": "^1.5.0",
     "@next/env": "15.5.27",
