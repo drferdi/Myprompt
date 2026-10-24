@@ -223,7 +223,7 @@ function getShellProviderState(): DesktopShellProviderState {
   if (providerReadiness.activeProvider === 'CLAUDE') {
     return {
       preferredProvider: 'CLAUDE',
-      preferredModel: 'claude-sonnet-4',
+      preferredModel: DEFAULT_MODEL_MAP.CLAUDE,
       modelChip: 'claude-ready',
       providerReadiness,
     }
